@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { api } from '../services/api';
+import { api, uploadImages } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 
 interface Post {
@@ -13,6 +13,7 @@ interface Post {
   author_id: number;
   parent_id: number | null;
   parent_author_name: string | null;
+  images?: string[];
 }
 
 interface PostWithReplies extends Post {
@@ -67,6 +68,21 @@ const PostComponent = ({
                   </span>
                 </div>
                     <p className="whitespace-pre-wrap text-gray-700">{parentPost.content}</p>
+                    {parentPost.images && parentPost.images.length > 0 && (
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {parentPost.images.map((imageUrl, index) => {
+                          const fullUrl = imageUrl.startsWith('http') ? imageUrl : (import.meta.env.VITE_API_URL || '') + imageUrl;
+                          return (
+                            <img
+                              key={index}
+                              src={fullUrl}
+                              alt={`Image ${index + 1}`}
+                              className="max-w-xs h-auto rounded border"
+                            />
+                          );
+                        })}
+                      </div>
+                    )}
               </blockquote>
             )}
           </div>
@@ -113,6 +129,22 @@ const PostComponent = ({
         </div>
         <div className="prose max-w-none">
           <p className="whitespace-pre-wrap">{post.content}</p>
+          {post.images && post.images.length > 0 && (
+            <div className="mt-4 flex flex-wrap gap-2">
+              {post.images.map((imageUrl, index) => {
+                const fullUrl = imageUrl.startsWith('http') ? imageUrl : (import.meta.env.VITE_API_URL || '') + imageUrl;
+                return (
+                  <img
+                    key={index}
+                    src={fullUrl}
+                    alt={`Image ${index + 1}`}
+                    className="max-w-full h-auto rounded border cursor-pointer hover:opacity-90"
+                    onClick={() => window.open(fullUrl, '_blank')}
+                  />
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
       {post.replies.length > 0 && (
@@ -144,6 +176,7 @@ interface Topic {
   category_id: number;
   created_at: string;
   posts: Post[];
+  images?: string[];
 }
 
 const Topic = () => {
@@ -156,6 +189,8 @@ const Topic = () => {
   const [replyingTo, setReplyingTo] = useState<number | null>(null);
   const [showQuote, setShowQuote] = useState(true);
   const [reactions, setReactions] = useState<Map<number, number | null>>(new Map());
+  const [selectedImages, setSelectedImages] = useState<File[]>([]);
+  const [uploadingImages, setUploadingImages] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -201,18 +236,43 @@ const Topic = () => {
     if (!user || !newPost.trim()) return;
 
     try {
+      setUploadingImages(true);
+      let imageUrls: string[] = [];
+
+      // Upload images if any
+      if (selectedImages.length > 0) {
+        imageUrls = await uploadImages(selectedImages);
+      }
+
       await api.post('/posts', {
         content: newPost,
         topic_id: id,
         parent_id: replyingTo || undefined,
+        images: imageUrls,
       });
       setNewPost('');
+      setSelectedImages([]);
       setReplyingTo(null);
       fetchTopic();
     } catch (error) {
       console.error('Error creating post:', error);
       alert('Ошибка при создании сообщения');
+    } finally {
+      setUploadingImages(false);
     }
+  };
+
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const files = Array.from(e.target.files);
+      // Limit to 10 images
+      const limitedFiles = files.slice(0, 10);
+      setSelectedImages((prev) => [...prev, ...limitedFiles].slice(0, 10));
+    }
+  };
+
+  const removeImage = (index: number) => {
+    setSelectedImages((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleReply = (postId: number) => {
@@ -234,6 +294,7 @@ const Topic = () => {
   const cancelReply = () => {
     setReplyingTo(null);
     setNewPost('');
+    setSelectedImages([]);
     setShowQuote(true);
   };
 
@@ -369,6 +430,22 @@ const Topic = () => {
         </div>
         <div className="prose max-w-none">
           <p className="whitespace-pre-wrap">{topic.content}</p>
+          {topic.images && topic.images.length > 0 && (
+            <div className="mt-4 flex flex-wrap gap-2">
+              {topic.images.map((imageUrl, index) => {
+                const fullUrl = imageUrl.startsWith('http') ? imageUrl : (import.meta.env.VITE_API_URL || '') + imageUrl;
+                return (
+                  <img
+                    key={index}
+                    src={fullUrl}
+                    alt={`Image ${index + 1}`}
+                    className="max-w-full h-auto rounded border cursor-pointer hover:opacity-90"
+                    onClick={() => window.open(fullUrl, '_blank')}
+                  />
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
 
@@ -432,6 +509,21 @@ const Topic = () => {
                       </span>
                     </div>
                     <p className="whitespace-pre-wrap text-gray-700">{replyingToPost.content}</p>
+                    {replyingToPost.images && replyingToPost.images.length > 0 && (
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {replyingToPost.images.map((imageUrl, index) => {
+                          const fullUrl = imageUrl.startsWith('http') ? imageUrl : (import.meta.env.VITE_API_URL || '') + imageUrl;
+                          return (
+                            <img
+                              key={index}
+                              src={fullUrl}
+                              alt={`Image ${index + 1}`}
+                              className="max-w-xs h-auto rounded border"
+                            />
+                          );
+                        })}
+                      </div>
+                    )}
                   </blockquote>
                 )}
               </div>
@@ -447,12 +539,45 @@ const Topic = () => {
             className="w-full border rounded px-4 py-2 mb-4 h-32"
             required
           />
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Изображения (до 10 шт.)
+            </label>
+            <input
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={handleImageSelect}
+              className="w-full border rounded px-4 py-2 mb-2"
+            />
+            {selectedImages.length > 0 && (
+              <div className="flex flex-wrap gap-2 mt-2">
+                {selectedImages.map((file, index) => (
+                  <div key={index} className="relative">
+                    <img
+                      src={URL.createObjectURL(file)}
+                      alt={`Preview ${index + 1}`}
+                      className="w-20 h-20 object-cover rounded border"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeImage(index)}
+                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
           <div className="flex gap-2">
             <button
               type="submit"
-              className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition"
+              className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition disabled:opacity-50"
+              disabled={uploadingImages}
             >
-              {replyingTo ? 'Отправить ответ' : 'Отправить'}
+              {uploadingImages ? 'Загрузка...' : replyingTo ? 'Отправить ответ' : 'Отправить'}
             </button>
             {replyingTo && (
               <button

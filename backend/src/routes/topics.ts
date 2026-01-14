@@ -141,7 +141,7 @@ router.post(
         return res.status(400).json({ errors: errors.array() });
       }
 
-      const { title, content, category_id } = req.body;
+      const { title, content, category_id, images } = req.body;
 
       // Verify category exists
       const categoryCheck = await pool.query('SELECT id FROM categories WHERE id = $1', [
@@ -151,9 +151,12 @@ router.post(
         return res.status(404).json({ error: 'Category not found' });
       }
 
+      // Convert images array to PostgreSQL array format
+      const imagesArray = images && Array.isArray(images) ? images : [];
+
       const result = await pool.query(
-        'INSERT INTO topics (title, content, author_id, category_id) VALUES ($1, $2, $3, $4) RETURNING *',
-        [title, content, req.userId, category_id]
+        'INSERT INTO topics (title, content, author_id, category_id, images) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+        [title, content, req.userId, category_id, imagesArray]
       );
 
       res.status(201).json(result.rows[0]);

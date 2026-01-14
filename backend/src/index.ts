@@ -7,7 +7,9 @@ import categoryRoutes from './routes/categories';
 import topicRoutes from './routes/topics';
 import postRoutes from './routes/posts';
 import statsRoutes from './routes/stats';
+import uploadRoutes from './routes/upload';
 import { telegramBotService } from './services/telegram-bot';
+import path from 'path';
 
 dotenv.config();
 
@@ -30,12 +32,16 @@ app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Serve uploaded images
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/topics', topicRoutes);
 app.use('/api/posts', postRoutes);
 app.use('/api/stats', statsRoutes);
+app.use('/api/upload', uploadRoutes);
 
 // Health check
 app.get('/api/health', async (req, res) => {

@@ -40,3 +40,49 @@ api.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
+// Upload image function
+export const uploadImage = async (file: File): Promise<string> => {
+  const formData = new FormData();
+  formData.append('image', file);
+
+  const token = localStorage.getItem('token');
+  const response = await fetch(`${getBaseURL()}/upload/image`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+    },
+    body: formData,
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to upload image');
+  }
+
+  const data = await response.json();
+  return data.url;
+};
+
+// Upload multiple images function
+export const uploadImages = async (files: File[]): Promise<string[]> => {
+  const formData = new FormData();
+  files.forEach((file) => {
+    formData.append('images', file);
+  });
+
+  const token = localStorage.getItem('token');
+  const response = await fetch(`${getBaseURL()}/upload/images`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+    },
+    body: formData,
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to upload images');
+  }
+
+  const data = await response.json();
+  return data.urls;
+};

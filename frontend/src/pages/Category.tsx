@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { api } from '../services/api';
+import { api, uploadImages } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 
 interface Topic {
@@ -13,6 +13,7 @@ interface Topic {
   last_post_at: string | null;
   last_post_author: string | null;
   created_at: string;
+  images?: string[];
 }
 
 const Category = () => {
@@ -23,6 +24,8 @@ const Category = () => {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({ title: '', content: '' });
+  const [selectedImages, setSelectedImages] = useState<File[]>([]);
+  const [uploadingImages, setUploadingImages] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -56,18 +59,43 @@ const Category = () => {
     if (!user) return;
 
     try {
+      setUploadingImages(true);
+      let imageUrls: string[] = [];
+
+      // Upload images if any
+      if (selectedImages.length > 0) {
+        imageUrls = await uploadImages(selectedImages);
+      }
+
       await api.post('/topics', {
         title: formData.title,
         content: formData.content,
         category_id: id,
+        images: imageUrls,
       });
       setFormData({ title: '', content: '' });
+      setSelectedImages([]);
       setShowForm(false);
       fetchTopics();
     } catch (error) {
       console.error('Error creating topic:', error);
       alert('Ошибка при создании темы');
+    } finally {
+      setUploadingImages(false);
     }
+  };
+
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const files = Array.from(e.target.files);
+      // Limit to 10 images
+      const limitedFiles = files.slice(0, 10);
+      setSelectedImages((prev) => [...prev, ...limitedFiles].slice(0, 10));
+    }
+  };
+
+  const removeImage = (index: number) => {
+    setSelectedImages((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleDeleteTopic = async (topicId: number, topicTitle: string) => {
@@ -139,18 +167,52 @@ const Category = () => {
                 className="w-full border rounded px-4 py-2 mb-4 h-32"
                 required
               />
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Изображения (до 10 шт.)
+                </label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={handleImageSelect}
+                  className="w-full border rounded px-4 py-2 mb-2"
+                />
+                {selectedImages.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {selectedImages.map((file, index) => (
+                      <div key={index} className="relative">
+                        <img
+                          src={URL.createObjectURL(file)}
+                          alt={`Preview ${index + 1}`}
+                          className="w-20 h-20 object-cover rounded border"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeImage(index)}
+                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
               <div className="flex gap-2">
                 <button
                   type="submit"
-                  className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition"
+                  className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition disabled:opacity-50"
+                  disabled={uploadingImages}
                 >
-                  Создать
+                  {uploadingImages ? 'Загрузка...' : 'Создать'}
                 </button>
                 <button
                   type="button"
                   onClick={() => {
                     setShowForm(false);
                     setFormData({ title: '', content: '' });
+                    setSelectedImages([]);
                   }}
                   className="bg-gray-300 text-gray-700 px-4 py-2 rounded hover:bg-gray-400 transition"
                 >

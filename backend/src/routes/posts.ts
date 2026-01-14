@@ -71,7 +71,7 @@ router.post(
         return res.status(400).json({ errors: errors.array() });
       }
 
-      const { content, topic_id, parent_id } = req.body;
+      const { content, topic_id, parent_id, images } = req.body;
 
       // Verify topic exists
       const topicCheck = await pool.query('SELECT id FROM topics WHERE id = $1', [topic_id]);
@@ -93,9 +93,12 @@ router.post(
         }
       }
 
+      // Convert images array to PostgreSQL array format
+      const imagesArray = images && Array.isArray(images) ? images : [];
+
       const result = await pool.query(
-        'INSERT INTO posts (content, author_id, topic_id, parent_id) VALUES ($1, $2, $3, $4) RETURNING *',
-        [content, req.userId, topic_id, parent_id || null]
+        'INSERT INTO posts (content, author_id, topic_id, parent_id, images) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+        [content, req.userId, topic_id, parent_id || null, imagesArray]
       );
 
       res.status(201).json(result.rows[0]);
