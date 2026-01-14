@@ -7,6 +7,7 @@ import categoryRoutes from './routes/categories';
 import topicRoutes from './routes/topics';
 import postRoutes from './routes/posts';
 import statsRoutes from './routes/stats';
+import { telegramBotService } from './services/telegram-bot';
 
 dotenv.config();
 
@@ -47,9 +48,12 @@ app.get('/api/health', async (req, res) => {
 });
 
 // Start server
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
   console.log(`📝 Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`🔐 JWT Secret: ${process.env.JWT_SECRET ? '✅ Set' : '❌ NOT SET!'}`);
   console.log(`🗄️  Database: ${process.env.DB_NAME || 'forum_db'} on ${process.env.DB_HOST || 'localhost'}:${process.env.DB_PORT || '5432'}`);
+  
+  // Initialize Telegram bot
+  await telegramBotService.initialize();
 });

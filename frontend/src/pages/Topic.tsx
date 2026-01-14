@@ -66,7 +66,7 @@ const PostComponent = ({
                     {new Date(parentPost.created_at).toLocaleString('ru-RU')}
                   </span>
                 </div>
-                <p className="whitespace-pre-wrap text-gray-700">{parentPost.content}</p>
+                    <p className="whitespace-pre-wrap text-gray-700">{parentPost.content}</p>
               </blockquote>
             )}
           </div>
