@@ -6,6 +6,8 @@ import Category from './pages/Category';
 import Topic from './pages/Topic';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 import Profile from './pages/Profile';
 import ProtectedRoute from './components/ProtectedRoute';
 
@@ -22,6 +24,8 @@ function App() {
               <Route path="/topic/:id" element={<Topic />} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
               <Route
                 path="/profile"
                 element={

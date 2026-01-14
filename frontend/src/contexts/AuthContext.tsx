@@ -38,14 +38,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const login = async (email: string, password: string) => {
-    const response = await api.post('/auth/login', { email, password });
-    const { token: newToken, user: newUser } = response.data;
+    try {
+      const response = await api.post('/auth/login', { email, password });
+      const { token: newToken, user: newUser } = response.data;
 
-    setToken(newToken);
-    setUser(newUser);
-    localStorage.setItem('token', newToken);
-    localStorage.setItem('user', JSON.stringify(newUser));
-    axios.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
+      setToken(newToken);
+      setUser(newUser);
+      localStorage.setItem('token', newToken);
+      localStorage.setItem('user', JSON.stringify(newUser));
+      axios.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
+    } catch (error: any) {
+      // Пробрасываем ошибку дальше для обработки в компоненте
+      throw error;
+    }
   };
 
   const register = async (username: string, email: string, password: string) => {

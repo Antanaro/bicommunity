@@ -19,7 +19,32 @@ const Login = () => {
       await login(email, password);
       navigate('/');
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Ошибка входа');
+      console.error('Login error:', err); // Для отладки
+      
+      let errorMessage = 'Ошибка входа';
+      let hint = '';
+      
+      // Обработка ошибок сети
+      if (!err.response) {
+        if (err.code === 'ECONNREFUSED' || err.message?.includes('Network Error')) {
+          errorMessage = 'Не удалось подключиться к серверу';
+          hint = 'Проверьте, что backend сервер запущен на порту 5000';
+        } else if (err.message) {
+          errorMessage = err.message;
+        }
+      } else if (err.response?.data) {
+        // Обработка ошибок валидации
+        if (err.response.data.errors && Array.isArray(err.response.data.errors)) {
+          errorMessage = err.response.data.errors.map((e: any) => e.msg || e.message).join(', ');
+        } else if (err.response.data.error) {
+          errorMessage = err.response.data.error;
+          hint = err.response.data.hint || '';
+        }
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      
+      setError(hint ? `${errorMessage}\n\n💡 ${hint}` : errorMessage);
     } finally {
       setLoading(false);
     }
@@ -29,8 +54,17 @@ const Login = () => {
     <div className="max-w-md mx-auto bg-white rounded-lg shadow p-6">
       <h1 className="text-2xl font-bold mb-6">Вход</h1>
       {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-          {error}
+        <div className="bg-red-50 border-l-4 border-red-500 text-red-700 px-4 py-3 rounded mb-4">
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div className="ml-3">
+              <p className="text-sm font-medium whitespace-pre-line">{error}</p>
+            </div>
+          </div>
         </div>
       )}
       <form onSubmit={handleSubmit}>
@@ -66,12 +100,19 @@ const Login = () => {
           {loading ? 'Вход...' : 'Войти'}
         </button>
       </form>
-      <p className="mt-4 text-center text-gray-600">
-        Нет аккаунта?{' '}
-        <Link to="/register" className="text-blue-600 hover:underline">
-          Зарегистрироваться
-        </Link>
-      </p>
+      <div className="mt-4 text-center space-y-2">
+        <p className="text-gray-600">
+          Нет аккаунта?{' '}
+          <Link to="/register" className="text-blue-600 hover:underline font-medium">
+            Зарегистрироваться
+          </Link>
+        </p>
+        <p className="text-sm">
+          <Link to="/forgot-password" className="text-blue-600 hover:underline font-medium">
+            Забыли пароль?
+          </Link>
+        </p>
+      </div>
     </div>
   );
 };

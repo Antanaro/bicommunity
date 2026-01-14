@@ -15,7 +15,15 @@ router.get('/', async (req: Request, res: Response) => {
         u.username as author_name,
         c.name as category_name,
         COUNT(p.id) as post_count,
-        MAX(p.created_at) as last_post_at
+        MAX(p.created_at) as last_post_at,
+        (
+          SELECT u2.username 
+          FROM posts p2
+          JOIN users u2 ON p2.author_id = u2.id
+          WHERE p2.topic_id = t.id
+          ORDER BY p2.created_at DESC
+          LIMIT 1
+        ) as last_post_author
       FROM topics t
       JOIN users u ON t.author_id = u.id
       JOIN categories c ON t.category_id = c.id
@@ -60,20 +68,50 @@ router.get('/:id', async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'Topic not found' });
     }
 
-    // Get posts
+    // Get posts with parent information and reaction counts
+    // Check if reaction_type column exists
+    const columnCheck = await pool.query(`
+      SELECT column_name 
+      FROM information_schema.columns 
+      WHERE table_name='likes' AND column_name='reaction_type'
+    `);
+    
+    const hasReactionType = columnCheck.rows.length > 0;
+    
     const postsResult = await pool.query(
-      `
-      SELECT 
-        p.*,
-        u.username as author_name,
-        COUNT(l.id) as like_count
-      FROM posts p
-      JOIN users u ON p.author_id = u.id
-      LEFT JOIN likes l ON p.id = l.post_id
-      WHERE p.topic_id = $1
-      GROUP BY p.id, u.username
-      ORDER BY p.created_at ASC
-    `,
+      hasReactionType
+        ? `
+          SELECT 
+            p.*,
+            u.username as author_name,
+            COALESCE(COUNT(CASE WHEN l.reaction_type = 1 THEN 1 END)::INTEGER, 0) as upvote_count,
+            COALESCE(COUNT(CASE WHEN l.reaction_type = -1 THEN 1 END)::INTEGER, 0) as downvote_count,
+            parent_u.username as parent_author_name
+          FROM posts p
+          JOIN users u ON p.author_id = u.id
+          LEFT JOIN likes l ON p.id = l.post_id
+          LEFT JOIN posts parent_p ON p.parent_id = parent_p.id
+          LEFT JOIN users parent_u ON parent_p.author_id = parent_u.id
+          WHERE p.topic_id = $1
+          GROUP BY p.id, u.username, parent_u.username
+          ORDER BY p.created_at ASC
+        `
+        : `
+          SELECT 
+            p.*,
+            u.username as author_name,
+            COALESCE(COUNT(l.id)::INTEGER, 0) as upvote_count,
+            0::INTEGER as downvote_count,
+            parent_u.username as parent_author_name
+          FROM posts p
+          JOIN users u ON p.author_id = u.id
+          LEFT JOIN likes l ON p.id = l.post_id
+          LEFT JOIN posts parent_p ON p.parent_id = parent_p.id
+          LEFT JOIN users parent_u ON parent_p.author_id = parent_u.id
+          WHERE p.topic_id = $1
+          GROUP BY p.id, u.username, parent_u.username
+          ORDER BY p.created_at ASC
+        `,
       [req.params.id]
     );
 

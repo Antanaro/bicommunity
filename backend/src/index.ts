@@ -6,6 +6,7 @@ import authRoutes from './routes/auth';
 import categoryRoutes from './routes/categories';
 import topicRoutes from './routes/topics';
 import postRoutes from './routes/posts';
+import statsRoutes from './routes/stats';
 
 dotenv.config();
 
@@ -22,6 +23,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/topics', topicRoutes);
 app.use('/api/posts', postRoutes);
+app.use('/api/stats', statsRoutes);
 
 // Health check
 app.get('/api/health', async (req, res) => {

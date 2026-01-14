@@ -26,6 +26,16 @@ DB_NAME=forum_db
 DB_USER=postgres
 DB_PASSWORD=ваш_пароль
 JWT_SECRET=случайная_строка_для_безопасности_минимум_32_символа
+
+# Настройки для сброса пароля через email (опционально)
+# Подробнее см. backend/PASSWORD-RESET-SETUP.md
+FRONTEND_URL=http://localhost:3000
+# SMTP_HOST=smtp.gmail.com
+# SMTP_PORT=587
+# SMTP_SECURE=false
+# SMTP_USER=ваш_email@gmail.com
+# SMTP_PASSWORD=ваш_пароль_приложения
+# SMTP_FROM=ваш_email@gmail.com
 ```
 
 **Важно:** 
@@ -53,6 +63,17 @@ npm run migrate
 ```
 
 Вы должны увидеть сообщение: `✅ Database tables created successfully`
+
+### Дополнительная миграция для сброса пароля
+
+Для использования функции сброса пароля через email, запустите дополнительную миграцию:
+
+```bash
+cd backend
+npm run migrate-password-reset
+```
+
+**Примечание:** Для работы сброса пароля необходимо настроить SMTP сервер. Подробные инструкции см. в файле `backend/PASSWORD-RESET-SETUP.md`
 
 ## Шаг 6: Запуск приложения
 
