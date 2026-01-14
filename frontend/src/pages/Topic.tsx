@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { api, uploadImages } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
+import LinkifyText from '../components/LinkifyText';
 
 interface Post {
   id: number;
@@ -67,7 +68,9 @@ const PostComponent = ({
                     {new Date(parentPost.created_at).toLocaleString('ru-RU')}
                   </span>
                 </div>
-                    <p className="whitespace-pre-wrap text-gray-700">{parentPost.content}</p>
+                    <p className="whitespace-pre-wrap text-gray-700">
+                      <LinkifyText text={parentPost.content} />
+                    </p>
                     {parentPost.images && parentPost.images.length > 0 && (
                       <div className={`mt-2 gap-2 ${parentPost.images.length > 1 ? 'grid grid-cols-2' : 'flex'}`}>
                         {parentPost.images.map((imageUrl, index) => {
@@ -128,7 +131,9 @@ const PostComponent = ({
           </div>
         </div>
         <div className="prose max-w-none">
-          <p className="whitespace-pre-wrap">{post.content}</p>
+          <p className="whitespace-pre-wrap">
+            <LinkifyText text={post.content} />
+          </p>
           {post.images && post.images.length > 0 && (
             <div className={`mt-4 gap-2 ${post.images.length > 1 ? 'grid grid-cols-2' : 'flex'}`}>
               {post.images.map((imageUrl, index) => {
@@ -429,7 +434,9 @@ const Topic = () => {
           Автор: {topic.author_name} • {new Date(topic.created_at).toLocaleString('ru-RU')}
         </div>
         <div className="prose max-w-none">
-          <p className="whitespace-pre-wrap">{topic.content}</p>
+          <p className="whitespace-pre-wrap">
+            <LinkifyText text={topic.content} />
+          </p>
           {topic.images && topic.images.length > 0 && (
             <div className={`mt-4 gap-2 ${topic.images.length > 1 ? 'grid grid-cols-2' : 'flex'}`}>
               {topic.images.map((imageUrl, index) => {
@@ -508,7 +515,9 @@ const Topic = () => {
                         {new Date(replyingToPost.created_at).toLocaleString('ru-RU')}
                       </span>
                     </div>
-                    <p className="whitespace-pre-wrap text-gray-700">{replyingToPost.content}</p>
+                    <p className="whitespace-pre-wrap text-gray-700">
+                      <LinkifyText text={replyingToPost.content} />
+                    </p>
                     {replyingToPost.images && replyingToPost.images.length > 0 && (
                       <div className={`mt-2 gap-2 ${replyingToPost.images.length > 1 ? 'grid grid-cols-2' : 'flex'}`}>
                         {replyingToPost.images.map((imageUrl, index) => {

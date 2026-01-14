@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { api, uploadImages } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
+import LinkifyText from '../components/LinkifyText';
 
 interface Topic {
   id: number;
@@ -245,7 +246,7 @@ const Category = () => {
                   
                   {/* Начало содержания */}
                   <span className="text-gray-600 truncate flex-1 min-w-0">
-                    {topic.content.substring(0, 80)}{topic.content.length > 80 ? '...' : ''}
+                    <LinkifyText text={topic.content.substring(0, 80) + (topic.content.length > 80 ? '...' : '')} />
                   </span>
                   <span className="text-gray-300 flex-shrink-0">•</span>
                   

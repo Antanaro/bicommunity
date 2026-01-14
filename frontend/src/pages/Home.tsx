@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { api } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import PieChart from '../components/PieChart';
+import LinkifyText from '../components/LinkifyText';
 
 interface Category {
   id: number;
@@ -238,7 +239,7 @@ const Home = () => {
                 </span>
               </div>
               <p className="text-sm text-gray-600 mb-2 line-clamp-2">
-                {truncateText(mostUpvoted.content, 100)}
+                <LinkifyText text={truncateText(mostUpvoted.content, 100)} />
               </p>
               <div className="flex items-center gap-2 text-sm">
                 <span className="bg-green-500 text-white px-2 py-1 rounded font-semibold">
@@ -271,7 +272,7 @@ const Home = () => {
                 </span>
               </div>
               <p className="text-sm text-gray-600 mb-2 line-clamp-2">
-                {truncateText(mostDownvoted.content, 100)}
+                <LinkifyText text={truncateText(mostDownvoted.content, 100)} />
               </p>
               <div className="flex items-center gap-2 text-sm">
                 <span className="bg-red-500 text-white px-2 py-1 rounded font-semibold">
