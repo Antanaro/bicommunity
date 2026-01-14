@@ -191,9 +191,13 @@ const Home = () => {
             title="Интерактивная статистика форума"
             style={{
               position: 'absolute',
-              left: '-60px',
+              left: '-70px',
               top: '50%',
               transform: 'translateY(-50%)',
+              userSelect: 'none',
+              WebkitUserSelect: 'none',
+              MozUserSelect: 'none',
+              msUserSelect: 'none',
             }}
           >
             <PieChart 

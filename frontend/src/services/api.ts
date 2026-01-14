@@ -1,7 +1,19 @@
 import axios from 'axios';
 
+// Для production: если используется отдельный поддомен для API, 
+// установите переменную окружения VITE_API_URL
+// Для одного домена используйте '/api' (будет работать через прокси Nginx)
+const getBaseURL = () => {
+  if (import.meta.env.VITE_API_URL) {
+    return import.meta.env.VITE_API_URL;
+  }
+  // В production используем относительный путь (работает через прокси)
+  // В development Vite проксирует на localhost:5000
+  return '/api';
+};
+
 export const api = axios.create({
-  baseURL: '/api',
+  baseURL: getBaseURL(),
   headers: {
     'Content-Type': 'application/json',
   },

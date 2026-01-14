@@ -21,10 +21,18 @@ code {
   display: inline-block;
   outline: none;
   overflow: visible !important;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
 }
 
 .pie-chart-container {
   overflow: visible !important;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
 }
 
 .pie-chart {
