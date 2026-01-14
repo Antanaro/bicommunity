@@ -72,7 +72,7 @@ const PostComponent = ({
                       <LinkifyText text={parentPost.content} />
                     </p>
                     {parentPost.images && parentPost.images.length > 0 && (
-                      <div className={`mt-2 gap-2 ${parentPost.images.length > 1 ? 'grid grid-cols-2' : 'flex'}`}>
+                      <div className={`mt-2 ${parentPost.images.length > 1 ? 'grid grid-cols-2 gap-0' : 'flex'}`}>
                         {parentPost.images.map((imageUrl, index) => {
                           const fullUrl = imageUrl.startsWith('http') ? imageUrl : (import.meta.env.VITE_API_URL || '') + imageUrl;
                           return (
@@ -80,7 +80,7 @@ const PostComponent = ({
                               key={index}
                               src={fullUrl}
                               alt={`Image ${index + 1}`}
-                              className={parentPost.images.length > 1 ? 'w-1/2 h-auto rounded border' : 'w-1/4 max-w-[25%] h-auto rounded border'}
+                              className={parentPost.images.length > 1 ? 'w-full h-auto rounded border' : 'w-1/4 max-w-[25%] h-auto rounded border'}
                             />
                           );
                         })}
@@ -135,7 +135,7 @@ const PostComponent = ({
             <LinkifyText text={post.content} />
           </p>
           {post.images && post.images.length > 0 && (
-            <div className={`mt-4 gap-2 ${post.images.length > 1 ? 'grid grid-cols-2' : 'flex'}`}>
+            <div className={`mt-4 ${post.images.length > 1 ? 'grid grid-cols-2 gap-0' : 'flex'}`}>
               {post.images.map((imageUrl, index) => {
                 const fullUrl = imageUrl.startsWith('http') ? imageUrl : (import.meta.env.VITE_API_URL || '') + imageUrl;
                 return (
@@ -143,7 +143,7 @@ const PostComponent = ({
                     key={index}
                     src={fullUrl}
                     alt={`Image ${index + 1}`}
-                    className={post.images.length > 1 ? 'w-1/2 h-auto rounded border cursor-pointer hover:opacity-90' : 'w-1/4 max-w-[25%] h-auto rounded border cursor-pointer hover:opacity-90'}
+                    className={post.images.length > 1 ? 'w-full h-auto rounded border cursor-pointer hover:opacity-90' : 'w-1/4 max-w-[25%] h-auto rounded border cursor-pointer hover:opacity-90'}
                     onClick={() => window.open(fullUrl, '_blank')}
                   />
                 );
@@ -438,7 +438,7 @@ const Topic = () => {
             <LinkifyText text={topic.content} />
           </p>
           {topic.images && topic.images.length > 0 && (
-            <div className={`mt-4 gap-2 ${topic.images.length > 1 ? 'grid grid-cols-2' : 'flex'}`}>
+            <div className={`mt-4 ${topic.images.length > 1 ? 'grid grid-cols-2 gap-0' : 'flex'}`}>
               {topic.images.map((imageUrl, index) => {
                 const fullUrl = imageUrl.startsWith('http') ? imageUrl : (import.meta.env.VITE_API_URL || '') + imageUrl;
                 return (
@@ -446,7 +446,7 @@ const Topic = () => {
                     key={index}
                     src={fullUrl}
                     alt={`Image ${index + 1}`}
-                    className={topic.images.length > 1 ? 'w-1/2 h-auto rounded border cursor-pointer hover:opacity-90' : 'w-1/4 max-w-[25%] h-auto rounded border cursor-pointer hover:opacity-90'}
+                    className={topic.images.length > 1 ? 'w-full h-auto rounded border cursor-pointer hover:opacity-90' : 'w-1/4 max-w-[25%] h-auto rounded border cursor-pointer hover:opacity-90'}
                     onClick={() => window.open(fullUrl, '_blank')}
                   />
                 );
@@ -519,7 +519,7 @@ const Topic = () => {
                       <LinkifyText text={replyingToPost.content} />
                     </p>
                     {replyingToPost.images && replyingToPost.images.length > 0 && (
-                      <div className={`mt-2 gap-2 ${replyingToPost.images.length > 1 ? 'grid grid-cols-2' : 'flex'}`}>
+                      <div className={`mt-2 ${replyingToPost.images.length > 1 ? 'grid grid-cols-2 gap-0' : 'flex'}`}>
                         {replyingToPost.images.map((imageUrl, index) => {
                           const fullUrl = imageUrl.startsWith('http') ? imageUrl : (import.meta.env.VITE_API_URL || '') + imageUrl;
                           return (
@@ -527,7 +527,7 @@ const Topic = () => {
                               key={index}
                               src={fullUrl}
                               alt={`Image ${index + 1}`}
-                              className={replyingToPost.images.length > 1 ? 'w-1/2 h-auto rounded border' : 'w-1/4 max-w-[25%] h-auto rounded border'}
+                              className={replyingToPost.images.length > 1 ? 'w-full h-auto rounded border' : 'w-1/4 max-w-[25%] h-auto rounded border'}
                             />
                           );
                         })}
