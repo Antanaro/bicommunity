@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
+import PieChart from '../components/PieChart';
 
 interface Category {
   id: number;
@@ -42,6 +43,50 @@ const Home = () => {
   const [mostUpvoted, setMostUpvoted] = useState<TopPost | null>(null);
   const [mostDownvoted, setMostDownvoted] = useState<TopPost | null>(null);
   const [topDiscussed, setTopDiscussed] = useState<TopTopic[]>([]);
+
+  // Генерируем случайные размеры сегментов от 10 до 50 процентов
+  const pieChartData = useMemo(() => {
+    const generateRandomSegments = () => {
+      // Генерируем три случайных значения от 10 до 50
+      const values: number[] = [];
+      for (let i = 0; i < 3; i++) {
+        values.push(Math.floor(Math.random() * 41) + 10); // От 10 до 50
+      }
+      
+      // Нормализуем, чтобы сумма была 100
+      const sum = values.reduce((a, b) => a + b, 0);
+      const normalized = values.map(v => Math.round((v / sum) * 100));
+      
+      // Проверяем, что сумма точно 100 (может быть погрешность из-за округления)
+      const currentSum = normalized.reduce((a, b) => a + b, 0);
+      if (currentSum !== 100) {
+        normalized[2] += (100 - currentSum); // Корректируем последний сегмент
+      }
+      
+      // Проверяем, что все значения в диапазоне 10-50
+      // Если нет, перегенерируем
+      const allValid = normalized.every(v => v >= 10 && v <= 50);
+      if (!allValid) {
+        // Если значения вышли за пределы, используем более простой алгоритм
+        const segments: number[] = [];
+        let remaining = 100;
+        
+        for (let i = 0; i < 2; i++) {
+          const max = Math.min(50, remaining - 10 * (2 - i));
+          const min = 10;
+          const value = Math.floor(Math.random() * (max - min + 1)) + min;
+          segments.push(value);
+          remaining -= value;
+        }
+        segments.push(Math.max(10, remaining)); // Гарантируем минимум 10
+        return segments;
+      }
+      
+      return normalized;
+    };
+    
+    return generateRandomSegments();
+  }, []); // Генерируется один раз при монтировании компонента
 
   useEffect(() => {
     fetchCategories();
@@ -138,9 +183,28 @@ const Home = () => {
   };
 
   return (
-    <div>
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">Категории форума</h1>
+    <div style={{ overflow: 'visible' }}>
+      <div className="flex justify-between items-center mb-6" style={{ overflow: 'visible', position: 'relative' }}>
+        <div className="flex items-center gap-3" style={{ position: 'relative' }}>
+          <div 
+            className="pie-chart-button" 
+            title="Интерактивная статистика форума"
+            style={{
+              position: 'absolute',
+              left: '-60px',
+              top: '50%',
+              transform: 'translateY(-50%)',
+            }}
+          >
+            <PieChart 
+              size={50} 
+              data={pieChartData} // Случайные пропорции от 10 до 50 процентов
+              colors={['#3b82f6', '#10b981', '#ef4444']} // Синий, зеленый, красный - цвета форума
+              className="pie-chart"
+            />
+          </div>
+          <h1 className="text-3xl font-bold">Категории форума</h1>
+        </div>
         {isAdmin && (
           <button
             onClick={() => setShowForm(!showForm)}

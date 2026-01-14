@@ -15,3 +15,60 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+
+/* Стили для pie-chart анимации */
+.pie-chart-button {
+  display: inline-block;
+  outline: none;
+  overflow: visible !important;
+}
+
+.pie-chart-container {
+  overflow: visible !important;
+}
+
+.pie-chart {
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+  transition: filter 0.3s ease, transform 0.3s ease;
+  overflow: visible !important;
+}
+
+.pie-chart-button:hover .pie-chart-container {
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.15));
+}
+
+.pie-chart-button:hover .pie-chart-container svg {
+  transform: scale(1.05);
+}
+
+.pie-chart-button:active .pie-chart-container svg {
+  transform: scale(0.95);
+}
+
+/* Анимация для сегментов pie-chart */
+.pie-segment {
+  transition: opacity 0.3s ease;
+  transform-origin: center;
+}
+
+.pie-chart-button:hover .pie-segment {
+  opacity: 0.9;
+}
+
+.pie-chart-button:active .pie-segment {
+  opacity: 0.7;
+}
+
+/* Анимация вращения при загрузке (можно использовать в будущем) */
+@keyframes pieRotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.pie-chart.animated {
+  animation: pieRotate 2s linear infinite;
+}

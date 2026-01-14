@@ -171,41 +171,69 @@ const Category = () => {
           topics.map((topic) => (
             <div
               key={topic.id}
-              className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition relative group"
+              className="bg-white rounded-lg shadow p-3 hover:shadow-lg transition relative group"
             >
               <Link to={`/topic/${topic.id}`} className="block pr-10">
-                <h2 className="text-xl font-semibold mb-2 text-gray-800 hover:text-blue-600 transition">
-                  {topic.title}
-                </h2>
-                <p className="text-gray-600 mb-4 line-clamp-2">{topic.content}</p>
-                
-                <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500 border-t pt-3">
-                  <div className="flex items-center gap-1">
-                    <span className="font-medium text-gray-700">Автор темы:</span>
-                    <span>{topic.author_name}</span>
-                  </div>
+                <div className="flex items-center gap-2 text-sm overflow-hidden">
+                  {/* Название темы */}
+                  <span className="font-semibold text-gray-800 hover:text-blue-600 transition flex-shrink-0">
+                    {topic.title}
+                  </span>
+                  <span className="text-gray-300 flex-shrink-0">•</span>
                   
-                  <div className="flex items-center gap-1">
-                    <span className="font-medium text-gray-700">Сообщений:</span>
-                    <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded font-semibold">
-                      {topic.post_count || 0}
+                  {/* Начало содержания */}
+                  <span className="text-gray-600 truncate flex-1 min-w-0">
+                    {topic.content.substring(0, 80)}{topic.content.length > 80 ? '...' : ''}
+                  </span>
+                  <span className="text-gray-300 flex-shrink-0">•</span>
+                  
+                  {/* Количество сообщений */}
+                  <span className="bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded font-medium flex-shrink-0 text-xs">
+                    {topic.post_count || 0}
+                  </span>
+                  <span className="text-gray-300 flex-shrink-0">•</span>
+                  
+                  {/* Автор */}
+                  <span className="text-gray-700 flex-shrink-0">
+                    {topic.author_name}
+                  </span>
+                  <span className="text-gray-300 flex-shrink-0">•</span>
+                  
+                  {/* Дата и время создания */}
+                  <span className="text-gray-500 flex-shrink-0 text-xs">
+                    {new Date(topic.created_at).toLocaleString('ru-RU', {
+                      day: '2-digit',
+                      month: '2-digit',
+                      year: '2-digit',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })}
+                  </span>
+                  <span className="text-gray-300 flex-shrink-0">•</span>
+                  
+                  {/* Логин последнего комментатора */}
+                  {topic.last_post_author ? (
+                    <span className="text-gray-700 flex-shrink-0">
+                      {topic.last_post_author}
                     </span>
-                  </div>
+                  ) : (
+                    <span className="text-gray-400 flex-shrink-0 text-xs">—</span>
+                  )}
+                  <span className="text-gray-300 flex-shrink-0">•</span>
                   
-                  {topic.last_post_author && topic.last_post_at && (
-                    <div className="flex items-center gap-1 ml-auto">
-                      <span className="text-gray-400">Последнее сообщение:</span>
-                      <span className="font-medium text-gray-700">{topic.last_post_author}</span>
-                      <span className="text-gray-400">
-                        {new Date(topic.last_post_at).toLocaleDateString('ru-RU', {
-                          day: '2-digit',
-                          month: '2-digit',
-                          year: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        })}
-                      </span>
-                    </div>
+                  {/* Дата и время последнего комментария */}
+                  {topic.last_post_at ? (
+                    <span className="text-gray-500 flex-shrink-0 text-xs">
+                      {new Date(topic.last_post_at).toLocaleString('ru-RU', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                    </span>
+                  ) : (
+                    <span className="text-gray-400 flex-shrink-0 text-xs">—</span>
                   )}
                 </div>
               </Link>
@@ -217,7 +245,7 @@ const Category = () => {
                     e.stopPropagation();
                     handleDeleteTopic(topic.id, topic.title);
                   }}
-                  className="absolute top-4 right-4 bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 transition opacity-0 group-hover:opacity-100"
+                  className="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600 transition opacity-0 group-hover:opacity-100 text-xs"
                   title="Удалить тему"
                 >
                   🗑️
