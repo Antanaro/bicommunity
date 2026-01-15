@@ -97,7 +97,42 @@ const Home = () => {
   const fetchCategories = async () => {
     try {
       const response = await api.get('/categories');
-      setCategories(response.data);
+      let categoriesData = response.data;
+      
+      // Найти категорию "Все темы"
+      let allTopicsCategory = categoriesData.find((cat: Category) => cat.name === 'Все темы');
+      
+      if (allTopicsCategory) {
+        // Если категория существует, получаем общее количество всех тем
+        try {
+          const topicsResponse = await api.get('/topics');
+          const totalTopics = topicsResponse.data.length;
+          allTopicsCategory.topic_count = totalTopics.toString();
+        } catch (error) {
+          console.error('Error fetching all topics:', error);
+        }
+        
+        // Удаляем категорию из списка и добавляем в начало
+        categoriesData = categoriesData.filter((cat: Category) => cat.name !== 'Все темы');
+        setCategories([allTopicsCategory, ...categoriesData]);
+      } else {
+        // Если категории нет, создаем виртуальную
+        try {
+          const topicsResponse = await api.get('/topics');
+          const totalTopics = topicsResponse.data.length;
+          allTopicsCategory = {
+            id: 'all-topics', // Виртуальный ID
+            name: 'Все темы',
+            description: 'Все темы форума',
+            topic_count: totalTopics.toString(),
+            created_at: new Date().toISOString()
+          };
+          setCategories([allTopicsCategory, ...categoriesData]);
+        } catch (error) {
+          console.error('Error fetching all topics:', error);
+          setCategories(categoriesData);
+        }
+      }
     } catch (error) {
       console.error('Error fetching categories:', error);
     } finally {
@@ -402,7 +437,7 @@ const Home = () => {
                   Тем: {category.topic_count || 0}
                 </div>
               </Link>
-              {isAdmin && (
+              {isAdmin && category.name !== 'Все темы' && (
                 <button
                   onClick={(e) => {
                     e.preventDefault();

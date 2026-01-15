@@ -31,14 +31,34 @@ const Category = () => {
   useEffect(() => {
     if (id) {
       fetchCategory();
-      fetchTopics();
     }
   }, [id]);
 
+  useEffect(() => {
+    if (category) {
+      fetchTopics();
+    }
+  }, [category]);
+
   const fetchCategory = async () => {
     try {
+      // Если это виртуальная категория "Все темы"
+      if (id === 'all-topics') {
+        setCategory({
+          id: 'all-topics',
+          name: 'Все темы',
+          description: 'Все темы форума'
+        });
+        return;
+      }
       const response = await api.get(`/categories/${id}`);
-      setCategory(response.data);
+      const categoryData = response.data;
+      // Проверяем, является ли это категорией "Все темы" по названию
+      if (categoryData.name === 'Все темы') {
+        setCategory(categoryData);
+        return;
+      }
+      setCategory(categoryData);
     } catch (error) {
       console.error('Error fetching category:', error);
     }
@@ -46,7 +66,22 @@ const Category = () => {
 
   const fetchTopics = async () => {
     try {
-      const response = await api.get(`/topics?category_id=${id}`);
+      // Если категория "Все темы", получаем все темы без фильтрации
+      let currentCategory = category;
+      if (!currentCategory && id) {
+        if (id === 'all-topics') {
+          currentCategory = { name: 'Все темы' };
+        } else {
+          try {
+            currentCategory = (await api.get(`/categories/${id}`)).data;
+          } catch (error) {
+            console.error('Error fetching category:', error);
+          }
+        }
+      }
+      const isAllTopicsCategory = currentCategory?.name === 'Все темы' || id === 'all-topics';
+      const url = isAllTopicsCategory ? '/topics' : `/topics?category_id=${id}`;
+      const response = await api.get(url);
       setTopics(response.data);
     } catch (error) {
       console.error('Error fetching topics:', error);
@@ -141,7 +176,7 @@ const Category = () => {
         </div>
       )}
 
-      {user && (
+      {user && category?.name !== 'Все темы' && (
         <div className="mb-6">
           {!showForm ? (
             <button
@@ -228,7 +263,7 @@ const Category = () => {
       <div className="space-y-4">
         {topics.length === 0 ? (
           <div className="bg-white rounded-lg shadow p-6 text-center text-gray-500">
-            Пока нет тем в этой категории.
+            {category?.name === 'Все темы' ? 'Пока нет тем на форуме.' : 'Пока нет тем в этой категории.'}
           </div>
         ) : (
           topics.map((topic) => (
@@ -242,6 +277,14 @@ const Category = () => {
                   <span className="font-semibold text-gray-800 hover:text-blue-600 transition flex-shrink-0">
                     {topic.title}
                   </span>
+                  {category?.name === 'Все темы' && topic.category_name && (
+                    <>
+                      <span className="text-gray-300 flex-shrink-0">•</span>
+                      <span className="text-blue-600 text-xs flex-shrink-0">
+                        [{topic.category_name}]
+                      </span>
+                    </>
+                  )}
                   <span className="text-gray-300 flex-shrink-0">•</span>
                   
                   {/* Начало содержания */}
