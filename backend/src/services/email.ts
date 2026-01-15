@@ -21,6 +21,128 @@ const createTransporter = () => {
   });
 };
 
+export const sendVerificationEmail = async (email: string, username: string, verificationToken: string) => {
+  try {
+    const transporter = createTransporter();
+    
+    // URL для подтверждения email - ведет на backend, который делает редирект
+    const backendUrl = process.env.BACKEND_URL || 'http://localhost:5000';
+    const verificationUrl = `${backendUrl}/api/auth/verify-email?token=${verificationToken}`;
+
+    const mailOptions = {
+      from: process.env.SMTP_FROM || process.env.SMTP_USER || 'noreply@forum.com',
+      to: email,
+      subject: 'Подтверждение email - Форум',
+      html: `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="UTF-8">
+          <style>
+            body {
+              font-family: Arial, sans-serif;
+              line-height: 1.6;
+              color: #333;
+            }
+            .container {
+              max-width: 600px;
+              margin: 0 auto;
+              padding: 20px;
+            }
+            .header {
+              background-color: #2196F3;
+              color: white;
+              padding: 20px;
+              text-align: center;
+              border-radius: 5px 5px 0 0;
+            }
+            .content {
+              background-color: #f9f9f9;
+              padding: 30px;
+              border-radius: 0 0 5px 5px;
+            }
+            .button {
+              display: inline-block;
+              padding: 12px 30px;
+              background-color: #2196F3;
+              color: white;
+              text-decoration: none;
+              border-radius: 5px;
+              margin: 20px 0;
+            }
+            .button:hover {
+              background-color: #1976D2;
+            }
+            .token {
+              background-color: #e8e8e8;
+              padding: 10px;
+              border-radius: 5px;
+              font-family: monospace;
+              word-break: break-all;
+              margin: 10px 0;
+            }
+            .footer {
+              margin-top: 20px;
+              padding-top: 20px;
+              border-top: 1px solid #ddd;
+              font-size: 12px;
+              color: #666;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1>Подтверждение email</h1>
+            </div>
+            <div class="content">
+              <p>Здравствуйте, ${username}!</p>
+              <p>Спасибо за регистрацию на нашем форуме!</p>
+              <p>Для завершения регистрации и активации вашего аккаунта, пожалуйста, подтвердите ваш email адрес, нажав на кнопку ниже:</p>
+              <p style="text-align: center;">
+                <a href="${verificationUrl}" class="button">Подтвердить email</a>
+              </p>
+              <p>Или скопируйте и вставьте следующую ссылку в браузер:</p>
+              <div class="token">${verificationUrl}</div>
+              <p><strong>Важно:</strong> Эта ссылка действительна в течение 24 часов.</p>
+              <p>Если вы не регистрировались на нашем форуме, просто проигнорируйте это письмо.</p>
+              <div class="footer">
+                <p>Это автоматическое письмо, пожалуйста, не отвечайте на него.</p>
+              </div>
+            </div>
+          </div>
+        </body>
+        </html>
+      `,
+      text: `
+Подтверждение email - Форум
+
+Здравствуйте, ${username}!
+
+Спасибо за регистрацию на нашем форуме!
+
+Для завершения регистрации и активации вашего аккаунта, пожалуйста, подтвердите ваш email адрес, перейдя по следующей ссылке:
+${verificationUrl}
+
+Важно: Эта ссылка действительна в течение 24 часов.
+
+Если вы не регистрировались на нашем форуме, просто проигнорируйте это письмо.
+
+Это автоматическое письмо, пожалуйста, не отвечайте на него.
+      `,
+    };
+
+    const info = await transporter.sendMail(mailOptions);
+    
+    console.log('📧 Verification email sent to:', email);
+    
+    return info;
+  } catch (error: any) {
+    console.error('Error sending verification email:', error);
+    throw new Error('Не удалось отправить email. Проверьте настройки SMTP.');
+  }
+};
+
 export const sendPasswordResetEmail = async (email: string, resetToken: string) => {
   try {
     const transporter = createTransporter();

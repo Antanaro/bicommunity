@@ -1,12 +1,15 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { api } from '../services/api';
 
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [resendingEmail, setResendingEmail] = useState(false);
+  const [resendMessage, setResendMessage] = useState('');
   const { login } = useAuth();
   const navigate = useNavigate();
 
@@ -40,6 +43,11 @@ const Login = () => {
           errorMessage = err.response.data.error;
           hint = err.response.data.hint || '';
         }
+        
+        // Если email не подтвержден, показываем кнопку для повторной отправки
+        if (err.response.data.emailNotVerified) {
+          // Сохраняем email для повторной отправки
+        }
       } else if (err.message) {
         errorMessage = err.message;
       }
@@ -47,6 +55,26 @@ const Login = () => {
       setError(hint ? `${errorMessage}\n\n💡 ${hint}` : errorMessage);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleResendVerification = async () => {
+    if (!email) {
+      setError('Пожалуйста, введите email адрес');
+      return;
+    }
+    
+    setResendingEmail(true);
+    setResendMessage('');
+    setError('');
+    
+    try {
+      const response = await api.post('/auth/resend-verification', { email });
+      setResendMessage(response.data.message || 'Письмо с подтверждением отправлено на ваш email');
+    } catch (err: any) {
+      setResendMessage(err.response?.data?.error || 'Не удалось отправить письмо. Попробуйте позже.');
+    } finally {
+      setResendingEmail(false);
     }
   };
 
@@ -61,10 +89,24 @@ const Login = () => {
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
               </svg>
             </div>
-            <div className="ml-3">
+            <div className="ml-3 flex-1">
               <p className="text-sm font-medium whitespace-pre-line">{error}</p>
+              {error.includes('Email не подтвержден') && (
+                <button
+                  onClick={handleResendVerification}
+                  disabled={resendingEmail}
+                  className="mt-2 text-sm text-blue-600 hover:text-blue-800 underline disabled:opacity-50"
+                >
+                  {resendingEmail ? 'Отправка...' : 'Отправить письмо подтверждения повторно'}
+                </button>
+              )}
             </div>
           </div>
+        </div>
+      )}
+      {resendMessage && (
+        <div className="bg-green-50 border-l-4 border-green-500 text-green-700 px-4 py-3 rounded mb-4">
+          <p className="text-sm">{resendMessage}</p>
         </div>
       )}
       <form onSubmit={handleSubmit}>

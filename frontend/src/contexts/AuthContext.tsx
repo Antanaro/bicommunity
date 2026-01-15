@@ -56,13 +56,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const register = async (username: string, email: string, password: string) => {
     try {
       const response = await api.post('/auth/register', { username, email, password });
+      
+      // После регистрации токен не выдается, нужно подтвердить email
+      // Возвращаем сообщение для отображения пользователю
+      if (response.data.message) {
+        // Не устанавливаем токен и пользователя, так как email не подтвержден
+        return response.data;
+      }
+      
+      // Если по какой-то причине токен все же пришел (для обратной совместимости)
       const { token: newToken, user: newUser } = response.data;
-
-      setToken(newToken);
-      setUser(newUser);
-      localStorage.setItem('token', newToken);
-      localStorage.setItem('user', JSON.stringify(newUser));
-      axios.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
+      if (newToken && newUser) {
+        setToken(newToken);
+        setUser(newUser);
+        localStorage.setItem('token', newToken);
+        localStorage.setItem('user', JSON.stringify(newUser));
+        axios.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
+      }
     } catch (error: any) {
       // Пробрасываем ошибку дальше для обработки в компоненте
       throw error;

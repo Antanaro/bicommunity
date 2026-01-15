@@ -4,7 +4,7 @@ import jwt from 'jsonwebtoken';
 import { body, validationResult } from 'express-validator';
 import crypto from 'crypto';
 import { pool } from '../config/database';
-import { sendPasswordResetEmail } from '../services/email';
+import { sendPasswordResetEmail, sendVerificationEmail } from '../services/email';
 
 const router = express.Router();
 
@@ -38,28 +38,36 @@ router.post(
       // Hash password
       const passwordHash = await bcrypt.hash(password, 10);
 
-      // Create user
+      // Generate email verification token
+      const verificationToken = crypto.randomBytes(32).toString('hex');
+
+      // Create user with unverified email
       const result = await pool.query(
-        'INSERT INTO users (username, email, password_hash) VALUES ($1, $2, $3) RETURNING id, username, email, role',
-        [username, email, passwordHash]
+        'INSERT INTO users (username, email, password_hash, email_verified, email_verification_token) VALUES ($1, $2, $3, $4, $5) RETURNING id, username, email, role',
+        [username, email, passwordHash, false, verificationToken]
       );
 
       const user = result.rows[0];
 
-      // Generate JWT
-      const token = jwt.sign(
-        { userId: user.id, role: user.role },
-        process.env.JWT_SECRET || 'secret',
-        { expiresIn: '7d' }
-      );
+      // Send verification email
+      try {
+        await sendVerificationEmail(user.email, user.username, verificationToken);
+      } catch (emailError: any) {
+        console.error('Error sending verification email:', emailError);
+        // Удаляем пользователя, если не удалось отправить email
+        await pool.query('DELETE FROM users WHERE id = $1', [user.id]);
+        return res.status(500).json({ 
+          error: 'Не удалось отправить письмо подтверждения. Проверьте настройки SMTP в .env файле.'
+        });
+      }
 
+      // Не выдаем JWT токен, пользователь должен подтвердить email
       res.status(201).json({
-        token,
+        message: 'Регистрация успешна! Пожалуйста, проверьте вашу почту и подтвердите email адрес.',
         user: {
           id: user.id,
           username: user.username,
           email: user.email,
-          role: user.role,
         },
       });
     } catch (error: any) {
@@ -134,6 +142,15 @@ router.post(
       }
 
       const user = result.rows[0];
+
+      // Check if email is verified
+      if (!user.email_verified) {
+        return res.status(403).json({ 
+          error: 'Email не подтвержден',
+          hint: 'Пожалуйста, подтвердите ваш email адрес. Проверьте почту для письма с подтверждением или запросите новое письмо.',
+          emailNotVerified: true
+        });
+      }
 
       // Check password
       const isValidPassword = await bcrypt.compare(password, user.password_hash);
@@ -238,6 +255,192 @@ router.post(
       });
     } catch (error: any) {
       console.error('Forgot password error:', error);
+      res.status(500).json({ 
+        error: 'Ошибка сервера',
+        message: error.message || 'Неизвестная ошибка'
+      });
+    }
+  }
+);
+
+// Verify Email - подтверждение email адреса
+router.get(
+  '/verify-email',
+  async (req: Request, res: Response) => {
+    try {
+      const { token } = req.query;
+
+      if (!token || typeof token !== 'string') {
+        return res.status(400).json({ 
+          error: 'Токен подтверждения не предоставлен'
+        });
+      }
+
+      // Найти пользователя с этим токеном
+      const userResult = await pool.query(
+        'SELECT id, username, email, email_verified, role FROM users WHERE email_verification_token = $1',
+        [token]
+      );
+
+      if (userResult.rows.length === 0) {
+        return res.status(400).json({ 
+          error: 'Недействительный токен подтверждения'
+        });
+      }
+
+      const user = userResult.rows[0];
+
+      // Проверяем, не подтвержден ли уже email
+      if (user.email_verified) {
+        // Если email уже подтвержден, все равно выдаем токен и перенаправляем
+        const jwtToken = jwt.sign(
+          { userId: user.id, role: user.role || 'user' },
+          process.env.JWT_SECRET || 'secret',
+          { expiresIn: '7d' }
+        );
+        
+        // Проверяем тип запроса
+        const acceptHeader = req.headers.accept || '';
+        const isApiRequest = acceptHeader.includes('application/json') || req.headers['x-requested-with'] === 'XMLHttpRequest';
+        
+        if (isApiRequest) {
+          return res.json({
+            success: true,
+            token: jwtToken,
+            user: {
+              id: user.id,
+              username: user.username,
+              email: user.email,
+              role: user.role || 'user',
+            },
+            alreadyVerified: true,
+          });
+        } else {
+          const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+          return res.redirect(`${frontendUrl}/verify-email?success=true&token=${jwtToken}&alreadyVerified=true`);
+        }
+      }
+
+      // Подтверждаем email
+      await pool.query(
+        'UPDATE users SET email_verified = TRUE, email_verification_token = NULL WHERE id = $1',
+        [user.id]
+      );
+
+      // Генерируем JWT токен для автоматического входа
+      const jwtToken = jwt.sign(
+        { userId: user.id, role: user.role || 'user' },
+        process.env.JWT_SECRET || 'secret',
+        { expiresIn: '7d' }
+      );
+
+      // Проверяем, откуда пришел запрос (браузер или API клиент)
+      const acceptHeader = req.headers.accept || '';
+      const isApiRequest = acceptHeader.includes('application/json') || req.headers['x-requested-with'] === 'XMLHttpRequest';
+
+      if (isApiRequest) {
+        // Если это API запрос (от frontend), возвращаем JSON
+        res.json({
+          success: true,
+          token: jwtToken,
+          user: {
+            id: user.id,
+            username: user.username,
+            email: user.email,
+            role: user.role || 'user',
+          },
+        });
+      } else {
+        // Если это прямой переход по ссылке, делаем редирект
+        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+        res.redirect(`${frontendUrl}/verify-email?success=true&token=${jwtToken}`);
+      }
+    } catch (error: any) {
+      console.error('Verify email error:', error);
+      
+      // Проверяем тип запроса для ошибок тоже
+      const acceptHeader = req.headers.accept || '';
+      const isApiRequest = acceptHeader.includes('application/json') || req.headers['x-requested-with'] === 'XMLHttpRequest';
+      
+      if (isApiRequest) {
+        res.status(error.message?.includes('Недействительный') ? 400 : 500).json({ 
+          error: error.message || 'Ошибка сервера',
+          message: error.message || 'Неизвестная ошибка'
+        });
+      } else {
+        // Для прямых переходов редиректим на frontend с ошибкой
+        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+        const errorMessage = encodeURIComponent(error.message || 'Ошибка подтверждения email');
+        res.redirect(`${frontendUrl}/verify-email?error=${errorMessage}`);
+      }
+    }
+  }
+);
+
+// Resend Verification Email - повторная отправка письма подтверждения
+router.post(
+  '/resend-verification',
+  [
+    body('email').isEmail().withMessage('Invalid email'),
+  ],
+  async (req: Request, res: Response) => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ 
+          error: 'Пожалуйста, введите корректный email адрес',
+          errors: errors.array() 
+        });
+      }
+
+      const { email } = req.body;
+
+      // Найти пользователя
+      const userResult = await pool.query(
+        'SELECT id, username, email, email_verified FROM users WHERE email = $1',
+        [email]
+      );
+
+      // Для безопасности всегда возвращаем успешный ответ
+      if (userResult.rows.length === 0) {
+        return res.json({ 
+          message: 'Если пользователь с таким email существует и email не подтвержден, на него будет отправлено письмо с подтверждением'
+        });
+      }
+
+      const user = userResult.rows[0];
+
+      // Если email уже подтвержден
+      if (user.email_verified) {
+        return res.json({ 
+          message: 'Email уже подтвержден'
+        });
+      }
+
+      // Генерируем новый токен
+      const verificationToken = crypto.randomBytes(32).toString('hex');
+
+      // Обновляем токен в базе данных
+      await pool.query(
+        'UPDATE users SET email_verification_token = $1 WHERE id = $2',
+        [verificationToken, user.id]
+      );
+
+      // Отправляем email
+      try {
+        await sendVerificationEmail(user.email, user.username, verificationToken);
+      } catch (emailError: any) {
+        console.error('Error sending verification email:', emailError);
+        return res.status(500).json({ 
+          error: 'Не удалось отправить email. Проверьте настройки SMTP в .env файле.'
+        });
+      }
+
+      res.json({ 
+        message: 'Если пользователь с таким email существует и email не подтвержден, на него будет отправлено письмо с подтверждением'
+      });
+    } catch (error: any) {
+      console.error('Resend verification error:', error);
       res.status(500).json({ 
         error: 'Ошибка сервера',
         message: error.message || 'Неизвестная ошибка'

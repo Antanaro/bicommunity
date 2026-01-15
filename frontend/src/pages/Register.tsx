@@ -7,6 +7,7 @@ const Register = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const { register } = useAuth();
   const navigate = useNavigate();
@@ -14,10 +15,20 @@ const Register = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setSuccessMessage('');
     setLoading(true);
 
     try {
-      await register(username, email, password);
+      const result = await register(username, email, password);
+      // Если регистрация успешна, но email не подтвержден, показываем сообщение
+      if (result && result.message) {
+        setSuccessMessage(result.message);
+        // Очищаем форму
+        setUsername('');
+        setEmail('');
+        setPassword('');
+        return;
+      }
       navigate('/');
     } catch (err: any) {
       console.error('Registration error:', err);
@@ -50,54 +61,62 @@ const Register = () => {
           {error}
         </div>
       )}
-      <form onSubmit={handleSubmit}>
-        <div className="mb-4">
-          <label className="block text-gray-700 text-sm font-bold mb-2">
-            Имя пользователя
-          </label>
-          <input
-            type="text"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            className="w-full border rounded px-4 py-2"
-            required
-            minLength={3}
-            maxLength={50}
-          />
+      {successMessage && (
+        <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
+          <p className="font-medium mb-2">✓ {successMessage}</p>
+          <p className="text-sm">Проверьте вашу почту и перейдите по ссылке в письме для подтверждения email адреса.</p>
         </div>
-        <div className="mb-4">
-          <label className="block text-gray-700 text-sm font-bold mb-2">
-            Email
-          </label>
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full border rounded px-4 py-2"
-            required
-          />
-        </div>
-        <div className="mb-4">
-          <label className="block text-gray-700 text-sm font-bold mb-2">
-            Пароль
-          </label>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full border rounded px-4 py-2"
-            required
-            minLength={6}
-          />
-        </div>
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition disabled:opacity-50"
-        >
-          {loading ? 'Регистрация...' : 'Зарегистрироваться'}
-        </button>
-      </form>
+      )}
+      {!successMessage && (
+        <form onSubmit={handleSubmit}>
+          <div className="mb-4">
+            <label className="block text-gray-700 text-sm font-bold mb-2">
+              Имя пользователя
+            </label>
+            <input
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              className="w-full border rounded px-4 py-2"
+              required
+              minLength={3}
+              maxLength={50}
+            />
+          </div>
+          <div className="mb-4">
+            <label className="block text-gray-700 text-sm font-bold mb-2">
+              Email
+            </label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full border rounded px-4 py-2"
+              required
+            />
+          </div>
+          <div className="mb-4">
+            <label className="block text-gray-700 text-sm font-bold mb-2">
+              Пароль
+            </label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full border rounded px-4 py-2"
+              required
+              minLength={6}
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition disabled:opacity-50"
+          >
+            {loading ? 'Регистрация...' : 'Зарегистрироваться'}
+          </button>
+        </form>
+      )}
       <p className="mt-4 text-center text-gray-600">
         Уже есть аккаунт?{' '}
         <Link to="/login" className="text-blue-600 hover:underline">
