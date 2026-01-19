@@ -49,7 +49,7 @@ CREATE DATABASE forum_db;
 
 ### 3. Настройте переменные окружения
 
-Создайте файл `backend/.env` на основе `backend/.env.example`:
+Создайте файл `backend/.env` на основе `backend/env.production.example`:
 
 ```env
 PORT=5000
@@ -133,25 +133,32 @@ npm run dev
 
 ```
 .
-├── backend/
+├── backend/               # Backend API (Node.js + Express)
 │   ├── src/
 │   │   ├── config/        # Конфигурация БД
 │   │   ├── middleware/    # Middleware (auth)
 │   │   ├── migrations/    # Миграции БД
 │   │   ├── routes/        # API роуты
+│   │   ├── scripts/       # Утилиты (seed, check-db)
+│   │   ├── services/      # Сервисы (email, telegram)
 │   │   └── index.ts       # Точка входа
 │   ├── package.json
 │   └── tsconfig.json
-├── frontend/
+├── frontend/              # Frontend (React + Vite)
 │   ├── src/
 │   │   ├── components/    # React компоненты
-│   │   ├── contexts/       # React контексты (Auth)
+│   │   ├── contexts/      # React контексты (Auth)
 │   │   ├── pages/         # Страницы приложения
 │   │   ├── services/      # API сервисы
 │   │   ├── App.tsx
 │   │   └── main.tsx
 │   ├── package.json
 │   └── vite.config.ts
+├── docs/                  # Документация
+│   ├── backend/           # Инструкции по backend
+│   └── deploy/            # Инструкции по деплою
+├── nginx/                 # Конфигурация Nginx
+├── docker-compose.yml     # Docker конфигурация
 ├── package.json
 └── README.md
 ```
@@ -178,6 +185,30 @@ UPDATE users SET role = 'admin' WHERE email = 'your_email@example.com';
 - Hot reload через Vite
 - Tailwind CSS для стилей
 - React Router для маршрутизации
+
+## Документация
+
+Вся дополнительная документация находится в папке `docs/`:
+
+- **[docs/QUICK-START.md](docs/QUICK-START.md)** - Быстрый старт
+- **[docs/backend/](docs/backend/)** - Инструкции по настройке backend
+- **[docs/deploy/](docs/deploy/)** - Инструкции по развертыванию (Docker, VM)
+
+## Docker
+
+Для развертывания через Docker:
+
+```bash
+# Скопируйте пример конфигурации
+cp env.template .env
+
+# Отредактируйте .env файл
+
+# Запустите контейнеры
+docker-compose up -d
+```
+
+Подробнее: [docs/deploy/DOCKER-SETUP.md](docs/deploy/DOCKER-SETUP.md)
 
 ## Лицензия
 
