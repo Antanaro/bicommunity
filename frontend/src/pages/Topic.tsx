@@ -192,6 +192,7 @@ const Topic = () => {
   const navigate = useNavigate();
   const [topic, setTopic] = useState<Topic | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [newPost, setNewPost] = useState('');
   const [replyingTo, setReplyingTo] = useState<number | null>(null);
   const [showQuote, setShowQuote] = useState(true);
@@ -207,7 +208,10 @@ const Topic = () => {
 
   const fetchTopic = async () => {
     try {
+      setError(null);
+      console.log('Fetching topic with id:', id);
       const response = await api.get(`/topics/${id}`);
+      console.log('Topic response:', response.data);
       // Convert string counts to numbers
       if (response.data.posts) {
         response.data.posts = response.data.posts.map((post: any) => ({
@@ -231,8 +235,17 @@ const Topic = () => {
         }
         setReactions(reactionsMap);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching topic:', error);
+      if (error.response?.status === 404) {
+        setError('Тема не найдена (404)');
+      } else if (error.response?.status) {
+        setError(`Ошибка сервера: ${error.response.status}`);
+      } else if (error.message) {
+        setError(`Ошибка: ${error.message}`);
+      } else {
+        setError('Не удалось загрузить тему');
+      }
     } finally {
       setLoading(false);
     }
@@ -404,8 +417,19 @@ const Topic = () => {
 
   if (!topic) {
     return (
-      <div className="text-center text-gray-500">
-        Тема не найдена
+      <div className="text-center py-8">
+        <div className="text-gray-500 mb-4">
+          {error || 'Тема не найдена'}
+        </div>
+        <div className="text-sm text-gray-400 mb-4">
+          ID темы: {id || 'не указан'}
+        </div>
+        <Link
+          to="/"
+          className="text-blue-600 hover:underline"
+        >
+          ← Вернуться на главную
+        </Link>
       </div>
     );
   }
