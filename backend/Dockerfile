@@ -3,11 +3,11 @@ FROM node:18-alpine AS builder
 
 WORKDIR /app
 
-# Копируем package.json и package-lock.json
-COPY package*.json ./
+# Копируем package.json
+COPY package.json ./
 
 # Устанавливаем зависимости
-RUN npm ci
+RUN npm install
 
 # Копируем исходный код
 COPY . .
@@ -24,10 +24,10 @@ WORKDIR /app
 RUN apk add --no-cache wget
 
 # Копируем package.json для production зависимостей
-COPY package*.json ./
+COPY package.json ./
 
 # Устанавливаем только production зависимости
-RUN npm ci --only=production
+RUN npm install --only=production
 
 # Копируем собранный код из builder
 COPY --from=builder /app/dist ./dist
