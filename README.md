@@ -194,9 +194,43 @@ UPDATE users SET role = 'admin' WHERE email = 'your_email@example.com';
 - **[docs/backend/](docs/backend/)** - Инструкции по настройке backend
 - **[docs/deploy/](docs/deploy/)** - Инструкции по развертыванию (Docker, VM)
 
-## Docker
+## Деплой на сервер
 
-Для развертывания через Docker:
+### Быстрый деплой с GitHub
+
+```bash
+# На сервере (Ubuntu/Debian)
+
+# 1. Установите Docker
+curl -fsSL https://get.docker.com | sh
+sudo usermod -aG docker $USER
+# Перелогиньтесь
+
+# 2. Клонируйте проект
+git clone https://github.com/antanaro/bicommunity.git
+cd bicommunity
+
+# 3. Настройте окружение
+cp env.template .env
+nano .env  # Измените DB_PASSWORD, JWT_SECRET, FRONTEND_URL
+
+# 4. Запустите
+docker compose up -d --build
+```
+
+Подробнее: [docs/deploy/DEPLOY-FROM-GITHUB.md](docs/deploy/DEPLOY-FROM-GITHUB.md)
+
+### Обновление на сервере
+
+```bash
+cd bicommunity
+git pull
+docker compose up -d --build
+```
+
+## Локальный Docker
+
+Для локального запуска через Docker:
 
 ```bash
 # Скопируйте пример конфигурации
@@ -205,7 +239,7 @@ cp env.template .env
 # Отредактируйте .env файл
 
 # Запустите контейнеры
-docker-compose up -d
+docker compose up -d --build
 ```
 
 Подробнее: [docs/deploy/DOCKER-SETUP.md](docs/deploy/DOCKER-SETUP.md)
