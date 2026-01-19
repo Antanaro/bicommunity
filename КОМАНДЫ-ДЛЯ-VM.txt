@@ -1,0 +1,79 @@
+========================================
+КОМАНДЫ ДЛЯ РАЗВЕРТЫВАНИЯ НА VM
+========================================
+
+1. ПОДКЛЮЧЕНИЕ К VM
+   ssh user@your-vm-ip
+
+2. ПРОВЕРКА DOCKER
+   docker --version
+   docker compose version
+
+3. ПЕРЕХОД В ДИРЕКТОРИЮ ПРОЕКТА
+   cd ~/bicommunity
+
+4. СОЗДАНИЕ .env ФАЙЛА
+   cp env.template .env
+   nano .env
+
+5. ЗАПУСК ПРОЕКТА
+   docker compose up -d
+
+6. ПРОВЕРКА СТАТУСА
+   docker compose ps
+
+7. ПРОСМОТР ЛОГОВ
+   docker compose logs -f
+   docker compose logs backend
+   docker compose logs postgres
+   docker compose logs nginx
+
+8. ОСТАНОВКА
+   docker compose down
+
+9. ПЕРЕЗАПУСК
+   docker compose restart backend
+   docker compose restart nginx
+
+10. ПЕРЕСБОРКА И ПЕРЕЗАПУСК
+    docker compose down
+    docker compose build
+    docker compose up -d
+
+11. ПРОВЕРКА ПОРТОВ
+    sudo netstat -tulpn | grep -E ':(80|443|5432)'
+
+12. ОЧИСТКА
+    docker system prune -a
+
+13. РЕЗЕРВНОЕ КОПИРОВАНИЕ БД
+    docker compose exec -T postgres pg_dump -U postgres forum_db > backup.sql
+
+14. ВОССТАНОВЛЕНИЕ БД
+    docker compose exec -T postgres psql -U postgres forum_db < backup.sql
+
+========================================
+НА ЛОКАЛЬНОЙ МАШИНЕ (Windows PowerShell)
+========================================
+
+1. КОПИРОВАНИЕ ПРОЕКТА НА VM
+   .\deploy-to-vm.ps1 -VmHost "your-vm-ip" -VmUser "username"
+
+2. КОПИРОВАНИЕ ОТДЕЛЬНОГО ФАЙЛА
+   scp .env user@your-vm-ip:~/bicommunity/.env
+
+3. КОПИРОВАНИЕ ВСЕГО ПРОЕКТА (через SCP)
+   scp -r . user@your-vm-ip:~/bicommunity
+
+========================================
+НА ЛОКАЛЬНОЙ МАШИНЕ (Linux/Mac/WSL)
+========================================
+
+1. КОПИРОВАНИЕ ПРОЕКТА НА VM
+   chmod +x deploy-to-vm.sh
+   ./deploy-to-vm.sh user@your-vm-ip
+
+2. КОПИРОВАНИЕ ЧЕРЕЗ RSYNC
+   rsync -avz --exclude 'node_modules' ./ user@your-vm-ip:~/bicommunity/
+
+========================================

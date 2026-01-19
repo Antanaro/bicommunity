@@ -1,0 +1,17 @@
+node_modules
+npm-debug.log
+dist
+.env
+.env.local
+.env.*.local
+*.log
+*.bat
+*.md
+uploads/*
+!uploads/.gitkeep
+.git
+.gitignore
+.DS_Store
+*.swp
+*.swo
+*~
