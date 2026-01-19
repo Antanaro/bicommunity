@@ -9,11 +9,17 @@ interface User {
   role: string;
 }
 
+interface RegisterResponse {
+  message?: string;
+  token?: string;
+  user?: User;
+}
+
 interface AuthContextType {
   user: User | null;
   token: string | null;
   login: (email: string, password: string) => Promise<void>;
-  register: (username: string, email: string, password: string) => Promise<void>;
+  register: (username: string, email: string, password: string) => Promise<RegisterResponse | undefined>;
   logout: () => void;
   loading: boolean;
 }

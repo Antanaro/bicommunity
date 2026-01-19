@@ -21,7 +21,7 @@ const Register = () => {
     try {
       const result = await register(username, email, password);
       // Если регистрация успешна, но email не подтвержден, показываем сообщение
-      if (result && result.message) {
+      if (result?.message) {
         setSuccessMessage(result.message);
         // Очищаем форму
         setUsername('');

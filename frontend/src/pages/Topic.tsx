@@ -73,14 +73,15 @@ const PostComponent = ({
                     </p>
                     {parentPost.images && parentPost.images.length > 0 && (
                       <div className={`mt-2 ${parentPost.images.length > 1 ? 'grid grid-cols-2 gap-0' : 'flex'}`}>
-                        {parentPost.images.map((imageUrl, index) => {
+                        {parentPost.images.map((imageUrl, imgIndex) => {
                           const fullUrl = imageUrl.startsWith('http') ? imageUrl : (import.meta.env.VITE_API_URL || '') + imageUrl;
+                          const imagesArray = parentPost.images || [];
                           return (
                             <img
-                              key={index}
+                              key={imgIndex}
                               src={fullUrl}
-                              alt={`Image ${index + 1}`}
-                              className={parentPost.images.length > 1 ? 'w-full h-auto rounded border' : 'w-1/4 max-w-[25%] h-auto rounded border'}
+                              alt={`Image ${imgIndex + 1}`}
+                              className={imagesArray.length > 1 ? 'w-full h-auto rounded border' : 'w-1/4 max-w-[25%] h-auto rounded border'}
                             />
                           );
                         })}
@@ -136,14 +137,15 @@ const PostComponent = ({
           </p>
           {post.images && post.images.length > 0 && (
             <div className={`mt-4 ${post.images.length > 1 ? 'grid grid-cols-2 gap-0' : 'flex'}`}>
-              {post.images.map((imageUrl, index) => {
+              {post.images.map((imageUrl, imgIndex) => {
                 const fullUrl = imageUrl.startsWith('http') ? imageUrl : (import.meta.env.VITE_API_URL || '') + imageUrl;
+                const imagesArray = post.images || [];
                 return (
                   <img
-                    key={index}
+                    key={imgIndex}
                     src={fullUrl}
-                    alt={`Image ${index + 1}`}
-                    className={post.images.length > 1 ? 'w-full h-auto rounded border cursor-pointer hover:opacity-90' : 'w-1/4 max-w-[25%] h-auto rounded border cursor-pointer hover:opacity-90'}
+                    alt={`Image ${imgIndex + 1}`}
+                    className={imagesArray.length > 1 ? 'w-full h-auto rounded border cursor-pointer hover:opacity-90' : 'w-1/4 max-w-[25%] h-auto rounded border cursor-pointer hover:opacity-90'}
                     onClick={() => window.open(fullUrl, '_blank')}
                   />
                 );
@@ -439,14 +441,15 @@ const Topic = () => {
           </p>
           {topic.images && topic.images.length > 0 && (
             <div className={`mt-4 ${topic.images.length > 1 ? 'grid grid-cols-2 gap-0' : 'flex'}`}>
-              {topic.images.map((imageUrl, index) => {
+              {topic.images.map((imageUrl, imgIndex) => {
                 const fullUrl = imageUrl.startsWith('http') ? imageUrl : (import.meta.env.VITE_API_URL || '') + imageUrl;
+                const imagesArray = topic.images || [];
                 return (
                   <img
-                    key={index}
+                    key={imgIndex}
                     src={fullUrl}
-                    alt={`Image ${index + 1}`}
-                    className={topic.images.length > 1 ? 'w-full h-auto rounded border cursor-pointer hover:opacity-90' : 'w-1/4 max-w-[25%] h-auto rounded border cursor-pointer hover:opacity-90'}
+                    alt={`Image ${imgIndex + 1}`}
+                    className={imagesArray.length > 1 ? 'w-full h-auto rounded border cursor-pointer hover:opacity-90' : 'w-1/4 max-w-[25%] h-auto rounded border cursor-pointer hover:opacity-90'}
                     onClick={() => window.open(fullUrl, '_blank')}
                   />
                 );
@@ -520,14 +523,15 @@ const Topic = () => {
                     </p>
                     {replyingToPost.images && replyingToPost.images.length > 0 && (
                       <div className={`mt-2 ${replyingToPost.images.length > 1 ? 'grid grid-cols-2 gap-0' : 'flex'}`}>
-                        {replyingToPost.images.map((imageUrl, index) => {
+                        {replyingToPost.images.map((imageUrl, imgIndex) => {
                           const fullUrl = imageUrl.startsWith('http') ? imageUrl : (import.meta.env.VITE_API_URL || '') + imageUrl;
+                          const imagesArray = replyingToPost.images || [];
                           return (
                             <img
-                              key={index}
+                              key={imgIndex}
                               src={fullUrl}
-                              alt={`Image ${index + 1}`}
-                              className={replyingToPost.images.length > 1 ? 'w-full h-auto rounded border' : 'w-1/4 max-w-[25%] h-auto rounded border'}
+                              alt={`Image ${imgIndex + 1}`}
+                              className={imagesArray.length > 1 ? 'w-full h-auto rounded border' : 'w-1/4 max-w-[25%] h-auto rounded border'}
                             />
                           );
                         })}

@@ -192,16 +192,11 @@ const PieChart: React.FC<PieChartProps> = ({
     e.stopPropagation();
   };
 
-  const handleSelectStart = (e: React.SyntheticEvent) => {
-    e.preventDefault(); // Предотвращаем начало выделения
-  };
-
   return (
     <div 
       ref={containerRef}
       onClick={handleClick}
       onMouseDown={handleMouseDown}
-      onSelectStart={handleSelectStart}
       style={{ 
         display: 'inline-block', 
         position: 'relative',
@@ -235,7 +230,7 @@ const PieChart: React.FC<PieChartProps> = ({
             const nodeSpacing = (size - 2 * padding) / data.length;
             let currentY = padding;
 
-            return segments.map((segment, index) => {
+            return segments.map((segment) => {
               const nodeHeight = segment.percentage * (size - 2 * padding);
               const nodeY = currentY;
               currentY += nodeSpacing;
