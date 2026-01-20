@@ -37,6 +37,7 @@ services:
       JWT_SECRET: ${JWT_SECRET:-change_this_secret_key}
       NODE_ENV: production
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost}
+      BACKEND_URL: ${BACKEND_URL:-http://localhost:5000}
       # Опциональные настройки SMTP
       SMTP_HOST: ${SMTP_HOST:-}
       SMTP_PORT: ${SMTP_PORT:-587}

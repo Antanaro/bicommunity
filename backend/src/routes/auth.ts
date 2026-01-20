@@ -5,6 +5,7 @@ import { body, validationResult } from 'express-validator';
 import crypto from 'crypto';
 import { pool } from '../config/database';
 import { sendPasswordResetEmail, sendVerificationEmail } from '../services/email';
+import { createInitialInvitations } from './invitations';
 
 const router = express.Router();
 
@@ -15,6 +16,7 @@ router.post(
     body('username').trim().isLength({ min: 3, max: 50 }).withMessage('Username must be 3-50 characters'),
     body('email').isEmail().withMessage('Invalid email'),
     body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
+    body('invitationCode').trim().notEmpty().withMessage('Invitation code is required'),
   ],
   async (req: Request, res: Response) => {
     try {
@@ -23,7 +25,23 @@ router.post(
         return res.status(400).json({ errors: errors.array() });
       }
 
-      const { username, email, password } = req.body;
+      const { username, email, password, invitationCode } = req.body;
+
+      // Проверяем пригласительный код
+      const inviteResult = await pool.query(
+        'SELECT id, owner_id, used_by_id FROM invitation_codes WHERE code = $1',
+        [invitationCode]
+      );
+
+      if (inviteResult.rows.length === 0) {
+        return res.status(400).json({ error: 'Недействительный пригласительный код' });
+      }
+
+      const invitation = inviteResult.rows[0];
+
+      if (invitation.used_by_id) {
+        return res.status(400).json({ error: 'Этот пригласительный код уже использован' });
+      }
 
       // Check if user exists
       const userCheck = await pool.query(
@@ -41,13 +59,22 @@ router.post(
       // Generate email verification token
       const verificationToken = crypto.randomBytes(32).toString('hex');
 
-      // Create user with unverified email
+      // Create user with unverified email and invited_by
       const result = await pool.query(
-        'INSERT INTO users (username, email, password_hash, email_verified, email_verification_token) VALUES ($1, $2, $3, $4, $5) RETURNING id, username, email, role',
-        [username, email, passwordHash, false, verificationToken]
+        'INSERT INTO users (username, email, password_hash, email_verified, email_verification_token, invited_by) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, username, email, role',
+        [username, email, passwordHash, false, verificationToken, invitation.owner_id]
       );
 
       const user = result.rows[0];
+
+      // Помечаем приглашение как использованное
+      await pool.query(
+        'UPDATE invitation_codes SET used_by_id = $1, used_at = NOW() WHERE id = $2',
+        [user.id, invitation.id]
+      );
+
+      // Создаём 3 приглашения для нового пользователя
+      await createInitialInvitations(user.id);
 
       // Send verification email
       try {

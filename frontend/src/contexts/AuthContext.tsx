@@ -19,7 +19,7 @@ interface AuthContextType {
   user: User | null;
   token: string | null;
   login: (email: string, password: string) => Promise<void>;
-  register: (username: string, email: string, password: string) => Promise<RegisterResponse | undefined>;
+  register: (username: string, email: string, password: string, invitationCode: string) => Promise<RegisterResponse | undefined>;
   logout: () => void;
   loading: boolean;
 }
@@ -59,9 +59,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const register = async (username: string, email: string, password: string) => {
+  const register = async (username: string, email: string, password: string, invitationCode: string) => {
     try {
-      const response = await api.post('/auth/register', { username, email, password });
+      const response = await api.post('/auth/register', { username, email, password, invitationCode });
       
       // После регистрации токен не выдается, нужно подтвердить email
       // Возвращаем сообщение для отображения пользователю

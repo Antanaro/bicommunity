@@ -16,6 +16,12 @@ yarn-error.log*
 backend/uploads/
 frontend/uploads/
 
+# SSL certificates (DO NOT commit!)
+nginx/ssl/*.pem
+nginx/ssl/*.key
+nginx/ssl/*.crt
+!nginx/ssl/.gitkeep
+
 # Build outputs
 dist/
 build/

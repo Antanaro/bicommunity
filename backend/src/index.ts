@@ -8,6 +8,7 @@ import topicRoutes from './routes/topics';
 import postRoutes from './routes/posts';
 import statsRoutes from './routes/stats';
 import uploadRoutes from './routes/upload';
+import invitationsRoutes from './routes/invitations';
 import { telegramBotService } from './services/telegram-bot';
 import path from 'path';
 
@@ -42,6 +43,7 @@ app.use('/api/topics', topicRoutes);
 app.use('/api/posts', postRoutes);
 app.use('/api/stats', statsRoutes);
 app.use('/api/upload', uploadRoutes);
+app.use('/api/invitations', invitationsRoutes);
 
 // Health check
 app.get('/api/health', async (req, res) => {

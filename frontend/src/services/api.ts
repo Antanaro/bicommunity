@@ -86,3 +86,15 @@ export const uploadImages = async (files: File[]): Promise<string[]> => {
   const data = await response.json();
   return data.urls;
 };
+
+// Invitation API
+export const invitationApi = {
+  // Проверить валидность кода
+  validate: (code: string) => api.get(`/invitations/validate/${code}`),
+  
+  // Получить свои приглашения
+  getMy: () => api.get('/invitations/my'),
+  
+  // Создать новое приглашение
+  create: () => api.post('/invitations/create'),
+};
