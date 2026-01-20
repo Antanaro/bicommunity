@@ -1,7 +1,7 @@
-import express, { Request, Response } from 'express';
+import express, { Response } from 'express';
 import crypto from 'crypto';
 import { pool } from '../config/database';
-import { authenticateToken } from '../middleware/auth';
+import { authenticate, AuthRequest } from '../middleware/auth';
 
 const router = express.Router();
 
@@ -13,9 +13,9 @@ const generateInviteCode = (): string => {
 };
 
 // Получить свои приглашения
-router.get('/my', authenticateToken, async (req: Request, res: Response) => {
+router.get('/my', authenticate, async (req: AuthRequest, res: Response) => {
   try {
-    const userId = (req as any).user.userId;
+    const userId = req.userId;
 
     const result = await pool.query(
       `SELECT 
@@ -52,9 +52,9 @@ router.get('/my', authenticateToken, async (req: Request, res: Response) => {
 });
 
 // Создать новое приглашение (если есть лимит)
-router.post('/create', authenticateToken, async (req: Request, res: Response) => {
+router.post('/create', authenticate, async (req: AuthRequest, res: Response) => {
   try {
-    const userId = (req as any).user.userId;
+    const userId = req.userId;
 
     // Проверяем количество существующих приглашений
     const countResult = await pool.query(
@@ -101,7 +101,7 @@ router.post('/create', authenticateToken, async (req: Request, res: Response) =>
 });
 
 // Проверить валидность кода (публичный эндпоинт)
-router.get('/validate/:code', async (req: Request, res: Response) => {
+router.get('/validate/:code', async (req: AuthRequest, res: Response) => {
   try {
     const { code } = req.params;
 
