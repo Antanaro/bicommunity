@@ -11,6 +11,7 @@
     "migrate-reaction-type": "node src/migrations/add-reaction-type.js",
     "migrate-password-reset": "node src/migrations/add-password-reset-tokens.js",
     "migrate-email-verification": "node src/migrations/add-email-verification.js",
+    "migrate-user-profile": "node src/migrations/add-user-profile-fields.js",
     "check-db": "node src/scripts/check-db.js",
     "create-db": "node src/scripts/create-database.js",
     "check-config": "node -e \"require('dotenv').config(); console.log('PORT:', process.env.PORT); console.log('JWT_SECRET:', process.env.JWT_SECRET ? 'Set' : 'NOT SET!'); console.log('DB:', process.env.DB_NAME);\"",

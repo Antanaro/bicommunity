@@ -23,26 +23,28 @@ router.get('/topic/:topicId', async (req: Request, res: Response) => {
           SELECT 
             p.*,
             u.username as author_name,
+            u.avatar_url as author_avatar,
             COALESCE(COUNT(CASE WHEN l.reaction_type = 1 THEN 1 END)::INTEGER, 0) as upvote_count,
             COALESCE(COUNT(CASE WHEN l.reaction_type = -1 THEN 1 END)::INTEGER, 0) as downvote_count
           FROM posts p
           JOIN users u ON p.author_id = u.id
           LEFT JOIN likes l ON p.id = l.post_id
           WHERE p.topic_id = $1
-          GROUP BY p.id, u.username
+          GROUP BY p.id, u.username, u.avatar_url
           ORDER BY p.created_at ASC
         `
         : `
           SELECT 
             p.*,
             u.username as author_name,
+            u.avatar_url as author_avatar,
             COALESCE(COUNT(l.id)::INTEGER, 0) as upvote_count,
             0::INTEGER as downvote_count
           FROM posts p
           JOIN users u ON p.author_id = u.id
           LEFT JOIN likes l ON p.id = l.post_id
           WHERE p.topic_id = $1
-          GROUP BY p.id, u.username
+          GROUP BY p.id, u.username, u.avatar_url
           ORDER BY p.created_at ASC
         `,
       [req.params.topicId]

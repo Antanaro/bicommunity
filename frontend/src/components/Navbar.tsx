@@ -1,6 +1,32 @@
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
+const NavbarAvatar = ({ avatarUrl, username }: { avatarUrl?: string | null; username: string }) => {
+  const getFullUrl = (url: string | null | undefined) => {
+    if (!url) return null;
+    if (url.startsWith('http')) return url;
+    return (import.meta.env.VITE_API_URL || '') + url;
+  };
+  
+  const fullUrl = getFullUrl(avatarUrl);
+  
+  return (
+    <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden flex-shrink-0">
+      {fullUrl ? (
+        <img
+          src={fullUrl}
+          alt={username}
+          className="w-full h-full object-cover"
+        />
+      ) : (
+        <span className="text-gray-500 font-medium text-sm">
+          {username.charAt(0).toUpperCase()}
+        </span>
+      )}
+    </div>
+  );
+};
+
 const Navbar = () => {
   const { user, logout } = useAuth();
 
@@ -16,9 +42,10 @@ const Navbar = () => {
               <>
                 <Link
                   to="/profile"
-                  className="text-gray-700 hover:text-blue-600 transition"
+                  className="flex items-center gap-2 text-gray-700 hover:text-blue-600 transition"
                 >
-                  {user.username}
+                  <NavbarAvatar avatarUrl={user.avatar_url} username={user.username} />
+                  <span>{user.username}</span>
                 </Link>
                 <button
                   onClick={logout}

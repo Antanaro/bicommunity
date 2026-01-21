@@ -8,12 +8,14 @@ interface Post {
   id: number;
   content: string;
   author_name: string;
+  author_avatar?: string | null;
   upvote_count: number;
   downvote_count: number;
   created_at: string;
   author_id: number;
   parent_id: number | null;
   parent_author_name: string | null;
+  parent_author_avatar?: string | null;
   images?: string[];
 }
 
@@ -30,6 +32,47 @@ interface PostComponentProps {
   level: number;
   allPosts: Post[];
 }
+
+// Avatar component
+const Avatar = ({ 
+  avatarUrl, 
+  username, 
+  size = 'md' 
+}: { 
+  avatarUrl?: string | null; 
+  username: string; 
+  size?: 'sm' | 'md' | 'lg';
+}) => {
+  const sizeClasses = {
+    sm: 'w-6 h-6 text-xs',
+    md: 'w-10 h-10 text-sm',
+    lg: 'w-12 h-12 text-base',
+  };
+  
+  const getFullUrl = (url: string | null | undefined) => {
+    if (!url) return null;
+    if (url.startsWith('http')) return url;
+    return (import.meta.env.VITE_API_URL || '') + url;
+  };
+  
+  const fullUrl = getFullUrl(avatarUrl);
+  
+  return (
+    <div className={`${sizeClasses[size]} rounded-full bg-gray-200 flex items-center justify-center overflow-hidden flex-shrink-0`}>
+      {fullUrl ? (
+        <img
+          src={fullUrl}
+          alt={username}
+          className="w-full h-full object-cover"
+        />
+      ) : (
+        <span className="text-gray-500 font-medium">
+          {username.charAt(0).toUpperCase()}
+        </span>
+      )}
+    </div>
+  );
+};
 
 const PostComponent = ({
   post,
@@ -62,9 +105,10 @@ const PostComponent = ({
             </button>
             {showQuote && (
               <blockquote className="border-l-4 border-gray-300 pl-4 py-2 bg-gray-50 rounded-r text-sm">
-                <div className="text-gray-600 mb-1">
+                <div className="flex items-center gap-2 text-gray-600 mb-1">
+                  <Avatar avatarUrl={parentPost.author_avatar} username={parentPost.author_name} size="sm" />
                   <span className="font-semibold">{parentPost.author_name}</span>
-                  <span className="text-xs text-gray-500 ml-2">
+                  <span className="text-xs text-gray-500">
                     {new Date(parentPost.created_at).toLocaleString('ru-RU')}
                   </span>
                 </div>
@@ -92,11 +136,14 @@ const PostComponent = ({
           </div>
         )}
         <div className="flex justify-between items-start mb-2">
-          <div>
-            <span className="font-semibold">{post.author_name}</span>
-            <span className="text-sm text-gray-500 ml-2">
-              {new Date(post.created_at).toLocaleString('ru-RU')}
-            </span>
+          <div className="flex items-center gap-3">
+            <Avatar avatarUrl={post.author_avatar} username={post.author_name} size="md" />
+            <div>
+              <span className="font-semibold">{post.author_name}</span>
+              <div className="text-sm text-gray-500">
+                {new Date(post.created_at).toLocaleString('ru-RU')}
+              </div>
+            </div>
           </div>
           <div className="flex gap-2 items-center">
             {user && (
@@ -179,6 +226,7 @@ interface Topic {
   title: string;
   content: string;
   author_name: string;
+  author_avatar?: string | null;
   category_name: string;
   category_id: number;
   created_at: string;
@@ -456,8 +504,12 @@ const Topic = () => {
             </button>
           )}
         </div>
-        <div className="text-sm text-gray-500 mb-4">
-          Автор: {topic.author_name} • {new Date(topic.created_at).toLocaleString('ru-RU')}
+        <div className="flex items-center gap-3 text-sm text-gray-500 mb-4">
+          <Avatar avatarUrl={topic.author_avatar} username={topic.author_name} size="md" />
+          <div>
+            <span className="font-medium text-gray-700">{topic.author_name}</span>
+            <div>{new Date(topic.created_at).toLocaleString('ru-RU')}</div>
+          </div>
         </div>
         <div className="prose max-w-none">
           <p className="whitespace-pre-wrap">
@@ -536,9 +588,10 @@ const Topic = () => {
                 </div>
                 {showQuote && (
                   <blockquote className="border-l-4 border-gray-300 pl-4 py-2 bg-gray-50 rounded-r text-sm">
-                    <div className="text-gray-600 mb-1">
+                    <div className="flex items-center gap-2 text-gray-600 mb-1">
+                      <Avatar avatarUrl={replyingToPost.author_avatar} username={replyingToPost.author_name} size="sm" />
                       <span className="font-semibold">{replyingToPost.author_name}</span>
-                      <span className="text-xs text-gray-500 ml-2">
+                      <span className="text-xs text-gray-500">
                         {new Date(replyingToPost.created_at).toLocaleString('ru-RU')}
                       </span>
                     </div>

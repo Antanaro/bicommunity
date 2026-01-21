@@ -6,6 +6,7 @@ import crypto from 'crypto';
 import { pool } from '../config/database';
 import { sendPasswordResetEmail, sendVerificationEmail } from '../services/email';
 import { createInitialInvitations } from './invitations';
+import { authenticate, AuthRequest } from '../middleware/auth';
 
 const router = express.Router();
 
@@ -87,6 +88,8 @@ router.post(
           username: user.username,
           email: user.email,
           role: user.role || 'user',
+          avatar_url: null,
+          bio: null,
         },
       });
     } catch (error: any) {
@@ -195,6 +198,8 @@ router.post(
           username: user.username,
           email: user.email,
           role: user.role,
+          avatar_url: user.avatar_url || null,
+          bio: user.bio || null,
         },
       });
     } catch (error: any) {
@@ -297,7 +302,7 @@ router.get(
 
       // Найти пользователя с этим токеном
       const userResult = await pool.query(
-        'SELECT id, username, email, email_verified, role FROM users WHERE email_verification_token = $1',
+        'SELECT id, username, email, email_verified, role, avatar_url, bio FROM users WHERE email_verification_token = $1',
         [token]
       );
 
@@ -331,6 +336,8 @@ router.get(
               username: user.username,
               email: user.email,
               role: user.role || 'user',
+              avatar_url: user.avatar_url || null,
+              bio: user.bio || null,
             },
             alreadyVerified: true,
           });
@@ -367,6 +374,8 @@ router.get(
             username: user.username,
             email: user.email,
             role: user.role || 'user',
+            avatar_url: user.avatar_url || null,
+            bio: user.bio || null,
           },
         });
       } else {
@@ -552,5 +561,129 @@ router.post(
     }
   }
 );
+
+// Get current user profile
+router.get('/profile', authenticate, async (req: AuthRequest, res: Response) => {
+  try {
+    const result = await pool.query(
+      'SELECT id, username, email, role, avatar_url, bio, created_at FROM users WHERE id = $1',
+      [req.userId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Пользователь не найден' });
+    }
+
+    const user = result.rows[0];
+    res.json({
+      id: user.id,
+      username: user.username,
+      email: user.email,
+      role: user.role,
+      avatar_url: user.avatar_url || null,
+      bio: user.bio || null,
+      created_at: user.created_at,
+    });
+  } catch (error: any) {
+    console.error('Get profile error:', error);
+    res.status(500).json({ 
+      error: 'Ошибка сервера',
+      message: error.message || 'Неизвестная ошибка'
+    });
+  }
+});
+
+// Update user profile (bio and avatar)
+router.put(
+  '/profile',
+  authenticate,
+  [
+    body('bio').optional().isLength({ max: 500 }).withMessage('Описание не должно превышать 500 символов'),
+    body('avatar_url').optional().isLength({ max: 500 }).withMessage('URL аватара слишком длинный'),
+  ],
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+      }
+
+      const { bio, avatar_url } = req.body;
+      const updates: string[] = [];
+      const values: any[] = [];
+      let paramCount = 1;
+
+      if (bio !== undefined) {
+        updates.push(`bio = $${paramCount++}`);
+        values.push(bio);
+      }
+      if (avatar_url !== undefined) {
+        updates.push(`avatar_url = $${paramCount++}`);
+        values.push(avatar_url);
+      }
+
+      if (updates.length === 0) {
+        return res.status(400).json({ error: 'Нет полей для обновления' });
+      }
+
+      values.push(req.userId);
+
+      const result = await pool.query(
+        `UPDATE users SET ${updates.join(', ')} WHERE id = $${paramCount} 
+         RETURNING id, username, email, role, avatar_url, bio`,
+        values
+      );
+
+      if (result.rows.length === 0) {
+        return res.status(404).json({ error: 'Пользователь не найден' });
+      }
+
+      const user = result.rows[0];
+      res.json({
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        role: user.role,
+        avatar_url: user.avatar_url || null,
+        bio: user.bio || null,
+      });
+    } catch (error: any) {
+      console.error('Update profile error:', error);
+      res.status(500).json({ 
+        error: 'Ошибка сервера',
+        message: error.message || 'Неизвестная ошибка'
+      });
+    }
+  }
+);
+
+// Get public user profile by ID
+router.get('/users/:id', async (req: Request, res: Response) => {
+  try {
+    const result = await pool.query(
+      'SELECT id, username, avatar_url, bio, created_at FROM users WHERE id = $1',
+      [req.params.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Пользователь не найден' });
+    }
+
+    const user = result.rows[0];
+    res.json({
+      id: user.id,
+      username: user.username,
+      avatar_url: user.avatar_url || null,
+      bio: user.bio || null,
+      created_at: user.created_at,
+    });
+  } catch (error: any) {
+    console.error('Get user error:', error);
+    res.status(500).json({ 
+      error: 'Ошибка сервера',
+      message: error.message || 'Неизвестная ошибка'
+    });
+  }
+});
 
 export default router;

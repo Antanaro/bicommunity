@@ -7,6 +7,8 @@ interface User {
   username: string;
   email: string;
   role: string;
+  avatar_url?: string | null;
+  bio?: string | null;
 }
 
 interface RegisterResponse {
@@ -21,6 +23,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   register: (username: string, email: string, password: string, invitationCode: string) => Promise<RegisterResponse | undefined>;
   logout: () => void;
+  updateUser: (userData: Partial<User>) => void;
   loading: boolean;
 }
 
@@ -87,8 +90,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     delete axios.defaults.headers.common['Authorization'];
   };
 
+  const updateUser = (userData: Partial<User>) => {
+    if (user) {
+      const updatedUser = { ...user, ...userData };
+      setUser(updatedUser);
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, token, login, register, logout, loading }}>
+    <AuthContext.Provider value={{ user, token, login, register, logout, updateUser, loading }}>
       {children}
     </AuthContext.Provider>
   );
