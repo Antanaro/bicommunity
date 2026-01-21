@@ -56,13 +56,10 @@ router.post(
       // Hash password
       const passwordHash = await bcrypt.hash(password, 10);
 
-      // Generate email verification token
-      const verificationToken = crypto.randomBytes(32).toString('hex');
-
-      // Create user with unverified email and invited_by
+      // Create user with verified email (приглашение заменяет верификацию)
       const result = await pool.query(
-        'INSERT INTO users (username, email, password_hash, email_verified, email_verification_token, invited_by) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, username, email, role',
-        [username, email, passwordHash, false, verificationToken, invitation.owner_id]
+        'INSERT INTO users (username, email, password_hash, email_verified, invited_by) VALUES ($1, $2, $3, $4, $5) RETURNING id, username, email, role',
+        [username, email, passwordHash, true, invitation.owner_id]
       );
 
       const user = result.rows[0];
@@ -76,25 +73,20 @@ router.post(
       // Создаём 3 приглашения для нового пользователя
       await createInitialInvitations(user.id);
 
-      // Send verification email
-      try {
-        await sendVerificationEmail(user.email, user.username, verificationToken);
-      } catch (emailError: any) {
-        console.error('Error sending verification email:', emailError);
-        // Удаляем пользователя, если не удалось отправить email
-        await pool.query('DELETE FROM users WHERE id = $1', [user.id]);
-        return res.status(500).json({ 
-          error: 'Не удалось отправить письмо подтверждения. Проверьте настройки SMTP в .env файле.'
-        });
-      }
+      // Сразу выдаём JWT токен - верификация email не нужна при регистрации по приглашению
+      const token = jwt.sign(
+        { userId: user.id, role: user.role || 'user' },
+        process.env.JWT_SECRET || 'secret',
+        { expiresIn: '7d' }
+      );
 
-      // Не выдаем JWT токен, пользователь должен подтвердить email
       res.status(201).json({
-        message: 'Регистрация успешна! Пожалуйста, проверьте вашу почту и подтвердите email адрес.',
+        token,
         user: {
           id: user.id,
           username: user.username,
           email: user.email,
+          role: user.role || 'user',
         },
       });
     } catch (error: any) {

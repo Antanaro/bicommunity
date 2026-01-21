@@ -1,4 +1,7 @@
 import TelegramBot from 'node-telegram-bot-api';
+import { TelegramClient } from 'telegram';
+import { StringSession } from 'telegram/sessions';
+import { Api } from 'telegram/tl';
 import { pool } from '../config/database';
 import dotenv from 'dotenv';
 import bcrypt from 'bcryptjs';
@@ -14,12 +17,23 @@ interface MediaGroupMessage {
   imageUrls: string[];
 }
 
+interface ParsedMessage {
+  id: number;
+  text: string;
+  date: Date;
+  views?: number;
+  mediaPath?: string;
+}
+
 class TelegramBotService {
   private bot: TelegramBot | null = null;
+  private client: TelegramClient | null = null;
   private telegramCategoryId: number | null = null;
   private botUserId: number | null = null;
   private mediaGroupBuffer: Map<string, MediaGroupMessage[]> = new Map();
   private mediaGroupTimers: Map<string, NodeJS.Timeout> = new Map();
+  private isClientInitialized: boolean = false;
+  private parsingInProgress: Map<number, boolean> = new Map(); // chatId -> isRunning
 
   async initialize() {
     const token = process.env.TELEGRAM_BOT_TOKEN;
@@ -35,8 +49,27 @@ class TelegramBotService {
       await this.ensureTelegramCategory();
       await this.ensureBotUser();
 
+      // Обработка команд
+      this.bot.onText(/\/parse\s+(@?\w+)(?:\s+(\d+))?/, async (msg, match) => {
+        await this.handleParseCommand(msg, match);
+      });
+
+      this.bot.onText(/\/stop/, async (msg) => {
+        await this.handleStopCommand(msg);
+      });
+
+      this.bot.onText(/\/help/, async (msg) => {
+        await this.handleHelpCommand(msg);
+      });
+
+      this.bot.onText(/\/status/, async (msg) => {
+        await this.handleStatusCommand(msg);
+      });
+
       // Обработка форвардированных сообщений
       this.bot.on('message', async (msg: TelegramBot.Message) => {
+        // Игнорируем команды
+        if (msg.text?.startsWith('/')) return;
         await this.handleMessage(msg);
       });
 
@@ -428,10 +461,345 @@ class TelegramBotService {
     }
   }
 
+  // ==================== MTProto Client для парсинга каналов ====================
+
+  private async initializeMTProtoClient(): Promise<boolean> {
+    if (this.isClientInitialized && this.client) {
+      return true;
+    }
+
+    const apiId = process.env.TELEGRAM_API_ID;
+    const apiHash = process.env.TELEGRAM_API_HASH;
+    const sessionString = process.env.TELEGRAM_SESSION_STRING || '';
+
+    if (!apiId || !apiHash) {
+      console.warn('⚠️  TELEGRAM_API_ID or TELEGRAM_API_HASH not set. Channel parsing will not be available.');
+      return false;
+    }
+
+    try {
+      const session = new StringSession(sessionString);
+      this.client = new TelegramClient(session, parseInt(apiId), apiHash, {
+        connectionRetries: 5,
+      });
+
+      await this.client.connect();
+      
+      if (!sessionString) {
+        console.log('⚠️  TELEGRAM_SESSION_STRING not set. You need to authenticate first.');
+        console.log('Run the auth script to get your session string.');
+        return false;
+      }
+
+      this.isClientInitialized = true;
+      console.log('✅ MTProto client initialized for channel parsing');
+      return true;
+    } catch (error) {
+      console.error('❌ Failed to initialize MTProto client:', error);
+      return false;
+    }
+  }
+
+  private async handleHelpCommand(msg: TelegramBot.Message) {
+    if (!this.bot) return;
+
+    const helpText = `
+📖 **Команды бота:**
+
+**/parse @channel_name [количество]**
+Парсит посты из публичного канала.
+• @channel_name — username канала (без @)
+• количество — сколько постов спарсить (по умолчанию 50, макс. 500)
+
+Примеры:
+\`/parse durov 10\` — последние 10 постов из @durov
+\`/parse telegram\` — последние 50 постов из @telegram
+
+**/stop**
+Остановить текущий парсинг
+
+**/status**
+Показать статус парсинга
+
+**/help**
+Показать эту справку
+
+📤 **Форвард сообщений:**
+Просто перешлите сообщение из любого канала — бот создаст тему на форуме.
+`;
+
+    await this.bot.sendMessage(msg.chat.id, helpText, { parse_mode: 'Markdown' });
+  }
+
+  private async handleStatusCommand(msg: TelegramBot.Message) {
+    if (!this.bot) return;
+
+    const isRunning = this.parsingInProgress.get(msg.chat.id);
+    const clientReady = this.isClientInitialized;
+
+    let status = '📊 **Статус:**\n\n';
+    status += `🤖 Bot API: ✅ Работает\n`;
+    status += `🔌 MTProto Client: ${clientReady ? '✅ Подключен' : '❌ Не настроен'}\n`;
+    status += `⏳ Парсинг: ${isRunning ? '🔄 В процессе' : '⏸️ Не активен'}\n`;
+
+    if (!clientReady) {
+      status += `\n⚠️ Для парсинга каналов нужно настроить:\n`;
+      status += `• TELEGRAM_API_ID\n`;
+      status += `• TELEGRAM_API_HASH\n`;
+      status += `• TELEGRAM_SESSION_STRING\n`;
+    }
+
+    await this.bot.sendMessage(msg.chat.id, status, { parse_mode: 'Markdown' });
+  }
+
+  private async handleStopCommand(msg: TelegramBot.Message) {
+    if (!this.bot) return;
+
+    const wasRunning = this.parsingInProgress.get(msg.chat.id);
+    this.parsingInProgress.set(msg.chat.id, false);
+
+    if (wasRunning) {
+      await this.bot.sendMessage(msg.chat.id, '⏹️ Парсинг остановлен.');
+    } else {
+      await this.bot.sendMessage(msg.chat.id, 'ℹ️ Парсинг не был запущен.');
+    }
+  }
+
+  private async handleParseCommand(msg: TelegramBot.Message, match: RegExpExecArray | null) {
+    if (!this.bot || !match) return;
+
+    const chatId = msg.chat.id;
+    
+    // Проверяем, не запущен ли уже парсинг
+    if (this.parsingInProgress.get(chatId)) {
+      await this.bot.sendMessage(chatId, '⚠️ Парсинг уже запущен. Используйте /stop чтобы остановить.');
+      return;
+    }
+
+    // Инициализируем MTProto клиент
+    const clientReady = await this.initializeMTProtoClient();
+    if (!clientReady) {
+      await this.bot.sendMessage(chatId, 
+        '❌ MTProto клиент не настроен.\n\n' +
+        'Для парсинга каналов нужно добавить в .env:\n' +
+        '• TELEGRAM_API_ID\n' +
+        '• TELEGRAM_API_HASH\n' +
+        '• TELEGRAM_SESSION_STRING\n\n' +
+        'Получить API ID/Hash: https://my.telegram.org\n' +
+        'Запустите скрипт авторизации для получения session string.'
+      );
+      return;
+    }
+
+    const channelUsername = match[1].replace('@', '');
+    const limit = Math.min(parseInt(match[2] || '50'), 500);
+
+    await this.bot.sendMessage(chatId, 
+      `🔍 Начинаю парсинг канала @${channelUsername}...\n` +
+      `📊 Количество постов: ${limit}\n\n` +
+      `Используйте /stop чтобы остановить.`
+    );
+
+    // Запускаем парсинг
+    this.parsingInProgress.set(chatId, true);
+    await this.parseChannel(chatId, channelUsername, limit);
+  }
+
+  private async parseChannel(chatId: number, channelUsername: string, limit: number) {
+    if (!this.client || !this.bot) return;
+
+    let processed = 0;
+    let created = 0;
+    let errors = 0;
+
+    try {
+      // Получаем информацию о канале
+      const entity = await this.client.getEntity(channelUsername);
+      const channelTitle = 'title' in entity ? entity.title : channelUsername;
+
+      console.log(`📥 Parsing channel: ${channelTitle} (@${channelUsername}), limit: ${limit}`);
+
+      // Получаем сообщения
+      const messages = await this.client.getMessages(channelUsername, {
+        limit: limit,
+      });
+
+      const totalMessages = messages.length;
+      await this.bot.sendMessage(chatId, `📨 Найдено ${totalMessages} сообщений. Обрабатываю...`);
+
+      // Обрабатываем сообщения
+      for (const message of messages) {
+        // Проверяем, не остановлен ли парсинг
+        if (!this.parsingInProgress.get(chatId)) {
+          await this.bot.sendMessage(chatId, 
+            `⏹️ Парсинг остановлен.\n\n` +
+            `📊 Обработано: ${processed}/${totalMessages}\n` +
+            `✅ Создано тем: ${created}\n` +
+            `❌ Ошибок: ${errors}`
+          );
+          return;
+        }
+
+        processed++;
+
+        // Пропускаем служебные сообщения без текста и медиа
+        if (!message.message && !message.media) {
+          continue;
+        }
+
+        try {
+          // Формируем данные для темы
+          const messageText = message.message || '';
+          const messageDate = message.date ? new Date(message.date * 1000) : new Date();
+          const messageId = message.id;
+          
+          // Скачиваем медиа если есть
+          let imageUrls: string[] = [];
+          if (message.media) {
+            const imageUrl = await this.downloadMediaFromMessage(message);
+            if (imageUrl) {
+              imageUrls.push(imageUrl);
+            }
+          }
+
+          // Пропускаем пустые сообщения
+          if (!messageText && imageUrls.length === 0) {
+            continue;
+          }
+
+          // Формируем заголовок
+          let topicTitle: string;
+          if (messageText.length > 0 && messageText.length <= 150 && !messageText.startsWith('[')) {
+            topicTitle = messageText.substring(0, 200);
+          } else if (messageText.length > 150) {
+            topicTitle = messageText.substring(0, 100) + '...';
+          } else {
+            topicTitle = `Из @${channelUsername}`;
+          }
+
+          // Формируем контент
+          let topicContent = messageText || '[Медиа контент]';
+          
+          // Добавляем ссылку на оригинал
+          const sourceLink = `https://t.me/${channelUsername}/${messageId}`;
+          topicContent += `\n\n---\n`;
+          topicContent += `**Источник:** ${channelTitle} (@${channelUsername})\n`;
+          topicContent += `**Ссылка:** [Открыть в Telegram](${sourceLink})\n`;
+          topicContent += `**Дата:** ${messageDate.toLocaleString('ru-RU')}\n`;
+          if (message.views) {
+            topicContent += `**Просмотры:** ${message.views.toLocaleString('ru-RU')}\n`;
+          }
+
+          // Создаём тему
+          await this.createTopic(topicTitle, topicContent, imageUrls);
+          created++;
+
+          // Отправляем прогресс каждые 10 сообщений
+          if (processed % 10 === 0) {
+            await this.bot.sendMessage(chatId, 
+              `⏳ Прогресс: ${processed}/${totalMessages} (${Math.round(processed/totalMessages*100)}%)\n` +
+              `✅ Создано тем: ${created}`
+            );
+          }
+
+          // Небольшая задержка чтобы не перегружать API
+          await this.sleep(100);
+
+        } catch (error) {
+          console.error(`❌ Error processing message ${message.id}:`, error);
+          errors++;
+        }
+      }
+
+      // Итоговое сообщение
+      this.parsingInProgress.set(chatId, false);
+      await this.bot.sendMessage(chatId, 
+        `✅ Парсинг завершён!\n\n` +
+        `📊 Канал: ${channelTitle} (@${channelUsername})\n` +
+        `📨 Обработано сообщений: ${processed}\n` +
+        `✅ Создано тем: ${created}\n` +
+        `❌ Ошибок: ${errors}`
+      );
+
+    } catch (error: any) {
+      this.parsingInProgress.set(chatId, false);
+      console.error('❌ Error parsing channel:', error);
+      
+      let errorMessage = '❌ Ошибка при парсинге канала.\n\n';
+      
+      if (error.message?.includes('Could not find the input entity')) {
+        errorMessage += `Канал @${channelUsername} не найден.\nПроверьте правильность username.`;
+      } else if (error.message?.includes('CHANNEL_PRIVATE')) {
+        errorMessage += `Канал @${channelUsername} приватный.\nПарсинг доступен только для публичных каналов.`;
+      } else {
+        errorMessage += `Ошибка: ${error.message || 'Неизвестная ошибка'}`;
+      }
+
+      await this.bot.sendMessage(chatId, errorMessage);
+    }
+  }
+
+  private async downloadMediaFromMessage(message: Api.Message): Promise<string | null> {
+    if (!this.client || !message.media) return null;
+
+    try {
+      // Проверяем тип медиа
+      if (message.media instanceof Api.MessageMediaPhoto) {
+        // Скачиваем фото
+        const buffer = await this.client.downloadMedia(message.media, {});
+        if (buffer) {
+          return await this.saveBufferAsImage(buffer as Buffer);
+        }
+      } else if (message.media instanceof Api.MessageMediaDocument) {
+        // Проверяем, является ли документ изображением
+        const doc = message.media.document;
+        if (doc instanceof Api.Document) {
+          const mimeType = doc.mimeType;
+          if (mimeType?.startsWith('image/')) {
+            const buffer = await this.client.downloadMedia(message.media, {});
+            if (buffer) {
+              const ext = mimeType.split('/')[1] || 'jpg';
+              return await this.saveBufferAsImage(buffer as Buffer, ext);
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error('❌ Error downloading media:', error);
+    }
+
+    return null;
+  }
+
+  private async saveBufferAsImage(buffer: Buffer, ext: string = 'jpg'): Promise<string> {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const filename = `image-${uniqueSuffix}.${ext}`;
+
+    const uploadsDir = path.join(__dirname, '../../uploads');
+    if (!fs.existsSync(uploadsDir)) {
+      fs.mkdirSync(uploadsDir, { recursive: true });
+    }
+    
+    const filePath = path.join(uploadsDir, filename);
+    fs.writeFileSync(filePath, buffer);
+
+    return `/uploads/${filename}`;
+  }
+
+  private sleep(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  // ==================== Завершение работы ====================
+
   async stop() {
     if (this.bot) {
       await this.bot.stopPolling();
       console.log('✅ Telegram bot stopped');
+    }
+    if (this.client) {
+      await this.client.disconnect();
+      console.log('✅ MTProto client disconnected');
     }
   }
 }

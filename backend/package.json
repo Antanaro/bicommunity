@@ -15,7 +15,8 @@
     "create-db": "node src/scripts/create-database.js",
     "check-config": "node -e \"require('dotenv').config(); console.log('PORT:', process.env.PORT); console.log('JWT_SECRET:', process.env.JWT_SECRET ? 'Set' : 'NOT SET!'); console.log('DB:', process.env.DB_NAME);\"",
     "test-register": "node src/scripts/test-registration.js",
-    "seed-bi": "node src/scripts/seed-bi-data.js"
+    "seed-bi": "node src/scripts/seed-bi-data.js",
+    "telegram-auth": "npx ts-node src/scripts/telegram-auth.ts"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
@@ -23,11 +24,13 @@
     "dotenv": "^16.3.1",
     "express": "^4.18.2",
     "express-validator": "^7.0.1",
+    "input": "^1.0.1",
     "jsonwebtoken": "^9.0.2",
     "multer": "^1.4.5-lts.1",
     "node-telegram-bot-api": "^0.64.0",
     "nodemailer": "^6.9.7",
-    "pg": "^8.11.3"
+    "pg": "^8.11.3",
+    "telegram": "^2.26.22"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",

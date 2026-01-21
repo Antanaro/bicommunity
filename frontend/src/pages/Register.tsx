@@ -10,7 +10,6 @@ const Register = () => {
   const [invitationCode, setInvitationCode] = useState('');
   const [invitedBy, setInvitedBy] = useState<string | null>(null);
   const [error, setError] = useState('');
-  const [successMessage, setSuccessMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [validatingCode, setValidatingCode] = useState(false);
   const [codeValid, setCodeValid] = useState<boolean | null>(null);
@@ -66,7 +65,6 @@ const Register = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    setSuccessMessage('');
 
     if (!codeValid) {
       setError('Пожалуйста, введите действительный пригласительный код');
@@ -76,14 +74,8 @@ const Register = () => {
     setLoading(true);
 
     try {
-      const result = await register(username, email, password, invitationCode);
-      if (result?.message) {
-        setSuccessMessage(result.message);
-        setUsername('');
-        setEmail('');
-        setPassword('');
-        return;
-      }
+      await register(username, email, password, invitationCode);
+      // После успешной регистрации сразу переходим на главную
       navigate('/');
     } catch (err: any) {
       console.error('Registration error:', err);
@@ -114,15 +106,7 @@ const Register = () => {
         </div>
       )}
       
-      {successMessage && (
-        <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
-          <p className="font-medium mb-2">{successMessage}</p>
-          <p className="text-sm">Проверьте вашу почту и перейдите по ссылке в письме для подтверждения email адреса.</p>
-        </div>
-      )}
-
-      {!successMessage && (
-        <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit}>
           {/* Пригласительный код */}
           <div className="mb-4">
             <label className="block text-gray-700 text-sm font-bold mb-2">
@@ -207,7 +191,6 @@ const Register = () => {
             {loading ? 'Регистрация...' : 'Зарегистрироваться'}
           </button>
         </form>
-      )}
       
       <p className="mt-4 text-center text-gray-600">
         Уже есть аккаунт?{' '}

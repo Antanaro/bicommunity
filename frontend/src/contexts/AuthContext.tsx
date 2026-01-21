@@ -63,14 +63,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const response = await api.post('/auth/register', { username, email, password, invitationCode });
       
-      // После регистрации токен не выдается, нужно подтвердить email
-      // Возвращаем сообщение для отображения пользователю
-      if (response.data.message) {
-        // Не устанавливаем токен и пользователя, так как email не подтвержден
-        return response.data;
-      }
-      
-      // Если по какой-то причине токен все же пришел (для обратной совместимости)
+      // При регистрации по приглашению сразу получаем токен
       const { token: newToken, user: newUser } = response.data;
       if (newToken && newUser) {
         setToken(newToken);
@@ -79,6 +72,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         localStorage.setItem('user', JSON.stringify(newUser));
         axios.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
       }
+      return response.data;
     } catch (error: any) {
       // Пробрасываем ошибку дальше для обработки в компоненте
       throw error;
