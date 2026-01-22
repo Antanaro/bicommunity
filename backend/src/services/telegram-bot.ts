@@ -84,6 +84,18 @@ class TelegramBotService {
       // Получение информации о боте
       const botInfo = await this.bot.getMe();
       console.log(`✅ Telegram bot initialized: @${botInfo.username}`);
+
+      // Попытка инициализации MTProto клиента при старте (не блокирует если не настроен)
+      try {
+        const mtprotoReady = await this.initializeMTProtoClient();
+        if (mtprotoReady) {
+          console.log('✅ MTProto client initialized successfully at startup');
+        } else {
+          console.log('ℹ️  MTProto client not configured (optional feature)');
+        }
+      } catch (error: any) {
+        console.warn('⚠️  MTProto client initialization failed at startup:', error?.message || error);
+      }
     } catch (error) {
       console.error('❌ Failed to initialize Telegram bot:', error);
     }
@@ -493,18 +505,24 @@ class TelegramBotService {
     }
 
     try {
+      console.log('🔌 Connecting to Telegram MTProto...');
       const session = new StringSession(sessionString);
       this.client = new TelegramClient(session, parseInt(apiId), apiHash, {
         connectionRetries: 5,
       });
 
+      console.log('⏳ Establishing connection...');
       await this.client.connect();
+      console.log('✅ Connected to Telegram MTProto');
 
       this.isClientInitialized = true;
       console.log('✅ MTProto client initialized for channel parsing');
       return true;
-    } catch (error) {
-      console.error('❌ Failed to initialize MTProto client:', error);
+    } catch (error: any) {
+      console.error('❌ Failed to initialize MTProto client:', error?.message || error);
+      if (error?.stack) {
+        console.error('Stack trace:', error.stack);
+      }
       return false;
     }
   }
