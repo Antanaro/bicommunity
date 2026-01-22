@@ -47,6 +47,10 @@ services:
       SMTP_FROM: ${SMTP_FROM:-}
       # Опциональный Telegram бот
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+      # Опциональные настройки Telegram MTProto API для парсинга каналов
+      TELEGRAM_API_ID: ${TELEGRAM_API_ID:-}
+      TELEGRAM_API_HASH: ${TELEGRAM_API_HASH:-}
+      TELEGRAM_SESSION_STRING: ${TELEGRAM_SESSION_STRING:-}
     volumes:
       - backend_uploads:/app/uploads
     depends_on:

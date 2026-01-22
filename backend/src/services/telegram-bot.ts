@@ -475,8 +475,20 @@ class TelegramBotService {
     const apiHash = process.env.TELEGRAM_API_HASH;
     const sessionString = process.env.TELEGRAM_SESSION_STRING || '';
 
+    // Debug logging
+    console.log('🔍 MTProto initialization check:');
+    console.log(`  API_ID: ${apiId ? '✅ Set' : '❌ Not set'}`);
+    console.log(`  API_HASH: ${apiHash ? '✅ Set' : '❌ Not set'}`);
+    console.log(`  SESSION_STRING: ${sessionString ? '✅ Set (' + sessionString.length + ' chars)' : '❌ Not set'}`);
+
     if (!apiId || !apiHash) {
       console.warn('⚠️  TELEGRAM_API_ID or TELEGRAM_API_HASH not set. Channel parsing will not be available.');
+      return false;
+    }
+
+    if (!sessionString) {
+      console.warn('⚠️  TELEGRAM_SESSION_STRING not set. You need to authenticate first.');
+      console.warn('Run the auth script to get your session string.');
       return false;
     }
 
@@ -487,12 +499,6 @@ class TelegramBotService {
       });
 
       await this.client.connect();
-      
-      if (!sessionString) {
-        console.log('⚠️  TELEGRAM_SESSION_STRING not set. You need to authenticate first.');
-        console.log('Run the auth script to get your session string.');
-        return false;
-      }
 
       this.isClientInitialized = true;
       console.log('✅ MTProto client initialized for channel parsing');
