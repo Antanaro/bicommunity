@@ -84,8 +84,25 @@ const PostComponent = ({
   allPosts,
 }: PostComponentProps) => {
   const [showQuote, setShowQuote] = useState(true);
+  const [showTooltip, setShowTooltip] = useState(false);
+  const [tooltipPost, setTooltipPost] = useState<Post | null>(null);
   const parentPost = post.parent_id ? allPosts.find((p) => p.id === post.parent_id) : null;
   const userReaction = reactions.get(post.id) || null;
+  
+  // Get global ID for post (index in allPosts array + 1, since topic is #0)
+  const getGlobalId = (postId: number) => {
+    const index = allPosts.findIndex(p => p.id === postId);
+    return index + 1; // Topic is #0, first post is #1
+  };
+  
+  const handleIdClick = (e: React.MouseEvent, targetId: number) => {
+    e.preventDefault();
+    const targetPost = allPosts.find(p => p.id === targetId);
+    if (targetPost) {
+      setTooltipPost(targetPost);
+      setShowTooltip(true);
+    }
+  };
 
   return (
     <div className={level > 0 ? 'mt-2' : ''}>
@@ -96,43 +113,23 @@ const PostComponent = ({
       >
         {post.parent_id && parentPost && (
           <div className="mb-3">
-            <button
-              type="button"
-              onClick={() => setShowQuote(!showQuote)}
-              className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1 mb-2"
-            >
-              {showQuote ? '▼' : '▶'} Цитата сообщения {parentPost.author_name}
-            </button>
-            {showQuote && (
-              <blockquote className="border-l-4 border-gray-300 pl-4 py-2 bg-gray-50 rounded-r text-sm">
-                <div className="flex items-center gap-2 text-gray-600 mb-1">
-                  <Avatar avatarUrl={parentPost.author_avatar} username={parentPost.author_name} size="sm" />
-                  <span className="font-semibold">{parentPost.author_name}</span>
-                  <span className="text-xs text-gray-500">
-                    {new Date(parentPost.created_at).toLocaleString('ru-RU')}
-                  </span>
-                </div>
-                    <p className="whitespace-pre-wrap text-gray-700">
-                      <LinkifyText text={parentPost.content} />
-                    </p>
-                    {parentPost.images && parentPost.images.length > 0 && (
-                      <div className={`mt-2 ${parentPost.images.length > 1 ? 'grid grid-cols-2 gap-0' : 'flex'}`}>
-                        {parentPost.images.map((imageUrl, imgIndex) => {
-                          const fullUrl = imageUrl.startsWith('http') ? imageUrl : (import.meta.env.VITE_API_URL || '') + imageUrl;
-                          const imagesArray = parentPost.images || [];
-                          return (
-                            <img
-                              key={imgIndex}
-                              src={fullUrl}
-                              alt={`Image ${imgIndex + 1}`}
-                              className={imagesArray.length > 1 ? 'w-full h-auto rounded border' : 'w-1/4 max-w-[25%] h-auto rounded border'}
-                            />
-                          );
-                        })}
-                      </div>
-                    )}
-              </blockquote>
-            )}
+            <div className="text-sm text-gray-600 mb-2">
+              Ответ на{' '}
+              <button
+                onClick={(e) => handleIdClick(e, post.parent_id!)}
+                className="text-blue-600 hover:underline font-mono"
+                onMouseEnter={(e) => {
+                  const targetPost = allPosts.find(p => p.id === post.parent_id);
+                  if (targetPost) {
+                    setTooltipPost(targetPost);
+                    setShowTooltip(true);
+                  }
+                }}
+                onMouseLeave={() => setShowTooltip(false)}
+              >
+                #{getGlobalId(post.parent_id)}
+              </button>
+            </div>
           </div>
         )}
         <div className="flex justify-between items-start mb-2">
@@ -144,6 +141,20 @@ const PostComponent = ({
                 {new Date(post.created_at).toLocaleString('ru-RU')}
               </div>
             </div>
+            <span 
+              id={`post-${post.id}`}
+              className="text-blue-600 font-mono text-sm cursor-pointer hover:underline"
+              onClick={(e) => {
+                e.preventDefault();
+                const element = document.getElementById(`post-${post.id}`);
+                if (element) {
+                  element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+              }}
+              title="Ссылка на сообщение"
+            >
+              #{getGlobalId(post.id)}
+            </span>
           </div>
           <div className="flex gap-2 items-center">
             {user && (
@@ -201,6 +212,47 @@ const PostComponent = ({
           )}
         </div>
       </div>
+      {showTooltip && tooltipPost && (
+        <div 
+          className="fixed bg-white border border-gray-300 rounded-lg shadow-lg p-3 max-w-md z-50"
+          style={{
+            left: '50%',
+            top: '50%',
+            transform: 'translate(-50%, -50%)',
+          }}
+          onMouseEnter={() => setShowTooltip(true)}
+          onMouseLeave={() => setShowTooltip(false)}
+        >
+          <div className="flex items-center gap-2 mb-2">
+            <Avatar avatarUrl={tooltipPost.author_avatar} username={tooltipPost.author_name} size="sm" />
+            <div>
+              <span className="font-semibold text-sm">{tooltipPost.author_name}</span>
+              <div className="text-xs text-gray-500">
+                {new Date(tooltipPost.created_at).toLocaleString('ru-RU')}
+              </div>
+            </div>
+            <span className="text-blue-600 font-mono text-xs">#{getGlobalId(tooltipPost.id)}</span>
+          </div>
+          <p className="text-sm whitespace-pre-wrap line-clamp-4">
+            <LinkifyText text={tooltipPost.content} />
+          </p>
+          {tooltipPost.images && tooltipPost.images.length > 0 && (
+            <div className="mt-2">
+              <img
+                src={tooltipPost.images[0].startsWith('http') ? tooltipPost.images[0] : (import.meta.env.VITE_API_URL || '') + tooltipPost.images[0]}
+                alt="Preview"
+                className="w-20 h-20 object-cover rounded border"
+              />
+            </div>
+          )}
+          <button
+            onClick={() => setShowTooltip(false)}
+            className="mt-2 text-xs text-blue-600 hover:underline"
+          >
+            Закрыть
+          </button>
+        </div>
+      )}
       {post.replies.length > 0 && (
         <div className="mt-2 space-y-2">
           {post.replies.map((reply) => (
@@ -493,7 +545,13 @@ const Topic = () => {
 
       <div className="bg-white rounded-lg shadow p-6 mb-6 relative">
         <div className="flex justify-between items-start mb-2">
-          <h1 className="text-3xl font-bold">{topic.title}</h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-3xl font-bold">{topic.title}</h1>
+            <span className="text-blue-600 font-mono text-lg cursor-pointer hover:underline"
+                  title="Ссылка на тему">
+              #0
+            </span>
+          </div>
           {isAdmin && (
             <button
               onClick={handleDeleteTopic}
@@ -568,16 +626,21 @@ const Topic = () => {
             const replyingToPost = getReplyingToPost();
             if (!replyingToPost) return null;
             
+            const getGlobalId = (postId: number) => {
+              const index = topic.posts.findIndex(p => p.id === postId);
+              return index + 1; // Topic is #0, first post is #1
+            };
+            
             return (
               <div className="mb-4">
                 <div className="flex justify-between items-center mb-2">
-                  <button
-                    type="button"
-                    onClick={() => setShowQuote(!showQuote)}
-                    className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1"
-                  >
-                    {showQuote ? '▼' : '▶'} Цитата сообщения {replyingToPost.author_name}
-                  </button>
+                  <div className="text-sm text-gray-600">
+                    Ответ на{' '}
+                    <span className="text-blue-600 font-mono">
+                      #{getGlobalId(replyingToPost.id)}
+                    </span>
+                    {' '}от {replyingToPost.author_name}
+                  </div>
                   <button
                     type="button"
                     onClick={cancelReply}
@@ -586,36 +649,6 @@ const Topic = () => {
                     ✕ Отменить ответ
                   </button>
                 </div>
-                {showQuote && (
-                  <blockquote className="border-l-4 border-gray-300 pl-4 py-2 bg-gray-50 rounded-r text-sm">
-                    <div className="flex items-center gap-2 text-gray-600 mb-1">
-                      <Avatar avatarUrl={replyingToPost.author_avatar} username={replyingToPost.author_name} size="sm" />
-                      <span className="font-semibold">{replyingToPost.author_name}</span>
-                      <span className="text-xs text-gray-500">
-                        {new Date(replyingToPost.created_at).toLocaleString('ru-RU')}
-                      </span>
-                    </div>
-                    <p className="whitespace-pre-wrap text-gray-700">
-                      <LinkifyText text={replyingToPost.content} />
-                    </p>
-                    {replyingToPost.images && replyingToPost.images.length > 0 && (
-                      <div className={`mt-2 ${replyingToPost.images.length > 1 ? 'grid grid-cols-2 gap-0' : 'flex'}`}>
-                        {replyingToPost.images.map((imageUrl, imgIndex) => {
-                          const fullUrl = imageUrl.startsWith('http') ? imageUrl : (import.meta.env.VITE_API_URL || '') + imageUrl;
-                          const imagesArray = replyingToPost.images || [];
-                          return (
-                            <img
-                              key={imgIndex}
-                              src={fullUrl}
-                              alt={`Image ${imgIndex + 1}`}
-                              className={imagesArray.length > 1 ? 'w-full h-auto rounded border' : 'w-1/4 max-w-[25%] h-auto rounded border'}
-                            />
-                          );
-                        })}
-                      </div>
-                    )}
-                  </blockquote>
-                )}
               </div>
             );
           })()}

@@ -4,6 +4,7 @@ import { api } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import PieChart from '../components/PieChart';
 import LinkifyText from '../components/LinkifyText';
+import Board from './Board';
 
 interface Category {
   id: number;
@@ -36,6 +37,7 @@ interface TopTopic {
 
 const Home = () => {
   const { user } = useAuth();
+  const [activeTab, setActiveTab] = useState<'categories' | 'board'>('categories');
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -220,31 +222,63 @@ const Home = () => {
 
   return (
     <div style={{ overflow: 'visible' }}>
-      <div className="flex justify-between items-center mb-6" style={{ overflow: 'visible', position: 'relative' }}>
-        <div className="flex items-center gap-3" style={{ position: 'relative' }}>
-          <div 
-            className="pie-chart-button" 
-            title="Интерактивная статистика форума"
-            style={{
-              position: 'absolute',
-              left: '-70px',
-              top: '50%',
-              transform: 'translateY(-50%)',
-              userSelect: 'none',
-              WebkitUserSelect: 'none',
-              MozUserSelect: 'none',
-              msUserSelect: 'none',
+      {/* Tabs */}
+      <div className="mb-6 border-b">
+        <div className="flex gap-4">
+          <button
+            onClick={() => {
+              setActiveTab('categories');
             }}
+            className={`px-4 py-2 font-semibold transition ${
+              activeTab === 'categories'
+                ? 'border-b-2 border-blue-500 text-blue-600'
+                : 'text-gray-600 hover:text-gray-800'
+            }`}
           >
-            <PieChart 
-              size={50} 
-              data={pieChartData} // Случайные пропорции от 10 до 50 процентов
-              colors={['#3b82f6', '#10b981', '#ef4444']} // Синий, зеленый, красный - цвета форума
-              className="pie-chart"
-            />
-          </div>
-          <h1 className="text-3xl font-bold">Категории форума</h1>
+            По категориям
+          </button>
+          <button
+            onClick={() => {
+              setActiveTab('board');
+            }}
+            className={`px-4 py-2 font-semibold transition ${
+              activeTab === 'board'
+                ? 'border-b-2 border-blue-500 text-blue-600'
+                : 'text-gray-600 hover:text-gray-800'
+            }`}
+          >
+            Бордом
+          </button>
         </div>
+      </div>
+
+      {activeTab === 'categories' ? (
+        <>
+          <div className="flex justify-between items-center mb-6" style={{ overflow: 'visible', position: 'relative' }}>
+            <div className="flex items-center gap-3" style={{ position: 'relative' }}>
+              <div 
+                className="pie-chart-button" 
+                title="Интерактивная статистика форума"
+                style={{
+                  position: 'absolute',
+                  left: '-70px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  userSelect: 'none',
+                  WebkitUserSelect: 'none',
+                  MozUserSelect: 'none',
+                  msUserSelect: 'none',
+                }}
+              >
+                <PieChart 
+                  size={50} 
+                  data={pieChartData} // Случайные пропорции от 10 до 50 процентов
+                  colors={['#3b82f6', '#10b981', '#ef4444']} // Синий, зеленый, красный - цвета форума
+                  className="pie-chart"
+                />
+              </div>
+              <h1 className="text-3xl font-bold">Категории форума</h1>
+            </div>
         {isAdmin && (
           <button
             onClick={() => setShowForm(!showForm)}
@@ -453,6 +487,10 @@ const Home = () => {
             </div>
           ))}
         </div>
+      )}
+        </>
+      ) : (
+        <Board />
       )}
     </div>
   );
