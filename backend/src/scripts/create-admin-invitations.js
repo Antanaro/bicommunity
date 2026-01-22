@@ -1,7 +1,16 @@
-import { pool } from '../config/database';
-import crypto from 'crypto';
+const { Pool } = require('pg');
+const crypto = require('crypto');
+require('dotenv').config();
 
-const generateInviteCode = (): string => {
+const pool = new Pool({
+  host: process.env.DB_HOST || 'postgres',
+  port: parseInt(process.env.DB_PORT || '5432'),
+  database: process.env.DB_NAME || 'forum_db',
+  user: process.env.DB_USER || 'postgres',
+  password: process.env.DB_PASSWORD || 'postgres',
+});
+
+const generateInviteCode = () => {
   return crypto.randomBytes(4).toString('hex');
 };
 
@@ -12,7 +21,7 @@ const createAdminInvitations = async () => {
     const count = countArg ? parseInt(countArg) : 5; // По умолчанию 5
 
     if (isNaN(count) || count <= 0) {
-      console.log('❌ Неверное количество. Используйте: npx ts-node src/scripts/create-admin-invitations.ts [количество]');
+      console.log('❌ Неверное количество. Используйте: node src/scripts/create-admin-invitations.js [количество]');
       process.exit(1);
     }
 
@@ -51,7 +60,7 @@ const createAdminInvitations = async () => {
       );
       
       console.log('\nСуществующие коды:');
-      codesResult.rows.forEach((row: any) => {
+      codesResult.rows.forEach((row) => {
         const status = row.used_by_id ? `использован (${row.used_by_username})` : 'доступен';
         console.log(`  - ${row.code} [${status}]`);
       });
@@ -60,9 +69,9 @@ const createAdminInvitations = async () => {
     // Создаём новые приглашения
     console.log(`\n📝 Создаю ${count} новых приглашений для администратора...\n`);
     
-    const codes: string[] = [];
+    const codes = [];
     for (let i = 0; i < count; i++) {
-      let code: string;
+      let code;
       let attempts = 0;
       do {
         code = generateInviteCode();
