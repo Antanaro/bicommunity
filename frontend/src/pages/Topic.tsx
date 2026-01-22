@@ -441,6 +441,8 @@ const Topic = () => {
       created_at: new Date().toISOString(),
       author_id: user.id,
       parent_id: parentId,
+      parent_author_name: parentId ? topic.posts.find(p => p.id === parentId)?.author_name || null : null,
+      parent_author_avatar: parentId ? topic.posts.find(p => p.id === parentId)?.author_avatar || null : null,
       images: [],
     };
 
@@ -471,7 +473,7 @@ const Topic = () => {
       const response = await api.post('/posts', {
         content: content,
         topic_id: id,
-        parent_id: parentId || undefined,
+        parent_id: parentId ?? undefined,
         images: imageUrls,
       });
 
@@ -665,7 +667,7 @@ const Topic = () => {
       // Revert optimistic update on error
       setReactions((prev) => {
         const newMap = new Map(prev);
-        newMap.set(postId, currentReaction);
+        newMap.set(postId, currentReaction ?? null);
         return newMap;
       });
       console.error('Error reacting to post:', error);

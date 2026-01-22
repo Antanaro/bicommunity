@@ -387,7 +387,7 @@ const Board = () => {
         const allPostIds: number[] = [];
         for (const topic of topicsWithPosts) {
           if (topic.posts) {
-            allPostIds.push(...topic.posts.map(p => p.id));
+            allPostIds.push(...topic.posts.map((p: Post) => p.id));
           }
         }
 
@@ -519,7 +519,7 @@ const Board = () => {
       // Revert optimistic update on error
       setReactions((prev) => {
         const newMap = new Map(prev);
-        newMap.set(postId, currentReaction);
+        newMap.set(postId, currentReaction ?? null);
         return newMap;
       });
       console.error('Error reacting to post:', error);
@@ -602,7 +602,7 @@ const Board = () => {
       const response = await api.post('/posts', {
         content: content,
         topic_id: topicId,
-        parent_id: parentId ? parentId : undefined,
+        parent_id: parentId ?? undefined,
         images: imageUrls,
       });
 
