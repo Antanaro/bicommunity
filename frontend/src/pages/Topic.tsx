@@ -31,6 +31,7 @@ interface PostComponentProps {
   onReply: (postId: number) => void;
   level: number;
   allPosts: Post[];
+  getGlobalId: (postId: number) => number;
 }
 
 // Avatar component
@@ -82,21 +83,12 @@ const PostComponent = ({
   onReply,
   level,
   allPosts,
+  getGlobalId,
 }: PostComponentProps) => {
   const [showTooltip, setShowTooltip] = useState(false);
   const [tooltipPost, setTooltipPost] = useState<Post | null>(null);
   const parentPost = post.parent_id ? allPosts.find((p) => p.id === post.parent_id) : null;
   const userReaction = reactions.get(post.id) || null;
-  
-  // Get global ID from map (sequential across entire forum)
-  const getGlobalId = (postId: number) => {
-    return globalIdMap.get(`post-${postId}`) || 0;
-  };
-  
-  const getTopicGlobalId = () => {
-    if (!topic) return 0;
-    return globalIdMap.get(`topic-${topic.id}`) || 0;
-  };
   
   const handleIdClick = (e: React.MouseEvent, targetId: number) => {
     e.preventDefault();
@@ -258,7 +250,7 @@ const PostComponent = ({
       </div>
       {post.replies.length > 0 && (
         <div className="mt-2 space-y-2">
-          {post.replies.map((reply) => (
+              {post.replies.map((reply) => (
             <PostComponent
               key={reply.id}
               post={reply}
@@ -268,6 +260,7 @@ const PostComponent = ({
               onReply={onReply}
               level={level + 1}
               allPosts={allPosts}
+              getGlobalId={getGlobalId}
             />
           ))}
         </div>
@@ -612,7 +605,7 @@ const Topic = () => {
             <h1 className="text-3xl font-bold">{topic.title}</h1>
             <span className="text-blue-600 font-mono text-lg cursor-pointer hover:underline"
                   title="Ссылка на тему">
-              #{getTopicGlobalId()}
+              #{globalIdMap.get(`topic-${topic.id}`) || 0}
             </span>
           </div>
           {isAdmin && (
@@ -674,6 +667,7 @@ const Topic = () => {
               onReply={handleReply}
               level={0}
               allPosts={topic.posts}
+              getGlobalId={(postId: number) => globalIdMap.get(`post-${postId}`) || 0}
             />
           ))
         )}
