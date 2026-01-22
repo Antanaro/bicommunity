@@ -27,6 +27,10 @@ dist/
 build/
 *.tsbuildinfo
 
+# Compiled TypeScript files (keep .ts, ignore .js in src)
+backend/src/**/*.js
+!backend/src/**/*.config.js
+
 # IDE and editor files
 .vscode/
 .idea/

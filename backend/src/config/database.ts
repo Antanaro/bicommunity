@@ -1,7 +1,11 @@
 import { Pool } from 'pg';
 import dotenv from 'dotenv';
+import path from 'path';
 
-dotenv.config();
+// Load .env from project root
+// In dev: __dirname = backend/src/config, path = ../../../.env = root/.env
+// In prod: __dirname = backend/dist/config, path = ../../../.env = root/.env
+dotenv.config({ path: path.join(__dirname, '../../../.env') });
 
 export const pool = new Pool({
   host: process.env.DB_HOST || '127.0.0.1',

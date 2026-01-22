@@ -10,7 +10,10 @@ import fs from 'fs';
 import path from 'path';
 import https from 'https';
 
-dotenv.config();
+// Load .env from project root
+// In dev: __dirname = backend/src/services, path = ../../../.env = root/.env
+// In prod: __dirname = backend/dist/services, path = ../../../.env = root/.env
+dotenv.config({ path: path.join(__dirname, '../../../.env') });
 
 interface MediaGroupMessage {
   msg: TelegramBot.Message;

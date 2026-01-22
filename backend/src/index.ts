@@ -12,7 +12,10 @@ import invitationsRoutes from './routes/invitations';
 import { telegramBotService } from './services/telegram-bot';
 import path from 'path';
 
-dotenv.config();
+// Load .env from project root
+// In dev: __dirname = backend/src, path = ../../.env = root/.env
+// In prod: __dirname = backend/dist, path = ../../.env = root/.env
+dotenv.config({ path: path.join(__dirname, '../../.env') });
 
 const app = express();
 const PORT = process.env.PORT || 5000;

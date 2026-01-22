@@ -11,8 +11,12 @@ import { TelegramClient } from 'telegram';
 import { StringSession } from 'telegram/sessions';
 import * as readline from 'readline';
 import dotenv from 'dotenv';
+import path from 'path';
 
-dotenv.config();
+// Load .env from project root
+// In dev: __dirname = backend/src/scripts, path = ../../../.env = root/.env
+// In prod: __dirname = backend/dist/scripts, path = ../../../.env = root/.env
+dotenv.config({ path: path.join(__dirname, '../../../.env') });
 
 const rl = readline.createInterface({
   input: process.stdin,
