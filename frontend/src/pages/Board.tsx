@@ -168,11 +168,11 @@ const PostComponent = ({
         </div>
       </div>
       {post.parent_id && (
-        <div className="mb-2 text-xs text-gray-600">
+        <div className="mb-2 text-xs text-gray-600 relative">
           Ответ на{' '}
           <button
             onClick={(e) => handleIdClick(e, post.parent_id!)}
-            className="text-blue-600 hover:underline font-mono"
+            className="text-blue-600 hover:underline font-mono relative"
             onMouseEnter={() => {
               const targetPost = allPosts.find(p => p.id === post.parent_id);
               if (targetPost) {
@@ -184,6 +184,37 @@ const PostComponent = ({
           >
             #{getGlobalIdForPost(post.parent_id)}
           </button>
+          {showTooltip && tooltipPost && tooltipPost.id === post.parent_id && (
+            <div 
+              className="absolute bg-white border border-gray-300 rounded-lg shadow-lg p-3 max-w-md z-50"
+              style={{
+                left: '100%',
+                top: '0',
+                marginLeft: '10px',
+              }}
+              onMouseEnter={() => setShowTooltip(true)}
+              onMouseLeave={() => setShowTooltip(false)}
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <Avatar avatarUrl={tooltipPost.author_avatar} username={tooltipPost.author_name} size="sm" />
+                <div>
+                  <span className="font-semibold text-sm">{tooltipPost.author_name}</span>
+                  <div className="text-xs text-gray-500">
+                    {new Date(tooltipPost.created_at).toLocaleString('ru-RU')}
+                  </div>
+                </div>
+              </div>
+              <p className="text-sm whitespace-pre-wrap line-clamp-4">
+                <LinkifyText text={tooltipPost.content} />
+              </p>
+              <button
+                onClick={() => setShowTooltip(false)}
+                className="mt-2 text-xs text-blue-600 hover:underline"
+              >
+                Закрыть
+              </button>
+            </div>
+          )}
         </div>
       )}
       <div className="prose max-w-none text-sm">
@@ -208,37 +239,6 @@ const PostComponent = ({
           </div>
         )}
       </div>
-      {showTooltip && tooltipPost && (
-        <div 
-          className="fixed bg-white border border-gray-300 rounded-lg shadow-lg p-3 max-w-md z-50"
-          style={{
-            left: '50%',
-            top: '50%',
-            transform: 'translate(-50%, -50%)',
-          }}
-          onMouseEnter={() => setShowTooltip(true)}
-          onMouseLeave={() => setShowTooltip(false)}
-        >
-          <div className="flex items-center gap-2 mb-2">
-            <Avatar avatarUrl={tooltipPost.author_avatar} username={tooltipPost.author_name} size="sm" />
-            <div>
-              <span className="font-semibold text-sm">{tooltipPost.author_name}</span>
-              <div className="text-xs text-gray-500">
-                {new Date(tooltipPost.created_at).toLocaleString('ru-RU')}
-              </div>
-            </div>
-          </div>
-          <p className="text-sm whitespace-pre-wrap line-clamp-4">
-            <LinkifyText text={tooltipPost.content} />
-          </p>
-          <button
-            onClick={() => setShowTooltip(false)}
-            className="mt-2 text-xs text-blue-600 hover:underline"
-          >
-            Закрыть
-          </button>
-        </div>
-      )}
     </div>
   );
 };
@@ -256,13 +256,76 @@ const Board = () => {
   const [newPost, setNewPost] = useState('');
   const [selectedImages, setSelectedImages] = useState<File[]>([]);
   const [uploadingImages, setUploadingImages] = useState(false);
+  const [globalIdMap, setGlobalIdMap] = useState<Map<string, number>>(new Map()); // 'topic-{id}' or 'post-{id}' -> globalId
 
   const topicsPerPage = 10;
   const postsPerTopic = 10;
 
   useEffect(() => {
+    fetchGlobalIdMap();
     fetchTopics();
   }, [currentPage]);
+
+  // Fetch all topics and posts to create global ID map
+  const fetchGlobalIdMap = async () => {
+    try {
+      const allTopicsResponse = await api.get('/topics');
+      const allTopics = allTopicsResponse.data;
+      
+      // Fetch all posts for all topics
+      const allTopicsWithPosts = await Promise.all(
+        allTopics.map(async (topic: any) => {
+          try {
+            const topicResponse = await api.get(`/topics/${topic.id}`);
+            return topicResponse.data;
+          } catch (error) {
+            return { ...topic, posts: [] };
+          }
+        })
+      );
+
+      // Create array of all items (topics + posts) sorted by creation date
+      const allItems: Array<{ type: 'topic' | 'post'; id: number; topicId?: number; created_at: string }> = [];
+      
+      for (const topic of allTopicsWithPosts) {
+        allItems.push({
+          type: 'topic',
+          id: topic.id,
+          created_at: topic.created_at,
+        });
+        
+        if (topic.posts) {
+          for (const post of topic.posts) {
+            allItems.push({
+              type: 'post',
+              id: post.id,
+              topicId: topic.id,
+              created_at: post.created_at,
+            });
+          }
+        }
+      }
+
+      // Sort by creation date
+      allItems.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+
+      // Create global ID map
+      const idMap = new Map<string, number>();
+      let globalId = 1;
+      
+      for (const item of allItems) {
+        if (item.type === 'topic') {
+          idMap.set(`topic-${item.id}`, globalId++);
+        } else {
+          idMap.set(`post-${item.id}`, globalId++);
+        }
+      }
+
+      setGlobalIdMap(idMap);
+    } catch (error) {
+      console.error('Error fetching global ID map:', error);
+    }
+  };
 
   const fetchTopics = async () => {
     try {
@@ -444,29 +507,14 @@ const Board = () => {
     setSelectedImages([]);
   };
 
-  // Calculate global IDs (sequential across all topics and posts on current page)
-  // This creates a continuous numbering: Topic #1, Post #2, Post #3, Topic #4, etc.
+  // Get global ID from map (sequential across entire forum)
   const getGlobalId = (topicId: number, postId: number | null, isTopic: boolean) => {
-    let globalId = 1;
-    
-    for (const topic of topics) {
-      if (isTopic && topic.id === topicId) {
-        return globalId;
-      }
-      globalId++;
-      
-      // Count all posts in topic, not just visible ones
-      if (topic.posts && topic.posts.length > 0) {
-        for (const post of topic.posts) {
-          if (!isTopic && post.id === postId) {
-            return globalId;
-          }
-          globalId++;
-        }
-      }
+    if (isTopic) {
+      return globalIdMap.get(`topic-${topicId}`) || 0;
+    } else if (postId) {
+      return globalIdMap.get(`post-${postId}`) || 0;
     }
-    
-    return globalId;
+    return 0;
   };
 
   if (loading) {
@@ -552,6 +600,21 @@ const Board = () => {
                     </div>
                   </div>
 
+                  {/* Expand/Collapse button - moved under topic */}
+                  {hasMorePosts && (
+                    <div className="mb-4">
+                      <button
+                        onClick={() => toggleTopicExpansion(topic.id)}
+                        className="text-blue-600 hover:underline text-sm"
+                      >
+                        {isExpanded 
+                          ? `Свернуть (показано ${allPosts.length} из ${allPosts.length})`
+                          : `Развернуть (показано ${visiblePosts.length} из ${allPosts.length}, скрыто ${allPosts.length - visiblePosts.length})`
+                        }
+                      </button>
+                    </div>
+                  )}
+
                   {/* Posts */}
                   <div className="space-y-2">
                     {visiblePosts.map((post) => {
@@ -575,19 +638,6 @@ const Board = () => {
                       );
                     })}
                   </div>
-
-                  {/* Expand/Collapse button */}
-                  {hasMorePosts && (
-                    <button
-                      onClick={() => toggleTopicExpansion(topic.id)}
-                      className="mt-4 text-blue-600 hover:underline text-sm"
-                    >
-                      {isExpanded 
-                        ? `Свернуть (показано ${allPosts.length} из ${allPosts.length})`
-                        : `Развернуть (показано ${visiblePosts.length} из ${allPosts.length}, скрыто ${allPosts.length - visiblePosts.length})`
-                      }
-                    </button>
-                  )}
 
                   {/* Reply Form */}
                   {user && replyingTo?.topicId === topic.id && (

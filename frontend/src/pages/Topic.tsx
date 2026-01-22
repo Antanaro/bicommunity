@@ -88,10 +88,14 @@ const PostComponent = ({
   const parentPost = post.parent_id ? allPosts.find((p) => p.id === post.parent_id) : null;
   const userReaction = reactions.get(post.id) || null;
   
-  // Get global ID for post (index in allPosts array + 1, since topic is #0)
+  // Get global ID from map (sequential across entire forum)
   const getGlobalId = (postId: number) => {
-    const index = allPosts.findIndex(p => p.id === postId);
-    return index + 1; // Topic is #0, first post is #1
+    return globalIdMap.get(`post-${postId}`) || 0;
+  };
+  
+  const getTopicGlobalId = () => {
+    if (!topic) return 0;
+    return globalIdMap.get(`topic-${topic.id}`) || 0;
   };
   
   const handleIdClick = (e: React.MouseEvent, targetId: number) => {
@@ -112,11 +116,11 @@ const PostComponent = ({
       >
         {post.parent_id && parentPost && (
           <div className="mb-3">
-            <div className="text-sm text-gray-600 mb-2">
+            <div className="text-sm text-gray-600 mb-2 relative">
               Ответ на{' '}
               <button
                 onClick={(e) => handleIdClick(e, post.parent_id!)}
-                className="text-blue-600 hover:underline font-mono"
+                className="text-blue-600 hover:underline font-mono relative"
                 onMouseEnter={() => {
                   const targetPost = allPosts.find(p => p.id === post.parent_id);
                   if (targetPost) {
@@ -128,6 +132,47 @@ const PostComponent = ({
               >
                 #{getGlobalId(post.parent_id)}
               </button>
+              {showTooltip && tooltipPost && tooltipPost.id === post.parent_id && (
+                <div 
+                  className="absolute bg-white border border-gray-300 rounded-lg shadow-lg p-3 max-w-md z-50"
+                  style={{
+                    left: '100%',
+                    top: '0',
+                    marginLeft: '10px',
+                  }}
+                  onMouseEnter={() => setShowTooltip(true)}
+                  onMouseLeave={() => setShowTooltip(false)}
+                >
+                  <div className="flex items-center gap-2 mb-2">
+                    <Avatar avatarUrl={tooltipPost.author_avatar} username={tooltipPost.author_name} size="sm" />
+                    <div>
+                      <span className="font-semibold text-sm">{tooltipPost.author_name}</span>
+                      <div className="text-xs text-gray-500">
+                        {new Date(tooltipPost.created_at).toLocaleString('ru-RU')}
+                      </div>
+                    </div>
+                    <span className="text-blue-600 font-mono text-xs">#{getGlobalId(tooltipPost.id)}</span>
+                  </div>
+                  <p className="text-sm whitespace-pre-wrap line-clamp-4">
+                    <LinkifyText text={tooltipPost.content} />
+                  </p>
+                  {tooltipPost.images && tooltipPost.images.length > 0 && (
+                    <div className="mt-2">
+                      <img
+                        src={tooltipPost.images[0].startsWith('http') ? tooltipPost.images[0] : (import.meta.env.VITE_API_URL || '') + tooltipPost.images[0]}
+                        alt="Preview"
+                        className="w-20 h-20 object-cover rounded border"
+                      />
+                    </div>
+                  )}
+                  <button
+                    onClick={() => setShowTooltip(false)}
+                    className="mt-2 text-xs text-blue-600 hover:underline"
+                  >
+                    Закрыть
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -211,47 +256,6 @@ const PostComponent = ({
           )}
         </div>
       </div>
-      {showTooltip && tooltipPost && (
-        <div 
-          className="fixed bg-white border border-gray-300 rounded-lg shadow-lg p-3 max-w-md z-50"
-          style={{
-            left: '50%',
-            top: '50%',
-            transform: 'translate(-50%, -50%)',
-          }}
-          onMouseEnter={() => setShowTooltip(true)}
-          onMouseLeave={() => setShowTooltip(false)}
-        >
-          <div className="flex items-center gap-2 mb-2">
-            <Avatar avatarUrl={tooltipPost.author_avatar} username={tooltipPost.author_name} size="sm" />
-            <div>
-              <span className="font-semibold text-sm">{tooltipPost.author_name}</span>
-              <div className="text-xs text-gray-500">
-                {new Date(tooltipPost.created_at).toLocaleString('ru-RU')}
-              </div>
-            </div>
-            <span className="text-blue-600 font-mono text-xs">#{getGlobalId(tooltipPost.id)}</span>
-          </div>
-          <p className="text-sm whitespace-pre-wrap line-clamp-4">
-            <LinkifyText text={tooltipPost.content} />
-          </p>
-          {tooltipPost.images && tooltipPost.images.length > 0 && (
-            <div className="mt-2">
-              <img
-                src={tooltipPost.images[0].startsWith('http') ? tooltipPost.images[0] : (import.meta.env.VITE_API_URL || '') + tooltipPost.images[0]}
-                alt="Preview"
-                className="w-20 h-20 object-cover rounded border"
-              />
-            </div>
-          )}
-          <button
-            onClick={() => setShowTooltip(false)}
-            className="mt-2 text-xs text-blue-600 hover:underline"
-          >
-            Закрыть
-          </button>
-        </div>
-      )}
       {post.replies.length > 0 && (
         <div className="mt-2 space-y-2">
           {post.replies.map((reply) => (
@@ -297,12 +301,75 @@ const Topic = () => {
   const [reactions, setReactions] = useState<Map<number, number | null>>(new Map());
   const [selectedImages, setSelectedImages] = useState<File[]>([]);
   const [uploadingImages, setUploadingImages] = useState(false);
+  const [globalIdMap, setGlobalIdMap] = useState<Map<string, number>>(new Map());
 
   useEffect(() => {
     if (id) {
+      fetchGlobalIdMap();
       fetchTopic();
     }
   }, [id]);
+
+  // Fetch all topics and posts to create global ID map
+  const fetchGlobalIdMap = async () => {
+    try {
+      const allTopicsResponse = await api.get('/topics');
+      const allTopics = allTopicsResponse.data;
+      
+      // Fetch all posts for all topics
+      const allTopicsWithPosts = await Promise.all(
+        allTopics.map(async (topic: any) => {
+          try {
+            const topicResponse = await api.get(`/topics/${topic.id}`);
+            return topicResponse.data;
+          } catch (error) {
+            return { ...topic, posts: [] };
+          }
+        })
+      );
+
+      // Create array of all items (topics + posts) sorted by creation date
+      const allItems: Array<{ type: 'topic' | 'post'; id: number; topicId?: number; created_at: string }> = [];
+      
+      for (const topic of allTopicsWithPosts) {
+        allItems.push({
+          type: 'topic',
+          id: topic.id,
+          created_at: topic.created_at,
+        });
+        
+        if (topic.posts) {
+          for (const post of topic.posts) {
+            allItems.push({
+              type: 'post',
+              id: post.id,
+              topicId: topic.id,
+              created_at: post.created_at,
+            });
+          }
+        }
+      }
+
+      // Sort by creation date
+      allItems.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+
+      // Create global ID map
+      const idMap = new Map<string, number>();
+      let globalId = 1;
+      
+      for (const item of allItems) {
+        if (item.type === 'topic') {
+          idMap.set(`topic-${item.id}`, globalId++);
+        } else {
+          idMap.set(`post-${item.id}`, globalId++);
+        }
+      }
+
+      setGlobalIdMap(idMap);
+    } catch (error) {
+      console.error('Error fetching global ID map:', error);
+    }
+  };
 
   const fetchTopic = async () => {
     try {
@@ -545,7 +612,7 @@ const Topic = () => {
             <h1 className="text-3xl font-bold">{topic.title}</h1>
             <span className="text-blue-600 font-mono text-lg cursor-pointer hover:underline"
                   title="Ссылка на тему">
-              #0
+              #{getTopicGlobalId()}
             </span>
           </div>
           {isAdmin && (
@@ -622,9 +689,8 @@ const Topic = () => {
             const replyingToPost = getReplyingToPost();
             if (!replyingToPost) return null;
             
-            const getGlobalId = (postId: number) => {
-              const index = topic.posts.findIndex(p => p.id === postId);
-              return index + 1; // Topic is #0, first post is #1
+            const getGlobalIdForPost = (postId: number) => {
+              return globalIdMap.get(`post-${postId}`) || 0;
             };
             
             return (
@@ -633,7 +699,7 @@ const Topic = () => {
                   <div className="text-sm text-gray-600">
                     Ответ на{' '}
                     <span className="text-blue-600 font-mono">
-                      #{getGlobalId(replyingToPost.id)}
+                      #{getGlobalIdForPost(replyingToPost.id)}
                     </span>
                     {' '}от {replyingToPost.author_name}
                   </div>
