@@ -257,16 +257,24 @@ const Board = () => {
   const [selectedImages, setSelectedImages] = useState<File[]>([]);
   const [uploadingImages, setUploadingImages] = useState(false);
   const [globalIdMap, setGlobalIdMap] = useState<Map<string, number>>(new Map()); // 'topic-{id}' or 'post-{id}' -> globalId
+  const [globalIdMapLoaded, setGlobalIdMapLoaded] = useState(false);
 
   const topicsPerPage = 10;
   const postsPerTopic = 10;
 
+  // Load global ID map only once on mount
   useEffect(() => {
-    fetchGlobalIdMap();
+    if (!globalIdMapLoaded) {
+      fetchGlobalIdMap();
+      setGlobalIdMapLoaded(true);
+    }
+  }, []);
+
+  useEffect(() => {
     fetchTopics();
   }, [currentPage]);
 
-  // Fetch all topics and posts to create global ID map
+  // Fetch all topics and posts to create global ID map (only once)
   const fetchGlobalIdMap = async () => {
     try {
       const allTopicsResponse = await api.get('/topics');
@@ -327,6 +335,18 @@ const Board = () => {
     }
   };
 
+  // Update global ID map when new post is created
+  const updateGlobalIdMapForNewPost = (postId: number) => {
+    if (globalIdMap.size > 0) {
+      const maxId = Math.max(...Array.from(globalIdMap.values()));
+      setGlobalIdMap(prev => {
+        const newMap = new Map(prev);
+        newMap.set(`post-${postId}`, maxId + 1);
+        return newMap;
+      });
+    }
+  };
+
   const fetchTopics = async () => {
     try {
       setLoading(true);
@@ -362,21 +382,27 @@ const Board = () => {
 
       setTopics(topicsWithPosts);
 
-      // Fetch reactions for all posts
+      // Fetch reactions for all posts in parallel
       if (user) {
-        const reactionsMap = new Map<number, number | null>();
+        const allPostIds: number[] = [];
         for (const topic of topicsWithPosts) {
           if (topic.posts) {
-            for (const post of topic.posts) {
-              try {
-                const reactionResponse = await api.get(`/posts/${post.id}/reaction`);
-                reactionsMap.set(post.id, reactionResponse.data.reaction_type);
-              } catch (error) {
-                reactionsMap.set(post.id, null);
-              }
-            }
+            allPostIds.push(...topic.posts.map(p => p.id));
           }
         }
+
+        // Fetch all reactions in parallel
+        const reactionPromises = allPostIds.map(postId =>
+          api.get(`/posts/${postId}/reaction`)
+            .then(res => ({ postId, reactionType: res.data.reaction_type }))
+            .catch(() => ({ postId, reactionType: null }))
+        );
+
+        const reactionResults = await Promise.all(reactionPromises);
+        const reactionsMap = new Map<number, number | null>();
+        reactionResults.forEach(({ postId, reactionType }) => {
+          reactionsMap.set(postId, reactionType);
+        });
         setReactions(reactionsMap);
       }
     } catch (error) {
@@ -415,11 +441,58 @@ const Board = () => {
       return;
     }
 
+    const currentReaction = reactions.get(postId);
+    const isRemoving = currentReaction === reactionType;
+
+    // Optimistic update
+    setReactions((prev) => {
+      const newMap = new Map(prev);
+      if (isRemoving) {
+        newMap.set(postId, null);
+      } else {
+        newMap.set(postId, reactionType);
+      }
+      return newMap;
+    });
+
+    // Update post counts optimistically
+    setTopics(prevTopics => prevTopics.map(topic => ({
+      ...topic,
+      posts: topic.posts?.map(post => {
+        if (post.id === postId) {
+          if (isRemoving) {
+            // Removing reaction
+            if (currentReaction === 1) {
+              return { ...post, upvote_count: Math.max(0, post.upvote_count - 1) };
+            } else if (currentReaction === -1) {
+              return { ...post, downvote_count: Math.max(0, post.downvote_count - 1) };
+            }
+          } else {
+            // Adding/changing reaction
+            if (currentReaction === 1) {
+              return { ...post, upvote_count: Math.max(0, post.upvote_count - 1), downvote_count: reactionType === -1 ? post.downvote_count + 1 : post.downvote_count };
+            } else if (currentReaction === -1) {
+              return { ...post, upvote_count: reactionType === 1 ? post.upvote_count + 1 : post.upvote_count, downvote_count: Math.max(0, post.downvote_count - 1) };
+            } else {
+              // No previous reaction
+              if (reactionType === 1) {
+                return { ...post, upvote_count: post.upvote_count + 1 };
+              } else {
+                return { ...post, downvote_count: post.downvote_count + 1 };
+              }
+            }
+          }
+        }
+        return post;
+      }) || [],
+    })));
+
     try {
       const response = await api.post(`/posts/${postId}/react`, {
         reaction_type: reactionType,
       });
 
+      // Update with server response
       setReactions((prev) => {
         const newMap = new Map(prev);
         if (response.data.removed) {
@@ -430,8 +503,25 @@ const Board = () => {
         return newMap;
       });
 
-      await fetchTopics();
+      // Refresh only the affected topic (in background, don't block UI)
+      const topicWithPost = topics.find(t => t.posts?.some(p => p.id === postId));
+      if (topicWithPost) {
+        api.get(`/topics/${topicWithPost.id}`).then(topicResponse => {
+          setTopics(prevTopics => prevTopics.map(topic => {
+            if (topic.id === topicWithPost.id) {
+              return topicResponse.data;
+            }
+            return topic;
+          }));
+        }).catch(err => console.error('Error refreshing topic:', err));
+      }
     } catch (error: any) {
+      // Revert optimistic update on error
+      setReactions((prev) => {
+        const newMap = new Map(prev);
+        newMap.set(postId, currentReaction);
+        return newMap;
+      });
       console.error('Error reacting to post:', error);
       if (error.response?.data?.error) {
         alert(error.response.data.error + (error.response.data.hint ? '\n\n' + error.response.data.hint : ''));
@@ -462,27 +552,102 @@ const Board = () => {
     e.preventDefault();
     if (!user || !newPost.trim() || !replyingTo) return;
 
-    try {
+    const topicId = replyingTo.topicId;
+    const content = newPost;
+    const parentId = replyingTo.postId;
+    const imagesToUpload = [...selectedImages];
+
+    // Optimistic update - immediately add post to UI
+    const optimisticPost: Post = {
+      id: Date.now(), // Temporary ID
+      content: content,
+      author_name: user.username || 'Вы',
+      author_avatar: user.avatar_url || null,
+      upvote_count: 0,
+      downvote_count: 0,
+      created_at: new Date().toISOString(),
+      author_id: user.id,
+      parent_id: parentId,
+      images: [],
+    };
+
+    // Update topics optimistically
+    setTopics(prevTopics => prevTopics.map(topic => {
+      if (topic.id === topicId) {
+        return {
+          ...topic,
+          posts: [...(topic.posts || []), optimisticPost],
+        };
+      }
+      return topic;
+    }));
+
+    // Clear form immediately
+    setNewPost('');
+    setReplyingTo(null);
+    setSelectedImages([]);
+    
+    // Set uploading state only if there are images to upload
+    if (imagesToUpload.length > 0) {
       setUploadingImages(true);
+    }
+
+    try {
       let imageUrls: string[] = [];
 
-      if (selectedImages.length > 0) {
-        imageUrls = await uploadImages(selectedImages);
+      if (imagesToUpload.length > 0) {
+        imageUrls = await uploadImages(imagesToUpload);
       }
 
-      await api.post('/posts', {
-        content: newPost,
-        topic_id: replyingTo.topicId,
-        parent_id: replyingTo.postId ? replyingTo.postId : undefined,
+      const response = await api.post('/posts', {
+        content: content,
+        topic_id: topicId,
+        parent_id: parentId ? parentId : undefined,
         images: imageUrls,
       });
-      
-      setNewPost('');
-      setSelectedImages([]);
-      setReplyingTo(null);
-      await fetchTopics();
+
+      // Update with real post data
+      setTopics(prevTopics => prevTopics.map(topic => {
+        if (topic.id === topicId) {
+          const realPost: Post = {
+            ...response.data,
+            author_name: user.username || 'Вы',
+            author_avatar: user.avatar_url || null,
+            upvote_count: 0,
+            downvote_count: 0,
+          };
+          return {
+            ...topic,
+            posts: topic.posts?.map(p => p.id === optimisticPost.id ? realPost : p) || [realPost],
+          };
+        }
+        return topic;
+      }));
+
+      // Update global ID map with new post
+      updateGlobalIdMapForNewPost(response.data.id);
+
+      // Refresh only the affected topic (in background, don't block UI)
+      api.get(`/topics/${topicId}`).then(topicResponse => {
+        setTopics(prevTopics => prevTopics.map(topic => {
+          if (topic.id === topicId) {
+            return topicResponse.data;
+          }
+          return topic;
+        }));
+      }).catch(err => console.error('Error refreshing topic:', err));
     } catch (error) {
       console.error('Error creating post:', error);
+      // Revert optimistic update on error
+      setTopics(prevTopics => prevTopics.map(topic => {
+        if (topic.id === topicId) {
+          return {
+            ...topic,
+            posts: topic.posts?.filter(p => p.id !== optimisticPost.id) || [],
+          };
+        }
+        return topic;
+      }));
       alert('Ошибка при создании сообщения');
     } finally {
       setUploadingImages(false);

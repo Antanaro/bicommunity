@@ -295,10 +295,18 @@ const Topic = () => {
   const [selectedImages, setSelectedImages] = useState<File[]>([]);
   const [uploadingImages, setUploadingImages] = useState(false);
   const [globalIdMap, setGlobalIdMap] = useState<Map<string, number>>(new Map());
+  const [globalIdMapLoaded, setGlobalIdMapLoaded] = useState(false);
+
+  // Load global ID map only once on mount
+  useEffect(() => {
+    if (!globalIdMapLoaded) {
+      fetchGlobalIdMap();
+      setGlobalIdMapLoaded(true);
+    }
+  }, []);
 
   useEffect(() => {
     if (id) {
-      fetchGlobalIdMap();
       fetchTopic();
     }
   }, [id]);
@@ -380,17 +388,22 @@ const Topic = () => {
       }
       setTopic(response.data);
       
-      // Fetch user reactions for all posts
+      // Fetch user reactions for all posts in parallel
       if (user && response.data.posts) {
+        const postIds = response.data.posts.map((p: Post) => p.id);
+        
+        // Fetch all reactions in parallel
+        const reactionPromises = postIds.map((postId: number) =>
+          api.get(`/posts/${postId}/reaction`)
+            .then(res => ({ postId, reactionType: res.data.reaction_type }))
+            .catch(() => ({ postId, reactionType: null }))
+        );
+
+        const reactionResults = await Promise.all(reactionPromises);
         const reactionsMap = new Map<number, number | null>();
-        for (const post of response.data.posts) {
-          try {
-            const reactionResponse = await api.get(`/posts/${post.id}/reaction`);
-            reactionsMap.set(post.id, reactionResponse.data.reaction_type);
-          } catch (error) {
-            reactionsMap.set(post.id, null);
-          }
-        }
+        reactionResults.forEach(({ postId, reactionType }) => {
+          reactionsMap.set(postId, reactionType);
+        });
         setReactions(reactionsMap);
       }
     } catch (error: any) {
@@ -411,29 +424,96 @@ const Topic = () => {
 
   const handleSubmitPost = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user || !newPost.trim()) return;
+    if (!user || !newPost.trim() || !topic) return;
+
+    const content = newPost;
+    const parentId = replyingTo;
+    const imagesToUpload = [...selectedImages];
+
+    // Optimistic update - immediately add post to UI
+    const optimisticPost: Post = {
+      id: Date.now(), // Temporary ID
+      content: content,
+      author_name: user.username || 'Вы',
+      author_avatar: user.avatar_url || null,
+      upvote_count: 0,
+      downvote_count: 0,
+      created_at: new Date().toISOString(),
+      author_id: user.id,
+      parent_id: parentId,
+      images: [],
+    };
+
+    // Update topic optimistically
+    setTopic({
+      ...topic,
+      posts: [...topic.posts, optimisticPost],
+    });
+
+    // Clear form immediately
+    setNewPost('');
+    setReplyingTo(null);
+    setSelectedImages([]);
+    
+    // Set uploading state only if there are images to upload
+    if (imagesToUpload.length > 0) {
+      setUploadingImages(true);
+    }
 
     try {
-      setUploadingImages(true);
       let imageUrls: string[] = [];
 
       // Upload images if any
-      if (selectedImages.length > 0) {
-        imageUrls = await uploadImages(selectedImages);
+      if (imagesToUpload.length > 0) {
+        imageUrls = await uploadImages(imagesToUpload);
       }
 
-      await api.post('/posts', {
-        content: newPost,
+      const response = await api.post('/posts', {
+        content: content,
         topic_id: id,
-        parent_id: replyingTo || undefined,
+        parent_id: parentId || undefined,
         images: imageUrls,
       });
-      setNewPost('');
-      setSelectedImages([]);
-      setReplyingTo(null);
-      fetchTopic();
+
+      // Update with real post data
+      const realPost: Post = {
+        ...response.data,
+        author_name: user.username || 'Вы',
+        author_avatar: user.avatar_url || null,
+        upvote_count: parseInt(response.data.upvote_count) || 0,
+        downvote_count: parseInt(response.data.downvote_count) || 0,
+      };
+
+      setTopic(prevTopic => {
+        if (!prevTopic) return prevTopic;
+        return {
+          ...prevTopic,
+          posts: prevTopic.posts.map(p => p.id === optimisticPost.id ? realPost : p),
+        };
+      });
+
+      // Update global ID map with new post
+      if (globalIdMap.size > 0) {
+        const maxId = Math.max(...Array.from(globalIdMap.values()));
+        setGlobalIdMap(prev => {
+          const newMap = new Map(prev);
+          newMap.set(`post-${response.data.id}`, maxId + 1);
+          return newMap;
+        });
+      }
+
+      // Refresh topic to get updated data
+      await fetchTopic();
     } catch (error) {
       console.error('Error creating post:', error);
+      // Revert optimistic update on error
+      setTopic(prevTopic => {
+        if (!prevTopic) return prevTopic;
+        return {
+          ...prevTopic,
+          posts: prevTopic.posts.filter(p => p.id !== optimisticPost.id),
+        };
+      });
       alert('Ошибка при создании сообщения');
     } finally {
       setUploadingImages(false);
@@ -509,16 +589,66 @@ const Topic = () => {
   };
 
   const handleReact = async (postId: number, reactionType: number) => {
-    if (!user) {
+    if (!user || !topic) {
       alert('Необходимо войти в систему');
       return;
     }
+
+    const currentReaction = reactions.get(postId);
+    const isRemoving = currentReaction === reactionType;
+
+    // Optimistic update
+    setReactions((prev) => {
+      const newMap = new Map(prev);
+      if (isRemoving) {
+        newMap.set(postId, null);
+      } else {
+        newMap.set(postId, reactionType);
+      }
+      return newMap;
+    });
+
+    // Update post counts optimistically
+    setTopic(prevTopic => {
+      if (!prevTopic) return prevTopic;
+      return {
+        ...prevTopic,
+        posts: prevTopic.posts.map(post => {
+          if (post.id === postId) {
+            if (isRemoving) {
+              // Removing reaction
+              if (currentReaction === 1) {
+                return { ...post, upvote_count: Math.max(0, post.upvote_count - 1) };
+              } else if (currentReaction === -1) {
+                return { ...post, downvote_count: Math.max(0, post.downvote_count - 1) };
+              }
+            } else {
+              // Adding/changing reaction
+              if (currentReaction === 1) {
+                return { ...post, upvote_count: Math.max(0, post.upvote_count - 1), downvote_count: reactionType === -1 ? post.downvote_count + 1 : post.downvote_count };
+              } else if (currentReaction === -1) {
+                return { ...post, upvote_count: reactionType === 1 ? post.upvote_count + 1 : post.upvote_count, downvote_count: Math.max(0, post.downvote_count - 1) };
+              } else {
+                // No previous reaction
+                if (reactionType === 1) {
+                  return { ...post, upvote_count: post.upvote_count + 1 };
+                } else {
+                  return { ...post, downvote_count: post.downvote_count + 1 };
+                }
+              }
+            }
+          }
+          return post;
+        }),
+      };
+    });
 
     try {
       const response = await api.post(`/posts/${postId}/react`, {
         reaction_type: reactionType,
       });
 
+      // Update with server response
       setReactions((prev) => {
         const newMap = new Map(prev);
         if (response.data.removed) {
@@ -529,9 +659,15 @@ const Topic = () => {
         return newMap;
       });
 
-      // Immediately update the topic to refresh counters
+      // Refresh topic to get accurate counts
       await fetchTopic();
     } catch (error: any) {
+      // Revert optimistic update on error
+      setReactions((prev) => {
+        const newMap = new Map(prev);
+        newMap.set(postId, currentReaction);
+        return newMap;
+      });
       console.error('Error reacting to post:', error);
       if (error.response?.data?.error) {
         alert(error.response.data.error + (error.response.data.hint ? '\n\n' + error.response.data.hint : ''));
