@@ -78,7 +78,6 @@ interface PostComponentProps {
   reactions: Map<number, number | null>;
   onReact: (postId: number, reactionType: number) => void;
   onReply: (postId: number) => void;
-  topicId: number;
   allPosts: Post[];
   globalId: number;
   getGlobalIdForPost: (postId: number) => number;
@@ -90,7 +89,6 @@ const PostComponent = ({
   reactions,
   onReact,
   onReply,
-  topicId,
   allPosts,
   globalId,
   getGlobalIdForPost,
@@ -175,7 +173,7 @@ const PostComponent = ({
           <button
             onClick={(e) => handleIdClick(e, post.parent_id!)}
             className="text-blue-600 hover:underline font-mono"
-            onMouseEnter={(e) => {
+            onMouseEnter={() => {
               const targetPost = allPosts.find(p => p.id === post.parent_id);
               if (targetPost) {
                 setTooltipPost(targetPost);
@@ -556,7 +554,7 @@ const Board = () => {
 
                   {/* Posts */}
                   <div className="space-y-2">
-                    {visiblePosts.map((post, index) => {
+                    {visiblePosts.map((post) => {
                       const postGlobalId = getGlobalId(topic.id, post.id, false);
                       const getGlobalIdForPost = (postId: number) => {
                         return getGlobalId(topic.id, postId, false);
@@ -569,7 +567,6 @@ const Board = () => {
                             reactions={reactions}
                             onReact={handleReact}
                             onReply={(postId) => handleReply(topic.id, postId)}
-                            topicId={topic.id}
                             allPosts={allPosts}
                             globalId={postGlobalId}
                             getGlobalIdForPost={getGlobalIdForPost}

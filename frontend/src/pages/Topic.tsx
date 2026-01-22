@@ -83,7 +83,6 @@ const PostComponent = ({
   level,
   allPosts,
 }: PostComponentProps) => {
-  const [showQuote, setShowQuote] = useState(true);
   const [showTooltip, setShowTooltip] = useState(false);
   const [tooltipPost, setTooltipPost] = useState<Post | null>(null);
   const parentPost = post.parent_id ? allPosts.find((p) => p.id === post.parent_id) : null;
@@ -118,7 +117,7 @@ const PostComponent = ({
               <button
                 onClick={(e) => handleIdClick(e, post.parent_id!)}
                 className="text-blue-600 hover:underline font-mono"
-                onMouseEnter={(e) => {
+                onMouseEnter={() => {
                   const targetPost = allPosts.find(p => p.id === post.parent_id);
                   if (targetPost) {
                     setTooltipPost(targetPost);
@@ -295,7 +294,6 @@ const Topic = () => {
   const [error, setError] = useState<string | null>(null);
   const [newPost, setNewPost] = useState('');
   const [replyingTo, setReplyingTo] = useState<number | null>(null);
-  const [showQuote, setShowQuote] = useState(true);
   const [reactions, setReactions] = useState<Map<number, number | null>>(new Map());
   const [selectedImages, setSelectedImages] = useState<File[]>([]);
   const [uploadingImages, setUploadingImages] = useState(false);
@@ -397,7 +395,6 @@ const Topic = () => {
 
   const handleReply = (postId: number) => {
     setReplyingTo(postId);
-    setShowQuote(true);
     // Scroll to form
     setTimeout(() => {
       const form = document.getElementById('reply-form');
@@ -415,7 +412,6 @@ const Topic = () => {
     setReplyingTo(null);
     setNewPost('');
     setSelectedImages([]);
-    setShowQuote(true);
   };
 
   const getReplyingToPost = () => {
