@@ -705,12 +705,26 @@ router.get('/users/:id', async (req: Request, res: Response) => {
 // Google OAuth routes
 router.get('/google', (req: Request, res: Response) => {
   const clientId = process.env.GOOGLE_CLIENT_ID;
+  
+  if (!clientId) {
+    console.error('❌ GOOGLE_CLIENT_ID не установлен в переменных окружения');
+    console.error('Проверьте .env файл и docker-compose.yml');
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    return res.redirect(`${frontendUrl}/login?error=${encodeURIComponent('OAuth не настроен: GOOGLE_CLIENT_ID отсутствует')}`);
+  }
+  
   const redirectUri = process.env.GOOGLE_CALLBACK_URL || `${process.env.BACKEND_URL || 'http://localhost:5000'}/api/auth/google/callback`;
   const scope = 'profile email';
   const state = crypto.randomBytes(32).toString('hex');
   
+  console.log('🔐 Google OAuth redirect:', {
+    clientId: clientId.substring(0, 10) + '...',
+    redirectUri,
+    hasCallbackUrl: !!process.env.GOOGLE_CALLBACK_URL
+  });
+  
   // Сохраняем state в cookie для проверки
-  res.cookie('oauth_state', state, { httpOnly: true, maxAge: 600000 }); // 10 минут
+  res.cookie('oauth_state', state, { httpOnly: true, maxAge: 600000, sameSite: 'lax' }); // 10 минут
   
   const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${encodeURIComponent(scope)}&state=${state}`;
   res.redirect(authUrl);
@@ -731,6 +745,12 @@ router.get('/google/callback', async (req: Request, res: Response) => {
     const clientId = process.env.GOOGLE_CLIENT_ID;
     const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
     const redirectUri = process.env.GOOGLE_CALLBACK_URL || `${process.env.BACKEND_URL || 'http://localhost:5000'}/api/auth/google/callback`;
+    
+    if (!clientId || !clientSecret) {
+      throw new Error('OAuth credentials not configured');
+    }
+    
+    console.log('🔄 Google OAuth callback received, exchanging code for token...');
     
     // Обмениваем код на токен
     const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
@@ -783,11 +803,25 @@ router.get('/google/callback', async (req: Request, res: Response) => {
 // Yandex OAuth routes
 router.get('/yandex', (req: Request, res: Response) => {
   const clientId = process.env.YANDEX_CLIENT_ID;
+  
+  if (!clientId) {
+    console.error('❌ YANDEX_CLIENT_ID не установлен в переменных окружения');
+    console.error('Проверьте .env файл и docker-compose.yml');
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    return res.redirect(`${frontendUrl}/login?error=${encodeURIComponent('OAuth не настроен: YANDEX_CLIENT_ID отсутствует')}`);
+  }
+  
   const redirectUri = process.env.YANDEX_CALLBACK_URL || `${process.env.BACKEND_URL || 'http://localhost:5000'}/api/auth/yandex/callback`;
   const state = crypto.randomBytes(32).toString('hex');
   
+  console.log('🔐 Yandex OAuth redirect:', {
+    clientId: clientId.substring(0, 10) + '...',
+    redirectUri,
+    hasCallbackUrl: !!process.env.YANDEX_CALLBACK_URL
+  });
+  
   // Сохраняем state в cookie для проверки
-  res.cookie('oauth_state', state, { httpOnly: true, maxAge: 600000 }); // 10 минут
+  res.cookie('oauth_state', state, { httpOnly: true, maxAge: 600000, sameSite: 'lax' }); // 10 минут
   
   const authUrl = `https://oauth.yandex.ru/authorize?response_type=code&client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${state}`;
   res.redirect(authUrl);
@@ -808,6 +842,12 @@ router.get('/yandex/callback', async (req: Request, res: Response) => {
     const clientId = process.env.YANDEX_CLIENT_ID;
     const clientSecret = process.env.YANDEX_CLIENT_SECRET;
     const redirectUri = process.env.YANDEX_CALLBACK_URL || `${process.env.BACKEND_URL || 'http://localhost:5000'}/api/auth/yandex/callback`;
+    
+    if (!clientId || !clientSecret) {
+      throw new Error('OAuth credentials not configured');
+    }
+    
+    console.log('🔄 Yandex OAuth callback received, exchanging code for token...');
     
     // Обмениваем код на токен
     const tokenResponse = await fetch('https://oauth.yandex.ru/token', {

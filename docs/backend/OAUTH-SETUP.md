@@ -15,48 +15,83 @@ npm run migrate-oauth
 
 1. Перейдите на [Google Cloud Console](https://console.cloud.google.com/)
 2. Создайте новый проект или выберите существующий
-3. Включите Google+ API:
+3. Включите Google OAuth API:
    - Перейдите в "APIs & Services" > "Library"
-   - Найдите "Google+ API" и включите её
-4. Создайте OAuth 2.0 Client ID:
+   - Найдите "Google+ API" (или "People API") и включите её
+   - Также включите "Google Identity Services API"
+4. Настройте OAuth consent screen:
+   - Перейдите в "APIs & Services" > "OAuth consent screen"
+   - Выберите "External" (для тестирования) или "Internal" (для G Suite)
+   - Заполните обязательные поля:
+     - App name: название вашего приложения
+     - User support email: ваш email
+     - Developer contact information: ваш email
+   - Сохраните и продолжите
+5. Создайте OAuth 2.0 Client ID:
    - Перейдите в "APIs & Services" > "Credentials"
    - Нажмите "Create Credentials" > "OAuth client ID"
    - Выберите "Web application"
-   - Добавьте Authorized redirect URIs:
+   - **ВАЖНО:** Добавьте Authorized redirect URIs:
      - Для разработки: `http://localhost:5000/api/auth/google/callback`
-     - Для production: `https://yourdomain.com/api/auth/google/callback`
-5. Скопируйте Client ID и Client Secret
+     - Для production: `https://bicommunity.ru/api/auth/google/callback`
+     - Или используйте ваш домен: `https://yourdomain.com/api/auth/google/callback`
+   - Нажмите "Create"
+6. **Скопируйте Client ID и Client Secret** - они понадобятся для .env файла
 
 ## Шаг 3: Настройка Yandex OAuth
 
 1. Перейдите на [Yandex OAuth](https://oauth.yandex.ru/)
-2. Нажмите "Зарегистрировать новое приложение"
-3. Заполните форму:
-   - Название приложения: ваше название
-   - Платформы: выберите "Веб-сервисы"
-   - Redirect URI:
+2. Войдите в свой аккаунт Yandex
+3. Нажмите "Зарегистрировать новое приложение"
+4. Заполните форму:
+   - **Название приложения:** название вашего приложения (например, "BI Community")
+   - **Описание:** краткое описание (опционально)
+   - **Платформы:** выберите "Веб-сервисы"
+   - **Redirect URI:** ⚠️ **ОЧЕНЬ ВАЖНО** - укажите точно:
      - Для разработки: `http://localhost:5000/api/auth/yandex/callback`
-     - Для production: `https://yourdomain.com/api/auth/yandex/callback`
-   - Права доступа: выберите "Доступ к email адресу" и "Доступ к имени, фамилии и портрету"
-4. Скопируйте ID приложения и Пароль
+     - Для production: `https://bicommunity.ru/api/auth/yandex/callback`
+     - Или ваш домен: `https://yourdomain.com/api/auth/yandex/callback`
+   - **Права доступа:** выберите:
+     - ✅ "Доступ к email адресу" (обязательно)
+     - ✅ "Доступ к имени, фамилии и портрету" (рекомендуется)
+5. Нажмите "Создать приложение"
+6. **Скопируйте ID приложения (Client ID) и Пароль (Client Secret)** - они понадобятся для .env файла
+   - ID приложения - это ваш `YANDEX_CLIENT_ID`
+   - Пароль - это ваш `YANDEX_CLIENT_SECRET`
 
 ## Шаг 4: Настройка переменных окружения
 
-Добавьте следующие переменные в ваш `.env` файл:
+**ВАЖНО:** Откройте файл `.env` в корне проекта (не в папке backend) и добавьте следующие переменные:
 
 ```env
 # Google OAuth
-GOOGLE_CLIENT_ID=your_google_client_id
-GOOGLE_CLIENT_SECRET=your_google_client_secret
-GOOGLE_CALLBACK_URL=http://localhost:5000/api/auth/google/callback
+GOOGLE_CLIENT_ID=ваш_google_client_id_здесь
+GOOGLE_CLIENT_SECRET=ваш_google_client_secret_здесь
+GOOGLE_CALLBACK_URL=https://bicommunity.ru/api/auth/google/callback
 
 # Yandex OAuth
-YANDEX_CLIENT_ID=your_yandex_client_id
-YANDEX_CLIENT_SECRET=your_yandex_client_secret
+YANDEX_CLIENT_ID=ваш_yandex_client_id_здесь
+YANDEX_CLIENT_SECRET=ваш_yandex_client_secret_здесь
+YANDEX_CALLBACK_URL=https://bicommunity.ru/api/auth/yandex/callback
+```
+
+**Для разработки (localhost):**
+```env
+GOOGLE_CALLBACK_URL=http://localhost:5000/api/auth/google/callback
 YANDEX_CALLBACK_URL=http://localhost:5000/api/auth/yandex/callback
 ```
 
-Для production замените `http://localhost:5000` на ваш production URL.
+**Для production:**
+```env
+GOOGLE_CALLBACK_URL=https://bicommunity.ru/api/auth/google/callback
+YANDEX_CALLBACK_URL=https://bicommunity.ru/api/auth/yandex/callback
+```
+
+⚠️ **КРИТИЧЕСКИ ВАЖНО:**
+- Callback URL в `.env` должен **ТОЧНО** совпадать с тем, что указан в настройках OAuth приложения
+- Не должно быть пробелов в начале или конце значений
+- Не используйте кавычки вокруг значений
+- После изменения `.env` перезапустите backend: `docker compose restart backend`
 
 ## Шаг 5: Перезапуск сервера
 
@@ -84,12 +119,39 @@ npm run dev
 ## Устранение неполадок
 
 ### Ошибка "redirect_uri_mismatch"
-- Убедитесь, что redirect URI в настройках OAuth провайдера точно совпадает с URL в `.env` файле
-- Проверьте, что используется правильный протокол (http/https)
+**Причина:** Redirect URI в настройках OAuth не совпадает с URL в `.env`
+**Решение:**
+1. Проверьте, что redirect URI в Google Cloud Console / Yandex OAuth **ТОЧНО** совпадает с `GOOGLE_CALLBACK_URL` / `YANDEX_CALLBACK_URL` в `.env`
+2. Проверьте протокол (http/https) - должен совпадать
+3. Проверьте домен - должен совпадать
+4. Проверьте путь - должен быть `/api/auth/google/callback` или `/api/auth/yandex/callback`
 
-### Ошибка "invalid_client"
-- Проверьте правильность Client ID и Client Secret в `.env` файле
-- Убедитесь, что нет лишних пробелов в значениях
+### Ошибка "invalid_client" или "The OAuth client was not found"
+**Причина:** Неверный Client ID или Client Secret
+**Решение:**
+1. Проверьте, что `GOOGLE_CLIENT_ID` и `GOOGLE_CLIENT_SECRET` правильно скопированы из Google Cloud Console
+2. Проверьте, что `YANDEX_CLIENT_ID` и `YANDEX_CLIENT_SECRET` правильно скопированы из Yandex OAuth
+3. Убедитесь, что нет лишних пробелов в начале или конце значений
+4. Убедитесь, что переменные добавлены в `.env` в корне проекта
+5. Перезапустите backend после изменения `.env`: `docker compose restart backend`
+
+### Ошибка "Неизвестно приложение с таким client_id" (Yandex)
+**Причина:** Неверный YANDEX_CLIENT_ID или приложение не создано
+**Решение:**
+1. Проверьте, что приложение создано на https://oauth.yandex.ru/
+2. Убедитесь, что используете правильный ID приложения (не пароль!)
+3. Проверьте, что приложение не удалено или не деактивировано
+4. Убедитесь, что `YANDEX_CLIENT_ID` в `.env` совпадает с ID приложения в Yandex
+
+### Проверка настроек
+Выполните на сервере для проверки:
+```bash
+# Проверьте, что переменные установлены
+docker compose exec backend env | grep -E 'GOOGLE_|YANDEX_'
+
+# Или проверьте логи при попытке OAuth
+docker compose logs backend | grep -i oauth
+```
 
 ### Пользователь не создается
 - Проверьте логи backend сервера

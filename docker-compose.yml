@@ -38,6 +38,14 @@ services:
       NODE_ENV: production
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost}
       BACKEND_URL: ${BACKEND_URL:-http://localhost:5000}
+      # OAuth настройки для Google
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      GOOGLE_CALLBACK_URL: ${GOOGLE_CALLBACK_URL:-}
+      # OAuth настройки для Yandex
+      YANDEX_CLIENT_ID: ${YANDEX_CLIENT_ID:-}
+      YANDEX_CLIENT_SECRET: ${YANDEX_CLIENT_SECRET:-}
+      YANDEX_CALLBACK_URL: ${YANDEX_CALLBACK_URL:-}
       # Опциональные настройки SMTP
       SMTP_HOST: ${SMTP_HOST:-}
       SMTP_PORT: ${SMTP_PORT:-587}
