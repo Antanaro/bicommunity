@@ -26,6 +26,10 @@ npm run migrate-oauth
      - App name: название вашего приложения
      - User support email: ваш email
      - Developer contact information: ваш email
+   - **ВАЖНО:** В разделе "Scopes" добавьте:
+     - `.../auth/userinfo.email` (Email адрес)
+     - `.../auth/userinfo.profile` (Основная информация профиля)
+     - `openid` (OpenID Connect)
    - Сохраните и продолжите
 5. Создайте OAuth 2.0 Client ID:
    - Перейдите в "APIs & Services" > "Credentials"
@@ -37,6 +41,11 @@ npm run migrate-oauth
      - Или используйте ваш домен: `https://yourdomain.com/api/auth/google/callback`
    - Нажмите "Create"
 6. **Скопируйте Client ID и Client Secret** - они понадобятся для .env файла
+
+**⚠️ ВАЖНО для получения email:**
+- Убедитесь, что в OAuth consent screen добавлены scopes для email
+- При первом входе пользователь должен дать разрешение на доступ к email
+- Если email не предоставляется, проверьте настройки OAuth consent screen
 
 ## Шаг 3: Настройка Yandex OAuth
 

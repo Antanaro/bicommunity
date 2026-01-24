@@ -28,89 +28,200 @@ async function migrateOAuthFields() {
     console.log('\n✅ Подключение к базе данных установлено');
     console.log('Starting OAuth fields migration...');
     
+    // Проверяем, существует ли таблица users
+    const tableCheck = await client.query(`
+      SELECT table_name 
+      FROM information_schema.tables 
+      WHERE table_name = 'users'
+    `);
+    
+    if (tableCheck.rows.length === 0) {
+      throw new Error('Таблица users не существует! Сначала запустите основную миграцию: npm run migrate');
+    }
+    
+    console.log('✅ Таблица users существует');
+    
     // Check if google_id column exists
     const googleIdCheck = await client.query(`
       SELECT column_name 
       FROM information_schema.columns 
-      WHERE table_name = 'users' AND column_name = 'google_id'
+      WHERE table_schema = 'public' AND table_name = 'users' AND column_name = 'google_id'
     `);
     
     if (googleIdCheck.rows.length === 0) {
       console.log('Adding google_id column...');
-      await client.query(`
-        ALTER TABLE users 
-        ADD COLUMN google_id VARCHAR(255) UNIQUE
-      `);
-      console.log('✅ google_id column added');
+      try {
+        await client.query(`
+          ALTER TABLE users 
+          ADD COLUMN google_id VARCHAR(255)
+        `);
+        // Добавляем UNIQUE constraint отдельно, если нужно
+        await client.query(`
+          CREATE UNIQUE INDEX IF NOT EXISTS idx_users_google_id_unique ON users(google_id) WHERE google_id IS NOT NULL
+        `);
+        console.log('✅ google_id column added');
+      } catch (error: any) {
+        console.error('❌ Ошибка при добавлении google_id:', error.message);
+        throw error;
+      }
     } else {
       console.log('✅ google_id column already exists');
+    }
+    
+    // Проверяем, что колонка действительно добавлена
+    const verifyGoogleId = await client.query(`
+      SELECT column_name, data_type 
+      FROM information_schema.columns 
+      WHERE table_schema = 'public' AND table_name = 'users' AND column_name = 'google_id'
+    `);
+    if (verifyGoogleId.rows.length > 0) {
+      console.log(`   Проверка: google_id существует (тип: ${verifyGoogleId.rows[0].data_type})`);
     }
     
     // Check if yandex_id column exists
     const yandexIdCheck = await client.query(`
       SELECT column_name 
       FROM information_schema.columns 
-      WHERE table_name = 'users' AND column_name = 'yandex_id'
+      WHERE table_schema = 'public' AND table_name = 'users' AND column_name = 'yandex_id'
     `);
     
     if (yandexIdCheck.rows.length === 0) {
       console.log('Adding yandex_id column...');
-      await client.query(`
-        ALTER TABLE users 
-        ADD COLUMN yandex_id VARCHAR(255) UNIQUE
-      `);
-      console.log('✅ yandex_id column added');
+      try {
+        await client.query(`
+          ALTER TABLE users 
+          ADD COLUMN yandex_id VARCHAR(255)
+        `);
+        // Добавляем UNIQUE constraint отдельно
+        await client.query(`
+          CREATE UNIQUE INDEX IF NOT EXISTS idx_users_yandex_id_unique ON users(yandex_id) WHERE yandex_id IS NOT NULL
+        `);
+        console.log('✅ yandex_id column added');
+      } catch (error: any) {
+        console.error('❌ Ошибка при добавлении yandex_id:', error.message);
+        throw error;
+      }
     } else {
       console.log('✅ yandex_id column already exists');
+    }
+    
+    // Проверяем, что колонка действительно добавлена
+    const verifyYandexId = await client.query(`
+      SELECT column_name, data_type 
+      FROM information_schema.columns 
+      WHERE table_schema = 'public' AND table_name = 'users' AND column_name = 'yandex_id'
+    `);
+    if (verifyYandexId.rows.length > 0) {
+      console.log(`   Проверка: yandex_id существует (тип: ${verifyYandexId.rows[0].data_type})`);
     }
     
     // Check if oauth_provider column exists
     const oauthProviderCheck = await client.query(`
       SELECT column_name 
       FROM information_schema.columns 
-      WHERE table_name = 'users' AND column_name = 'oauth_provider'
+      WHERE table_schema = 'public' AND table_name = 'users' AND column_name = 'oauth_provider'
     `);
     
     if (oauthProviderCheck.rows.length === 0) {
       console.log('Adding oauth_provider column...');
-      await client.query(`
-        ALTER TABLE users 
-        ADD COLUMN oauth_provider VARCHAR(20)
-      `);
-      console.log('✅ oauth_provider column added');
+      try {
+        await client.query(`
+          ALTER TABLE users 
+          ADD COLUMN oauth_provider VARCHAR(20)
+        `);
+        console.log('✅ oauth_provider column added');
+      } catch (error: any) {
+        console.error('❌ Ошибка при добавлении oauth_provider:', error.message);
+        throw error;
+      }
     } else {
       console.log('✅ oauth_provider column already exists');
+    }
+    
+    // Проверяем, что колонка действительно добавлена
+    const verifyOAuthProvider = await client.query(`
+      SELECT column_name, data_type 
+      FROM information_schema.columns 
+      WHERE table_schema = 'public' AND table_name = 'users' AND column_name = 'oauth_provider'
+    `);
+    if (verifyOAuthProvider.rows.length > 0) {
+      console.log(`   Проверка: oauth_provider существует (тип: ${verifyOAuthProvider.rows[0].data_type})`);
     }
     
     // Make password_hash nullable for OAuth users
     const passwordHashCheck = await client.query(`
       SELECT is_nullable 
       FROM information_schema.columns 
-      WHERE table_name = 'users' AND column_name = 'password_hash'
+      WHERE table_schema = 'public' AND table_name = 'users' AND column_name = 'password_hash'
     `);
     
     if (passwordHashCheck.rows.length > 0 && passwordHashCheck.rows[0].is_nullable === 'NO') {
       console.log('Making password_hash nullable for OAuth users...');
-      await client.query(`
-        ALTER TABLE users 
-        ALTER COLUMN password_hash DROP NOT NULL
-      `);
-      console.log('✅ password_hash is now nullable');
+      try {
+        await client.query(`
+          ALTER TABLE users 
+          ALTER COLUMN password_hash DROP NOT NULL
+        `);
+        console.log('✅ password_hash is now nullable');
+      } catch (error: any) {
+        console.error('⚠️ Не удалось сделать password_hash nullable:', error.message);
+        // Не критично, продолжаем
+      }
     } else {
       console.log('✅ password_hash is already nullable or column does not exist');
     }
     
     // Add indexes for OAuth IDs
-    await client.query(`
-      CREATE INDEX IF NOT EXISTS idx_users_google_id ON users(google_id) WHERE google_id IS NOT NULL
-    `);
-    await client.query(`
-      CREATE INDEX IF NOT EXISTS idx_users_yandex_id ON users(yandex_id) WHERE yandex_id IS NOT NULL
+    try {
+      await client.query(`
+        CREATE INDEX IF NOT EXISTS idx_users_google_id ON users(google_id) WHERE google_id IS NOT NULL
+      `);
+      console.log('✅ Index for google_id created');
+    } catch (error: any) {
+      console.error('⚠️ Не удалось создать индекс для google_id:', error.message);
+    }
+    
+    try {
+      await client.query(`
+        CREATE INDEX IF NOT EXISTS idx_users_yandex_id ON users(yandex_id) WHERE yandex_id IS NOT NULL
+      `);
+      console.log('✅ Index for yandex_id created');
+    } catch (error: any) {
+      console.error('⚠️ Не удалось создать индекс для yandex_id:', error.message);
+    }
+    
+    // Финальная проверка всех колонок
+    console.log('\n📋 Финальная проверка структуры таблицы users:');
+    const finalCheck = await client.query(`
+      SELECT column_name, data_type, is_nullable
+      FROM information_schema.columns 
+      WHERE table_schema = 'public' AND table_name = 'users'
+      AND column_name IN ('google_id', 'yandex_id', 'oauth_provider')
+      ORDER BY column_name
     `);
     
-    console.log('✅ Migration completed successfully!');
+    if (finalCheck.rows.length === 0) {
+      console.error('❌ КРИТИЧЕСКАЯ ОШИБКА: Колонки OAuth не найдены после миграции!');
+      console.error('Попробуйте выполнить SQL вручную:');
+      console.error(`
+ALTER TABLE users ADD COLUMN google_id VARCHAR(255);
+ALTER TABLE users ADD COLUMN yandex_id VARCHAR(255);
+ALTER TABLE users ADD COLUMN oauth_provider VARCHAR(20);
+CREATE UNIQUE INDEX idx_users_google_id_unique ON users(google_id) WHERE google_id IS NOT NULL;
+CREATE UNIQUE INDEX idx_users_yandex_id_unique ON users(yandex_id) WHERE yandex_id IS NOT NULL;
+      `);
+    } else {
+      console.log('✅ Найдены следующие OAuth колонки:');
+      finalCheck.rows.forEach((row: any) => {
+        console.log(`   - ${row.column_name} (${row.data_type}, nullable: ${row.is_nullable})`);
+      });
+    }
+    
+    console.log('\n✅ Migration completed successfully!');
   } catch (error: any) {
     console.error('\n❌ Migration failed:', error.message);
+    console.error('Error code:', error.code);
+    console.error('Error details:', error);
     
     if (error.code === '28P01') {
       console.error('\n🔐 ОШИБКА АУТЕНТИФИКАЦИИ:');

@@ -714,7 +714,8 @@ router.get('/google', (req: Request, res: Response) => {
   }
   
   const redirectUri = process.env.GOOGLE_CALLBACK_URL || `${process.env.BACKEND_URL || 'http://localhost:5000'}/api/auth/google/callback`;
-  const scope = 'profile email';
+  // Запрашиваем email и profile - важно указать оба scope
+  const scope = 'openid email profile';
   const state = crypto.randomBytes(32).toString('hex');
   
   console.log('🔐 Google OAuth redirect:', {
@@ -726,7 +727,9 @@ router.get('/google', (req: Request, res: Response) => {
   // Сохраняем state в cookie для проверки
   res.cookie('oauth_state', state, { httpOnly: true, maxAge: 600000, sameSite: 'lax' }); // 10 минут
   
-  const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${encodeURIComponent(scope)}&state=${state}`;
+  // Используем OpenID Connect для получения email
+  const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${encodeURIComponent(scope)}&access_type=offline&prompt=consent&state=${state}`;
+  console.log('🔐 Redirecting to Google OAuth:', { scope, hasClientId: !!clientId });
   res.redirect(authUrl);
 });
 
@@ -775,17 +778,45 @@ router.get('/google/callback', async (req: Request, res: Response) => {
     const accessToken = tokenData.access_token;
     
     // Получаем информацию о пользователе
-    const userResponse = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+    // Пробуем сначала OpenID Connect endpoint, затем fallback на старый v2 endpoint
+    let profile: any;
+    let userResponse = await fetch('https://openidconnect.googleapis.com/v1/userinfo', {
       headers: {
         Authorization: `Bearer ${accessToken}`,
       },
     });
     
     if (!userResponse.ok) {
-      throw new Error('Не удалось получить информацию о пользователе от Google');
+      console.log('⚠️ OpenID Connect endpoint failed, trying v2 endpoint...');
+      // Fallback на старый endpoint
+      userResponse = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+      
+      if (!userResponse.ok) {
+        const errorText = await userResponse.text();
+        console.error('❌ Google userinfo error:', userResponse.status, errorText);
+        throw new Error(`Не удалось получить информацию о пользователе от Google: ${userResponse.status}`);
+      }
     }
     
-    const profile = await userResponse.json();
+    profile = await userResponse.json();
+    
+    // Логируем полученный профиль для отладки
+    console.log('📧 Google profile received:', {
+      id: profile.id || profile.sub,
+      email: profile.email,
+      verified_email: profile.verified_email,
+      name: profile.name,
+      given_name: profile.given_name,
+      family_name: profile.family_name,
+      picture: profile.picture,
+      hasEmailsArray: Array.isArray(profile.emails),
+      emails: profile.emails,
+      allKeys: Object.keys(profile)
+    });
     
     // Обрабатываем пользователя
     const user = await handleGoogleUser(profile);
