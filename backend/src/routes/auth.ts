@@ -11,6 +11,21 @@ import { generateToken, handleGoogleUser, handleYandexUser } from '../services/o
 
 const router = express.Router();
 
+// OAuth token response types
+interface GoogleTokenResponse {
+  access_token: string;
+  token_type?: string;
+  expires_in?: number;
+  refresh_token?: string;
+  scope?: string;
+}
+
+interface YandexTokenResponse {
+  access_token: string;
+  token_type?: string;
+  expires_in?: number;
+}
+
 // Register
 router.post(
   '/register',
@@ -736,7 +751,7 @@ router.get('/google/callback', async (req: Request, res: Response) => {
       throw new Error('Не удалось получить токен от Google');
     }
     
-    const tokenData = await tokenResponse.json();
+    const tokenData: GoogleTokenResponse = await tokenResponse.json() as GoogleTokenResponse;
     const accessToken = tokenData.access_token;
     
     // Получаем информацию о пользователе
@@ -812,7 +827,7 @@ router.get('/yandex/callback', async (req: Request, res: Response) => {
       throw new Error('Не удалось получить токен от Yandex');
     }
     
-    const tokenData = await tokenResponse.json();
+    const tokenData: YandexTokenResponse = await tokenResponse.json() as YandexTokenResponse;
     const accessToken = tokenData.access_token;
     
     // Получаем информацию о пользователе
