@@ -7,6 +7,7 @@ import { pool } from '../config/database';
 import { sendPasswordResetEmail, sendVerificationEmail } from '../services/email';
 import { createInitialInvitations } from './invitations';
 import { authenticate, AuthRequest } from '../middleware/auth';
+import { generateToken, handleGoogleUser, handleYandexUser } from '../services/oauth';
 
 const router = express.Router();
 
@@ -683,6 +684,160 @@ router.get('/users/:id', async (req: Request, res: Response) => {
       error: 'Ошибка сервера',
       message: error.message || 'Неизвестная ошибка'
     });
+  }
+});
+
+// Google OAuth routes
+router.get('/google', (req: Request, res: Response) => {
+  const clientId = process.env.GOOGLE_CLIENT_ID;
+  const redirectUri = process.env.GOOGLE_CALLBACK_URL || `${process.env.BACKEND_URL || 'http://localhost:5000'}/api/auth/google/callback`;
+  const scope = 'profile email';
+  const state = crypto.randomBytes(32).toString('hex');
+  
+  // Сохраняем state в cookie для проверки
+  res.cookie('oauth_state', state, { httpOnly: true, maxAge: 600000 }); // 10 минут
+  
+  const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${encodeURIComponent(scope)}&state=${state}`;
+  res.redirect(authUrl);
+});
+
+router.get('/google/callback', async (req: Request, res: Response) => {
+  try {
+    const { code, state } = req.query;
+    const storedState = req.cookies?.oauth_state;
+    
+    if (!code || !state || state !== storedState) {
+      throw new Error('Неверный запрос авторизации');
+    }
+    
+    // Очищаем cookie
+    res.clearCookie('oauth_state');
+    
+    const clientId = process.env.GOOGLE_CLIENT_ID;
+    const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+    const redirectUri = process.env.GOOGLE_CALLBACK_URL || `${process.env.BACKEND_URL || 'http://localhost:5000'}/api/auth/google/callback`;
+    
+    // Обмениваем код на токен
+    const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        code: code as string,
+        client_id: clientId || '',
+        client_secret: clientSecret || '',
+        redirect_uri: redirectUri,
+        grant_type: 'authorization_code',
+      }),
+    });
+    
+    if (!tokenResponse.ok) {
+      throw new Error('Не удалось получить токен от Google');
+    }
+    
+    const tokenData = await tokenResponse.json();
+    const accessToken = tokenData.access_token;
+    
+    // Получаем информацию о пользователе
+    const userResponse = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+    
+    if (!userResponse.ok) {
+      throw new Error('Не удалось получить информацию о пользователе от Google');
+    }
+    
+    const profile = await userResponse.json();
+    
+    // Обрабатываем пользователя
+    const user = await handleGoogleUser(profile);
+    const token = generateToken(user);
+    
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    res.redirect(`${frontendUrl}/auth/callback?token=${token}&success=true`);
+  } catch (error: any) {
+    console.error('Google OAuth callback error:', error);
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    res.redirect(`${frontendUrl}/auth/callback?error=${encodeURIComponent(error.message || 'Ошибка авторизации')}`);
+  }
+});
+
+// Yandex OAuth routes
+router.get('/yandex', (req: Request, res: Response) => {
+  const clientId = process.env.YANDEX_CLIENT_ID;
+  const redirectUri = process.env.YANDEX_CALLBACK_URL || `${process.env.BACKEND_URL || 'http://localhost:5000'}/api/auth/yandex/callback`;
+  const state = crypto.randomBytes(32).toString('hex');
+  
+  // Сохраняем state в cookie для проверки
+  res.cookie('oauth_state', state, { httpOnly: true, maxAge: 600000 }); // 10 минут
+  
+  const authUrl = `https://oauth.yandex.ru/authorize?response_type=code&client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${state}`;
+  res.redirect(authUrl);
+});
+
+router.get('/yandex/callback', async (req: Request, res: Response) => {
+  try {
+    const { code, state } = req.query;
+    const storedState = req.cookies?.oauth_state;
+    
+    if (!code || !state || state !== storedState) {
+      throw new Error('Неверный запрос авторизации');
+    }
+    
+    // Очищаем cookie
+    res.clearCookie('oauth_state');
+    
+    const clientId = process.env.YANDEX_CLIENT_ID;
+    const clientSecret = process.env.YANDEX_CLIENT_SECRET;
+    const redirectUri = process.env.YANDEX_CALLBACK_URL || `${process.env.BACKEND_URL || 'http://localhost:5000'}/api/auth/yandex/callback`;
+    
+    // Обмениваем код на токен
+    const tokenResponse = await fetch('https://oauth.yandex.ru/token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        grant_type: 'authorization_code',
+        code: code as string,
+        client_id: clientId || '',
+        client_secret: clientSecret || '',
+      }),
+    });
+    
+    if (!tokenResponse.ok) {
+      throw new Error('Не удалось получить токен от Yandex');
+    }
+    
+    const tokenData = await tokenResponse.json();
+    const accessToken = tokenData.access_token;
+    
+    // Получаем информацию о пользователе
+    const userResponse = await fetch('https://login.yandex.ru/info', {
+      headers: {
+        Authorization: `OAuth ${accessToken}`,
+      },
+    });
+    
+    if (!userResponse.ok) {
+      throw new Error('Не удалось получить информацию о пользователе от Yandex');
+    }
+    
+    const yandexUser = await userResponse.json();
+    
+    // Обрабатываем пользователя
+    const user = await handleYandexUser(yandexUser);
+    const token = generateToken(user);
+    
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    res.redirect(`${frontendUrl}/auth/callback?token=${token}&success=true`);
+  } catch (error: any) {
+    console.error('Yandex OAuth callback error:', error);
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    res.redirect(`${frontendUrl}/auth/callback?error=${encodeURIComponent(error.message || 'Ошибка авторизации')}`);
   }
 });
 

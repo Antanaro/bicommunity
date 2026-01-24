@@ -90,11 +90,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     delete axios.defaults.headers.common['Authorization'];
   };
 
-  const updateUser = (userData: Partial<User>) => {
-    if (user) {
-      const updatedUser = { ...user, ...userData };
-      setUser(updatedUser);
-      localStorage.setItem('user', JSON.stringify(updatedUser));
+  const updateUser = (userData: Partial<User> | User) => {
+    const updatedUser = user ? { ...user, ...userData } : userData as User;
+    setUser(updatedUser as User);
+    localStorage.setItem('user', JSON.stringify(updatedUser));
+    if (token) {
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
     }
   };
 
