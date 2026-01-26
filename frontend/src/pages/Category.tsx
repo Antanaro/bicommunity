@@ -17,6 +17,11 @@ interface Topic {
   images?: string[];
 }
 
+interface CategoryOption {
+  id: number;
+  name: string;
+}
+
 const Category = () => {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
@@ -24,9 +29,10 @@ const Category = () => {
   const [topics, setTopics] = useState<Topic[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
-  const [formData, setFormData] = useState({ title: '', content: '' });
+  const [formData, setFormData] = useState({ title: '', content: '', category_id: '' });
   const [selectedImages, setSelectedImages] = useState<File[]>([]);
   const [uploadingImages, setUploadingImages] = useState(false);
+  const [categories, setCategories] = useState<CategoryOption[]>([]);
 
   useEffect(() => {
     if (id) {
@@ -39,6 +45,21 @@ const Category = () => {
       fetchTopics();
     }
   }, [category]);
+
+  useEffect(() => {
+    // Загружаем список категорий для выбора при создании темы в "Все темы"
+    const fetchCategories = async () => {
+      try {
+        const response = await api.get('/categories');
+        // Исключаем категорию "Все темы" из списка для выбора
+        const categoriesData = response.data.filter((cat: CategoryOption) => cat.name !== 'Все темы');
+        setCategories(categoriesData);
+      } catch (error) {
+        console.error('Error fetching categories:', error);
+      }
+    };
+    fetchCategories();
+  }, []);
 
   const fetchCategory = async () => {
     try {
@@ -94,6 +115,15 @@ const Category = () => {
     e.preventDefault();
     if (!user) return;
 
+    // Для категории "Все темы" нужна реальная категория
+    const isAllTopicsCategory = category?.name === 'Все темы' || id === 'all-topics';
+    const categoryId = isAllTopicsCategory ? formData.category_id : id;
+
+    if (!categoryId) {
+      alert('Пожалуйста, выберите категорию');
+      return;
+    }
+
     try {
       setUploadingImages(true);
       let imageUrls: string[] = [];
@@ -106,10 +136,10 @@ const Category = () => {
       await api.post('/topics', {
         title: formData.title,
         content: formData.content,
-        category_id: id,
+        category_id: categoryId,
         images: imageUrls,
       });
-      setFormData({ title: '', content: '' });
+      setFormData({ title: '', content: '', category_id: '' });
       setSelectedImages([]);
       setShowForm(false);
       fetchTopics();
@@ -176,7 +206,7 @@ const Category = () => {
         </div>
       )}
 
-      {user && category?.name !== 'Все темы' && (
+      {user && (
         <div className="mb-6">
           {!showForm ? (
             <button
@@ -188,6 +218,26 @@ const Category = () => {
           ) : (
             <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow p-6 mb-4">
               <h3 className="text-lg font-semibold mb-4">Новая тема</h3>
+              {(category?.name === 'Все темы' || id === 'all-topics') && (
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Категория *
+                  </label>
+                  <select
+                    value={formData.category_id}
+                    onChange={(e) => setFormData({ ...formData, category_id: e.target.value })}
+                    className="w-full border rounded px-4 py-2"
+                    required
+                  >
+                    <option value="">Выберите категорию</option>
+                    {categories.map((cat) => (
+                      <option key={cat.id} value={cat.id}>
+                        {cat.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
               <input
                 type="text"
                 placeholder="Название темы"
@@ -247,7 +297,7 @@ const Category = () => {
                   type="button"
                   onClick={() => {
                     setShowForm(false);
-                    setFormData({ title: '', content: '' });
+                    setFormData({ title: '', content: '', category_id: '' });
                     setSelectedImages([]);
                   }}
                   className="bg-gray-300 text-gray-700 px-4 py-2 rounded hover:bg-gray-400 transition"
@@ -269,7 +319,9 @@ const Category = () => {
           topics.map((topic) => (
             <div
               key={topic.id}
-              className="bg-white rounded-lg shadow p-3 hover:shadow-lg transition relative group"
+              className={`bg-white rounded-lg shadow p-3 hover:shadow-lg transition relative group ${
+                category?.name === 'Все темы' || id === 'all-topics' ? 'border-2 border-blue-300' : ''
+              }`}
             >
               <Link to={`/topic/${topic.id}`} className="block pr-10">
                 <div className="flex items-center gap-2 text-sm overflow-hidden">

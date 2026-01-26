@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { api, uploadImages } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import LinkifyText from '../components/LinkifyText';
+import MarkdownRenderer from '../components/MarkdownRenderer';
 
 interface Post {
   id: number;
@@ -218,9 +219,7 @@ const PostComponent = ({
         </div>
       )}
       <div className="prose max-w-none text-sm">
-        <p className="whitespace-pre-wrap">
-          <LinkifyText text={post.content} />
-        </p>
+        <MarkdownRenderer content={post.content} />
         {post.images && post.images.length > 0 && (
           <div className={`mt-2 ${post.images.length > 1 ? 'grid grid-cols-2 gap-2' : 'flex'}`}>
             {post.images.map((imageUrl, imgIndex) => {
@@ -742,9 +741,7 @@ const Board = () => {
                       </div>
                     </div>
                     <div className="prose max-w-none mt-2">
-                      <p className="whitespace-pre-wrap text-sm">
-                        <LinkifyText text={topic.content} />
-                      </p>
+                      <MarkdownRenderer content={topic.content} />
                       {topic.images && topic.images.length > 0 && (
                         <div className={`mt-2 ${topic.images.length > 1 ? 'grid grid-cols-2 gap-2' : 'flex'}`}>
                           {topic.images.map((imageUrl, imgIndex) => {
