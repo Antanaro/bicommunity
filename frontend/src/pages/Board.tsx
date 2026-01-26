@@ -242,6 +242,11 @@ const PostComponent = ({
   );
 };
 
+interface CategoryOption {
+  id: number;
+  name: string;
+}
+
 const Board = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -257,6 +262,11 @@ const Board = () => {
   const [uploadingImages, setUploadingImages] = useState(false);
   const [globalIdMap, setGlobalIdMap] = useState<Map<string, number>>(new Map()); // 'topic-{id}' or 'post-{id}' -> globalId
   const [globalIdMapLoaded, setGlobalIdMapLoaded] = useState(false);
+  const [showTopicForm, setShowTopicForm] = useState(false);
+  const [topicFormData, setTopicFormData] = useState({ title: '', content: '', category_id: '' });
+  const [topicImages, setTopicImages] = useState<File[]>([]);
+  const [uploadingTopicImages, setUploadingTopicImages] = useState(false);
+  const [categories, setCategories] = useState<CategoryOption[]>([]);
 
   const topicsPerPage = 10;
   const postsPerTopic = 10;
@@ -272,6 +282,21 @@ const Board = () => {
   useEffect(() => {
     fetchTopics();
   }, [currentPage]);
+
+  useEffect(() => {
+    // Загружаем список категорий для создания темы
+    const fetchCategories = async () => {
+      try {
+        const response = await api.get('/categories');
+        // Исключаем категорию "Все темы" из списка для выбора
+        const categoriesData = response.data.filter((cat: CategoryOption) => cat.name !== 'Все темы');
+        setCategories(categoriesData);
+      } catch (error) {
+        console.error('Error fetching categories:', error);
+      }
+    };
+    fetchCategories();
+  }, []);
 
   // Fetch all topics and posts to create global ID map (only once)
   const fetchGlobalIdMap = async () => {
@@ -665,10 +690,58 @@ const Board = () => {
     setSelectedImages((prev) => prev.filter((_, i) => i !== index));
   };
 
+  const removeTopicImage = (index: number) => {
+    setTopicImages((prev) => prev.filter((_, i) => i !== index));
+  };
+
   const cancelReply = () => {
     setReplyingTo(null);
     setNewPost('');
     setSelectedImages([]);
+  };
+
+  const handleTopicImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const files = Array.from(e.target.files);
+      const limitedFiles = files.slice(0, 10);
+      setTopicImages((prev) => [...prev, ...limitedFiles].slice(0, 10));
+    }
+  };
+
+  const handleCreateTopic = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user) return;
+
+    if (!topicFormData.category_id) {
+      alert('Пожалуйста, выберите категорию');
+      return;
+    }
+
+    try {
+      setUploadingTopicImages(true);
+      let imageUrls: string[] = [];
+
+      if (topicImages.length > 0) {
+        imageUrls = await uploadImages(topicImages);
+      }
+
+      await api.post('/topics', {
+        title: topicFormData.title,
+        content: topicFormData.content,
+        category_id: topicFormData.category_id,
+        images: imageUrls,
+      });
+
+      setTopicFormData({ title: '', content: '', category_id: '' });
+      setTopicImages([]);
+      setShowTopicForm(false);
+      fetchTopics();
+    } catch (error) {
+      console.error('Error creating topic:', error);
+      alert('Ошибка при создании темы');
+    } finally {
+      setUploadingTopicImages(false);
+    }
   };
 
   // Get global ID from map (sequential across entire forum)
@@ -691,9 +764,108 @@ const Board = () => {
 
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold mb-4">Форум (Борд)</h1>
+      <div className="mb-6 flex justify-between items-center">
+        <h1 className="text-3xl font-bold">Форум (Борд)</h1>
+        {user && (
+          <button
+            onClick={() => setShowTopicForm(!showTopicForm)}
+            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition"
+          >
+            {showTopicForm ? '✕ Отмена' : '+ Создать тему'}
+          </button>
+        )}
       </div>
+
+      {user && showTopicForm && (
+        <form onSubmit={handleCreateTopic} className="bg-white rounded-lg shadow p-6 mb-6">
+          <h3 className="text-lg font-semibold mb-4">Новая тема</h3>
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Категория *
+            </label>
+            <select
+              value={topicFormData.category_id}
+              onChange={(e) => setTopicFormData({ ...topicFormData, category_id: e.target.value })}
+              className="w-full border rounded px-4 py-2"
+              required
+            >
+              <option value="">Выберите категорию</option>
+              {categories.map((cat) => (
+                <option key={cat.id} value={cat.id}>
+                  {cat.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <input
+            type="text"
+            placeholder="Название темы"
+            value={topicFormData.title}
+            onChange={(e) => setTopicFormData({ ...topicFormData, title: e.target.value })}
+            className="w-full border rounded px-4 py-2 mb-4"
+            required
+          />
+          <textarea
+            placeholder="Содержание темы"
+            value={topicFormData.content}
+            onChange={(e) => setTopicFormData({ ...topicFormData, content: e.target.value })}
+            className="w-full border rounded px-4 py-2 mb-4 h-32"
+            required
+          />
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Изображения (до 10 шт.)
+            </label>
+            <input
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={handleTopicImageSelect}
+              className="w-full border rounded px-4 py-2 mb-2"
+            />
+            {topicImages.length > 0 && (
+              <div className="flex flex-wrap gap-2 mt-2">
+                {topicImages.map((file, index) => (
+                  <div key={index} className="relative">
+                    <img
+                      src={URL.createObjectURL(file)}
+                      alt={`Preview ${index + 1}`}
+                      className="w-20 h-20 object-cover rounded border"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeTopicImage(index)}
+                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          <div className="flex gap-2">
+            <button
+              type="submit"
+              className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition disabled:opacity-50"
+              disabled={uploadingTopicImages}
+            >
+              {uploadingTopicImages ? 'Загрузка...' : 'Создать'}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setShowTopicForm(false);
+                setTopicFormData({ title: '', content: '', category_id: '' });
+                setTopicImages([]);
+              }}
+              className="bg-gray-300 text-gray-700 px-4 py-2 rounded hover:bg-gray-400 transition"
+            >
+              Отмена
+            </button>
+          </div>
+        </form>
+      )}
 
       {topics.length === 0 ? (
         <div className="bg-white rounded-lg shadow p-6 text-center text-gray-500">

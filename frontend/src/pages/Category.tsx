@@ -183,6 +183,9 @@ const Category = () => {
   };
 
   const isAdmin = user?.role === 'admin';
+  
+  // Проверяем, является ли текущая категория "Все темы"
+  const isAllTopicsCategory = category?.name === 'Все темы' || id === 'all-topics';
 
   if (loading) {
     return (
@@ -320,7 +323,7 @@ const Category = () => {
             <div
               key={topic.id}
               className={`bg-white rounded-lg shadow p-3 hover:shadow-lg transition relative group ${
-                category?.name === 'Все темы' || id === 'all-topics' ? 'border-2 border-blue-300' : ''
+                isAllTopicsCategory ? 'border-2 border-blue-300' : ''
               }`}
             >
               <Link to={`/topic/${topic.id}`} className="block pr-10">
