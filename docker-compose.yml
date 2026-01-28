@@ -55,6 +55,8 @@ services:
       SMTP_FROM: ${SMTP_FROM:-}
       # Опциональный Telegram бот
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+      # ID администратора для получения уведомлений
+      TELEGRAM_ADMIN_ID: ${TELEGRAM_ADMIN_ID:-}
       # Опциональные настройки Telegram MTProto API для парсинга каналов
       TELEGRAM_API_ID: ${TELEGRAM_API_ID:-}
       TELEGRAM_API_HASH: ${TELEGRAM_API_HASH:-}
