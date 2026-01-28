@@ -60,6 +60,28 @@ app.get('/api/health', async (req, res) => {
   }
 });
 
+// Test admin notification endpoint
+app.get('/api/test-notification', async (req, res) => {
+  try {
+    const testMessage = `🧪 <b>Тестовое уведомление</b>\n\n` +
+      `Это тестовое сообщение для проверки работы уведомлений администратору.\n` +
+      `Время: ${new Date().toLocaleString('ru-RU')}`;
+    
+    await telegramBotService.sendAdminNotification(testMessage);
+    res.json({ 
+      status: 'ok', 
+      message: 'Test notification sent. Check your Telegram.',
+      adminId: process.env.TELEGRAM_ADMIN_ID || 'NOT SET'
+    });
+  } catch (error: any) {
+    res.status(500).json({ 
+      status: 'error', 
+      message: error.message,
+      adminId: process.env.TELEGRAM_ADMIN_ID || 'NOT SET'
+    });
+  }
+});
+
 // Start server
 app.listen(PORT, async () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);

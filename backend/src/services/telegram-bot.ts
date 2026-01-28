@@ -97,6 +97,14 @@ class TelegramBotService {
       // Получение информации о боте
       const botInfo = await this.bot.getMe();
       console.log(`✅ Telegram bot initialized: @${botInfo.username}`);
+      
+      // Проверка настроек уведомлений администратору
+      const adminId = process.env.TELEGRAM_ADMIN_ID;
+      if (adminId) {
+        console.log(`✅ TELEGRAM_ADMIN_ID configured: ${adminId}`);
+      } else {
+        console.warn('⚠️  TELEGRAM_ADMIN_ID not set. Admin notifications will be disabled.');
+      }
 
       // Попытка инициализации MTProto клиента при старте (не блокирует если не настроен)
       try {
@@ -837,28 +845,41 @@ class TelegramBotService {
    * @param message Текст сообщения для отправки
    */
   async sendAdminNotification(message: string): Promise<void> {
+    console.log('🔔 sendAdminNotification called');
+    
     if (!this.bot) {
       console.warn('⚠️  Telegram bot not initialized. Cannot send admin notification.');
       return;
     }
 
     const adminId = process.env.TELEGRAM_ADMIN_ID;
+    console.log(`🔍 TELEGRAM_ADMIN_ID from env: ${adminId ? `"${adminId}"` : 'NOT SET'}`);
+    
     if (!adminId) {
       console.warn('⚠️  TELEGRAM_ADMIN_ID not set. Admin notifications disabled.');
+      console.log('💡 Available env vars:', Object.keys(process.env).filter(k => k.includes('TELEGRAM')).join(', '));
       return;
     }
 
     try {
-      const adminChatId = parseInt(adminId, 10);
+      const adminChatId = parseInt(adminId.trim(), 10);
       if (isNaN(adminChatId)) {
-        console.error('❌ Invalid TELEGRAM_ADMIN_ID format. Must be a number.');
+        console.error(`❌ Invalid TELEGRAM_ADMIN_ID format: "${adminId}". Must be a number.`);
         return;
       }
 
+      console.log(`📤 Sending notification to chat_id: ${adminChatId}`);
+      console.log(`📝 Message preview: ${message.substring(0, 50)}...`);
+      
       await this.bot.sendMessage(adminChatId, message, { parse_mode: 'HTML' });
-      console.log('✅ Admin notification sent successfully');
+      console.log('✅ Admin notification sent successfully to chat_id:', adminChatId);
     } catch (error: any) {
       console.error('❌ Error sending admin notification:', error);
+      console.error('❌ Error details:', {
+        message: error.message,
+        code: error.code,
+        response: error.response?.body
+      });
       // Не выбрасываем ошибку, чтобы не нарушать основной функционал
     }
   }

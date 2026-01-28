@@ -166,6 +166,7 @@ router.post(
       );
 
       // Отправляем уведомление администратору о новой теме
+      console.log('📝 Topic created, preparing admin notification...');
       try {
         // Получаем информацию об авторе темы
         const authorResult = await pool.query(
@@ -173,17 +174,24 @@ router.post(
           [req.userId]
         );
         
+        console.log(`👤 Author query result: ${authorResult.rows.length} rows`);
+        
         if (authorResult.rows.length > 0) {
           const author = authorResult.rows[0];
           const notificationMessage = `📝 <b>Создана новая тема</b>\n\n` +
             `📌 Название: <b>${title}</b>\n` +
             `👤 Автор: <code>${author.username}</code>\n` +
             `🆔 ID темы: ${result.rows[0].id}`;
+          console.log('📤 Calling sendAdminNotification...');
           await telegramBotService.sendAdminNotification(notificationMessage);
+          console.log('✅ sendAdminNotification call completed');
+        } else {
+          console.warn('⚠️  Author not found for user_id:', req.userId);
         }
-      } catch (notificationError) {
+      } catch (notificationError: any) {
         // Игнорируем ошибки уведомлений, чтобы не нарушать создание темы
-        console.error('Failed to send topic creation notification:', notificationError);
+        console.error('❌ Failed to send topic creation notification:', notificationError);
+        console.error('❌ Error stack:', notificationError.stack);
       }
 
       res.status(201).json(result.rows[0]);
