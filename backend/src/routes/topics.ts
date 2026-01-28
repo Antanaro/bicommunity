@@ -2,6 +2,7 @@ import express, { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
 import { pool } from '../config/database';
 import { authenticate, AuthRequest } from '../middleware/auth';
+import { telegramBotService } from '../services/telegram-bot';
 
 const router = express.Router();
 
@@ -163,6 +164,27 @@ router.post(
         'INSERT INTO topics (title, content, author_id, category_id, images) VALUES ($1, $2, $3, $4, $5) RETURNING *',
         [title, content, req.userId, category_id, imagesArray]
       );
+
+      // Отправляем уведомление администратору о новой теме
+      try {
+        // Получаем информацию об авторе темы
+        const authorResult = await pool.query(
+          'SELECT username, email FROM users WHERE id = $1',
+          [req.userId]
+        );
+        
+        if (authorResult.rows.length > 0) {
+          const author = authorResult.rows[0];
+          const notificationMessage = `📝 <b>Создана новая тема</b>\n\n` +
+            `📌 Название: <b>${title}</b>\n` +
+            `👤 Автор: <code>${author.username}</code>\n` +
+            `🆔 ID темы: ${result.rows[0].id}`;
+          await telegramBotService.sendAdminNotification(notificationMessage);
+        }
+      } catch (notificationError) {
+        // Игнорируем ошибки уведомлений, чтобы не нарушать создание темы
+        console.error('Failed to send topic creation notification:', notificationError);
+      }
 
       res.status(201).json(result.rows[0]);
     } catch (error) {

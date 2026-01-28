@@ -8,6 +8,7 @@ import { sendPasswordResetEmail, sendVerificationEmail } from '../services/email
 import { createInitialInvitations } from './invitations';
 import { authenticate, AuthRequest } from '../middleware/auth';
 import { generateToken, handleGoogleUser, handleYandexUser } from '../services/oauth';
+import { telegramBotService } from '../services/telegram-bot';
 
 const router = express.Router();
 
@@ -89,6 +90,18 @@ router.post(
 
       // Создаём 3 приглашения для нового пользователя
       await createInitialInvitations(user.id);
+
+      // Отправляем уведомление администратору о новом пользователе
+      try {
+        const notificationMessage = `🆕 <b>Новый пользователь зарегистрирован</b>\n\n` +
+          `👤 Логин: <code>${user.username}</code>\n` +
+          `📧 Email: <code>${user.email}</code>\n` +
+          `🆔 ID: ${user.id}`;
+        await telegramBotService.sendAdminNotification(notificationMessage);
+      } catch (notificationError) {
+        // Игнорируем ошибки уведомлений, чтобы не нарушать регистрацию
+        console.error('Failed to send registration notification:', notificationError);
+      }
 
       // Сразу выдаём JWT токен - верификация email не нужна при регистрации по приглашению
       const token = jwt.sign(

@@ -1,6 +1,7 @@
 import { pool } from '../config/database';
 import { createInitialInvitations } from '../routes/invitations';
 import jwt from 'jsonwebtoken';
+import { telegramBotService } from './telegram-bot';
 
 // Generate JWT token for user
 export const generateToken = (user: any) => {
@@ -115,6 +116,18 @@ export const handleGoogleUser = async (profile: any) => {
   // Создаём 3 приглашения для нового пользователя
   await createInitialInvitations(newUser.id);
 
+  // Отправляем уведомление администратору о новом пользователе через OAuth
+  try {
+    const notificationMessage = `🆕 <b>Новый пользователь зарегистрирован через Google OAuth</b>\n\n` +
+      `👤 Логин: <code>${newUser.username}</code>\n` +
+      `📧 Email: <code>${newUser.email}</code>\n` +
+      `🆔 ID: ${newUser.id}`;
+    await telegramBotService.sendAdminNotification(notificationMessage);
+  } catch (notificationError) {
+    // Игнорируем ошибки уведомлений, чтобы не нарушать регистрацию
+    console.error('Failed to send OAuth registration notification:', notificationError);
+  }
+
   return newUser;
 };
 
@@ -204,6 +217,18 @@ export const handleYandexUser = async (yandexUser: any) => {
 
   // Создаём 3 приглашения для нового пользователя
   await createInitialInvitations(newUser.id);
+
+  // Отправляем уведомление администратору о новом пользователе через OAuth
+  try {
+    const notificationMessage = `🆕 <b>Новый пользователь зарегистрирован через Yandex OAuth</b>\n\n` +
+      `👤 Логин: <code>${newUser.username}</code>\n` +
+      `📧 Email: <code>${newUser.email}</code>\n` +
+      `🆔 ID: ${newUser.id}`;
+    await telegramBotService.sendAdminNotification(notificationMessage);
+  } catch (notificationError) {
+    // Игнорируем ошибки уведомлений, чтобы не нарушать регистрацию
+    console.error('Failed to send OAuth registration notification:', notificationError);
+  }
 
   return newUser;
 };

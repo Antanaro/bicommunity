@@ -57,6 +57,19 @@ class TelegramBotService {
         await this.handleParseCommand(msg, match);
       });
 
+      this.bot.onText(/\/myid/, async (msg) => {
+        if (!this.bot) return;
+        try {
+          await this.bot.sendMessage(
+            msg.chat.id,
+            `Ваш chat_id: <code>${msg.chat.id}</code>`,
+            { parse_mode: 'HTML' }
+          );
+        } catch (error) {
+          console.error('❌ Error sending /myid response:', error);
+        }
+      });
+
       this.bot.onText(/\/stop/, async (msg) => {
         await this.handleStopCommand(msg);
       });
@@ -815,6 +828,39 @@ class TelegramBotService {
 
   private sleep(ms: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  // ==================== Уведомления администратору ====================
+
+  /**
+   * Отправляет уведомление администратору в Telegram
+   * @param message Текст сообщения для отправки
+   */
+  async sendAdminNotification(message: string): Promise<void> {
+    if (!this.bot) {
+      console.warn('⚠️  Telegram bot not initialized. Cannot send admin notification.');
+      return;
+    }
+
+    const adminId = process.env.TELEGRAM_ADMIN_ID;
+    if (!adminId) {
+      console.warn('⚠️  TELEGRAM_ADMIN_ID not set. Admin notifications disabled.');
+      return;
+    }
+
+    try {
+      const adminChatId = parseInt(adminId, 10);
+      if (isNaN(adminChatId)) {
+        console.error('❌ Invalid TELEGRAM_ADMIN_ID format. Must be a number.');
+        return;
+      }
+
+      await this.bot.sendMessage(adminChatId, message, { parse_mode: 'HTML' });
+      console.log('✅ Admin notification sent successfully');
+    } catch (error: any) {
+      console.error('❌ Error sending admin notification:', error);
+      // Не выбрасываем ошибку, чтобы не нарушать основной функционал
+    }
   }
 
   // ==================== Завершение работы ====================
