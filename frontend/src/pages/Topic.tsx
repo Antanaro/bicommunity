@@ -108,7 +108,7 @@ const PostComponent = ({
         }`}
       >
         <div className="flex gap-4 p-4">
-          {/* Левая колонка: аватар, логин, дата, #id */}
+          {/* Левая колонка: аватар, логин, дата */}
           <div className="flex-shrink-0 w-28 flex flex-col items-center text-center">
             <Avatar avatarUrl={post.author_avatar} username={post.author_name} size="md" />
             <div className="mt-2 w-full">
@@ -118,25 +118,25 @@ const PostComponent = ({
               <div className="text-xs text-gray-500 mt-0.5">
                 {new Date(post.created_at).toLocaleString('ru-RU')}
               </div>
-              <span
-                id={`post-${post.id}`}
-                className="inline-block mt-1 text-blue-600 font-mono text-xs cursor-pointer hover:underline"
-                onClick={(e) => {
-                  e.preventDefault();
-                  document.getElementById(`post-${post.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                }}
-                title="Ссылка на сообщение"
-              >
-                #{getGlobalId(post.id)}
-              </span>
             </div>
           </div>
 
-          {/* Центр: ответ на #X (если есть) + окошко с сообщением */}
+          {/* Центр: ID сообщения, ответ на #X (если есть) + окошко с сообщением */}
           <div className="flex-1 min-w-0 flex flex-col">
-            {post.parent_id && parentPost && (
-              <div className="mb-2 text-sm text-gray-600">
-                Ответ на{' '}
+            {(post.parent_id && parentPost) && (
+              <div className="mb-2 text-sm text-gray-600 flex items-center gap-2">
+                <span
+                  id={`post-${post.id}`}
+                  className="text-blue-600 font-mono text-sm cursor-pointer hover:underline flex-shrink-0"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    document.getElementById(`post-${post.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  }}
+                  title="Ссылка на сообщение"
+                >
+                  #{getGlobalId(post.id)}
+                </span>
+                <span>Ответ на{' '}</span>
                 <span className="relative inline-block">
                   <button
                     onClick={(e) => handleIdClick(e, post.parent_id!)}
@@ -154,8 +154,12 @@ const PostComponent = ({
                   </button>
                   {showTooltip && tooltipPost && tooltipPost.id === post.parent_id && (
                     <div
-                      className="absolute left-0 top-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg p-3 max-w-md z-50"
-                      style={{ minWidth: '200px' }}
+                      className="absolute right-0 top-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg p-3 z-50"
+                      style={{ 
+                        minWidth: '200px',
+                        maxWidth: 'min(400px, calc(100vw - 40px))',
+                        width: 'max-content'
+                      }}
                       onMouseEnter={() => setShowTooltip(true)}
                       onMouseLeave={() => setShowTooltip(false)}
                     >
@@ -189,6 +193,21 @@ const PostComponent = ({
                       </button>
                     </div>
                   )}
+                </span>
+              </div>
+            )}
+            {!post.parent_id && (
+              <div className="mb-2">
+                <span
+                  id={`post-${post.id}`}
+                  className="text-blue-600 font-mono text-sm cursor-pointer hover:underline"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    document.getElementById(`post-${post.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  }}
+                  title="Ссылка на сообщение"
+                >
+                  #{getGlobalId(post.id)}
                 </span>
               </div>
             )}
