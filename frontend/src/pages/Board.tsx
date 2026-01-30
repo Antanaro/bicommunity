@@ -318,7 +318,7 @@ const Board = () => {
 
   // Случайный выбор начального графика при каждом рефреше
   const initialChartType = useMemo(() => {
-    const types = ['pie', 'bar', 'line', 'horizontalBar', 'donut', 'area', 'sankey'];
+    const types: Array<'pie' | 'bar' | 'line' | 'horizontalBar' | 'donut' | 'area' | 'sankey'> = ['pie', 'bar', 'line', 'horizontalBar', 'donut', 'area', 'sankey'];
     return types[Math.floor(Math.random() * types.length)];
   }, []);
 
