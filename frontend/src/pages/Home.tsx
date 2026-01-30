@@ -37,7 +37,7 @@ interface TopTopic {
 
 const Home = () => {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<'categories' | 'board'>('categories');
+  const [activeTab, setActiveTab] = useState<'categories' | 'board'>('board');
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -227,18 +227,6 @@ const Home = () => {
         <div className="flex gap-4">
           <button
             onClick={() => {
-              setActiveTab('categories');
-            }}
-            className={`px-4 py-2 font-semibold transition ${
-              activeTab === 'categories'
-                ? 'border-b-2 border-blue-500 text-blue-600'
-                : 'text-gray-600 hover:text-gray-800'
-            }`}
-          >
-            По категориям
-          </button>
-          <button
-            onClick={() => {
               setActiveTab('board');
             }}
             className={`px-4 py-2 font-semibold transition ${
@@ -249,10 +237,24 @@ const Home = () => {
           >
             Бордом
           </button>
+          <button
+            onClick={() => {
+              setActiveTab('categories');
+            }}
+            className={`px-4 py-2 font-semibold transition ${
+              activeTab === 'categories'
+                ? 'border-b-2 border-blue-500 text-blue-600'
+                : 'text-gray-600 hover:text-gray-800'
+            }`}
+          >
+            По категориям
+          </button>
         </div>
       </div>
 
-      {activeTab === 'categories' ? (
+      {activeTab === 'board' ? (
+        <Board />
+      ) : (
         <>
           <div className="flex justify-between items-center mb-6" style={{ overflow: 'visible', position: 'relative' }}>
             <div className="flex items-center gap-3" style={{ position: 'relative' }}>
@@ -489,8 +491,6 @@ const Home = () => {
         </div>
       )}
         </>
-      ) : (
-        <Board />
       )}
     </div>
   );

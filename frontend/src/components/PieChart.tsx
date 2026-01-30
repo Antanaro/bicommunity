@@ -5,6 +5,7 @@ interface PieChartProps {
   data: number[]; // Массив значений для секторов
   colors?: string[]; // Цвета для секторов
   className?: string;
+  initialChartType?: 'pie' | 'bar' | 'line' | 'horizontalBar' | 'donut' | 'area' | 'sankey';
 }
 
 const PieChart: React.FC<PieChartProps> = ({
@@ -12,14 +13,36 @@ const PieChart: React.FC<PieChartProps> = ({
   data,
   colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'],
   className = '',
+  initialChartType = 'pie',
 }) => {
+  // Инициализируем состояние на основе initialChartType
+  const getInitialState = () => {
+    switch (initialChartType) {
+      case 'bar':
+        return { isBarChart: true, isLineChart: false, isHorizontalBarChart: false, isDonutChart: false, isAreaChart: false, isSankeyChart: false };
+      case 'line':
+        return { isBarChart: false, isLineChart: true, isHorizontalBarChart: false, isDonutChart: false, isAreaChart: false, isSankeyChart: false };
+      case 'horizontalBar':
+        return { isBarChart: false, isLineChart: false, isHorizontalBarChart: true, isDonutChart: false, isAreaChart: false, isSankeyChart: false };
+      case 'donut':
+        return { isBarChart: false, isLineChart: false, isHorizontalBarChart: false, isDonutChart: true, isAreaChart: false, isSankeyChart: false };
+      case 'area':
+        return { isBarChart: false, isLineChart: false, isHorizontalBarChart: false, isDonutChart: false, isAreaChart: true, isSankeyChart: false };
+      case 'sankey':
+        return { isBarChart: false, isLineChart: false, isHorizontalBarChart: false, isDonutChart: false, isAreaChart: false, isSankeyChart: true };
+      default:
+        return { isBarChart: false, isLineChart: false, isHorizontalBarChart: false, isDonutChart: false, isAreaChart: false, isSankeyChart: false };
+    }
+  };
+
+  const initialState = getInitialState();
   const [isExploded, setIsExploded] = useState(false);
-  const [isBarChart, setIsBarChart] = useState(false);
-  const [isLineChart, setIsLineChart] = useState(false);
-  const [isHorizontalBarChart, setIsHorizontalBarChart] = useState(false);
-  const [isDonutChart, setIsDonutChart] = useState(false);
-  const [isAreaChart, setIsAreaChart] = useState(false);
-  const [isSankeyChart, setIsSankeyChart] = useState(false);
+  const [isBarChart, setIsBarChart] = useState(initialState.isBarChart);
+  const [isLineChart, setIsLineChart] = useState(initialState.isLineChart);
+  const [isHorizontalBarChart, setIsHorizontalBarChart] = useState(initialState.isHorizontalBarChart);
+  const [isDonutChart, setIsDonutChart] = useState(initialState.isDonutChart);
+  const [isAreaChart, setIsAreaChart] = useState(initialState.isAreaChart);
+  const [isSankeyChart, setIsSankeyChart] = useState(initialState.isSankeyChart);
   const [linePoints, setLinePoints] = useState<Array<Array<{x: number, y: number}>>>([]);
   const containerRef = useRef<HTMLDivElement>(null);
   const total = data.reduce((sum, value) => sum + value, 0);
