@@ -103,121 +103,145 @@ const PostComponent = ({
   return (
     <div className={level > 0 ? 'mt-2' : ''}>
       <div
-        className={`bg-white rounded-lg shadow p-6 ${
-          level > 0 ? 'border-l-4 border-blue-300' : ''
+        className={`bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden ${
+          level > 0 ? 'border-l-4 border-l-blue-400' : ''
         }`}
       >
-        {post.parent_id && parentPost && (
-          <div className="mb-3">
-            <div className="text-sm text-gray-600 mb-2 relative">
-              Ответ на{' '}
-              <button
-                onClick={(e) => handleIdClick(e, post.parent_id!)}
-                className="text-blue-600 hover:underline font-mono relative"
-                onMouseEnter={() => {
-                  const targetPost = allPosts.find(p => p.id === post.parent_id);
-                  if (targetPost) {
-                    setTooltipPost(targetPost);
-                    setShowTooltip(true);
-                  }
+        <div className="flex gap-4 p-4">
+          {/* Левая колонка: аватар, логин, дата, #id */}
+          <div className="flex-shrink-0 w-28 flex flex-col items-center text-center">
+            <Avatar avatarUrl={post.author_avatar} username={post.author_name} size="md" />
+            <div className="mt-2 w-full">
+              <span className="font-semibold text-gray-800 text-sm block truncate" title={post.author_name}>
+                {post.author_name}
+              </span>
+              <div className="text-xs text-gray-500 mt-0.5">
+                {new Date(post.created_at).toLocaleString('ru-RU')}
+              </div>
+              <span
+                id={`post-${post.id}`}
+                className="inline-block mt-1 text-blue-600 font-mono text-xs cursor-pointer hover:underline"
+                onClick={(e) => {
+                  e.preventDefault();
+                  document.getElementById(`post-${post.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 }}
-                onMouseLeave={() => setShowTooltip(false)}
+                title="Ссылка на сообщение"
               >
-                #{getGlobalId(post.parent_id)}
-              </button>
-              {showTooltip && tooltipPost && tooltipPost.id === post.parent_id && (
-                <div 
-                  className="absolute bg-white border border-gray-300 rounded-lg shadow-lg p-3 max-w-md z-50"
-                  style={{
-                    left: '100%',
-                    top: '0',
-                    marginLeft: '10px',
-                  }}
-                  onMouseEnter={() => setShowTooltip(true)}
-                  onMouseLeave={() => setShowTooltip(false)}
-                >
-                  <div className="flex items-center gap-2 mb-2">
-                    <Avatar avatarUrl={tooltipPost.author_avatar} username={tooltipPost.author_name} size="sm" />
-                    <div>
-                      <span className="font-semibold text-sm">{tooltipPost.author_name}</span>
-                      <div className="text-xs text-gray-500">
-                        {new Date(tooltipPost.created_at).toLocaleString('ru-RU')}
+                #{getGlobalId(post.id)}
+              </span>
+            </div>
+          </div>
+
+          {/* Центр: ответ на #X (если есть) + окошко с сообщением */}
+          <div className="flex-1 min-w-0 flex flex-col">
+            {post.parent_id && parentPost && (
+              <div className="mb-2 text-sm text-gray-600">
+                Ответ на{' '}
+                <span className="relative inline-block">
+                  <button
+                    onClick={(e) => handleIdClick(e, post.parent_id!)}
+                    className="text-blue-600 hover:underline font-mono"
+                    onMouseEnter={() => {
+                      const targetPost = allPosts.find(p => p.id === post.parent_id);
+                      if (targetPost) {
+                        setTooltipPost(targetPost);
+                        setShowTooltip(true);
+                      }
+                    }}
+                    onMouseLeave={() => setShowTooltip(false)}
+                  >
+                    #{getGlobalId(post.parent_id)}
+                  </button>
+                  {showTooltip && tooltipPost && tooltipPost.id === post.parent_id && (
+                    <div
+                      className="absolute left-0 top-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg p-3 max-w-md z-50"
+                      style={{ minWidth: '200px' }}
+                      onMouseEnter={() => setShowTooltip(true)}
+                      onMouseLeave={() => setShowTooltip(false)}
+                    >
+                      <div className="flex items-center gap-2 mb-2">
+                        <Avatar avatarUrl={tooltipPost.author_avatar} username={tooltipPost.author_name} size="sm" />
+                        <div>
+                          <span className="font-semibold text-sm">{tooltipPost.author_name}</span>
+                          <div className="text-xs text-gray-500">
+                            {new Date(tooltipPost.created_at).toLocaleString('ru-RU')}
+                          </div>
+                        </div>
+                        <span className="text-blue-600 font-mono text-xs">#{getGlobalId(tooltipPost.id)}</span>
                       </div>
-                    </div>
-                    <span className="text-blue-600 font-mono text-xs">#{getGlobalId(tooltipPost.id)}</span>
-                  </div>
-                  <p className="text-sm whitespace-pre-wrap line-clamp-4">
-                    <LinkifyText text={tooltipPost.content} />
-                  </p>
-                  {tooltipPost.images && tooltipPost.images.length > 0 && (
-                    <div className="mt-2">
-                      <img
-                        src={tooltipPost.images[0].startsWith('http') ? tooltipPost.images[0] : (import.meta.env.VITE_API_URL || '') + tooltipPost.images[0]}
-                        alt="Preview"
-                        className="w-20 h-20 object-cover rounded border"
-                      />
+                      <p className="text-sm whitespace-pre-wrap line-clamp-4">
+                        <LinkifyText text={tooltipPost.content} />
+                      </p>
+                      {tooltipPost.images && tooltipPost.images.length > 0 && (
+                        <div className="mt-2">
+                          <img
+                            src={tooltipPost.images[0].startsWith('http') ? tooltipPost.images[0] : (import.meta.env.VITE_API_URL || '') + tooltipPost.images[0]}
+                            alt="Preview"
+                            className="w-20 h-20 object-cover rounded border"
+                          />
+                        </div>
+                      )}
+                      <button
+                        onClick={() => setShowTooltip(false)}
+                        className="mt-2 text-xs text-blue-600 hover:underline"
+                      >
+                        Закрыть
+                      </button>
                     </div>
                   )}
-                  <button
-                    onClick={() => setShowTooltip(false)}
-                    className="mt-2 text-xs text-blue-600 hover:underline"
-                  >
-                    Закрыть
-                  </button>
+                </span>
+              </div>
+            )}
+            <div className="flex-1 rounded-lg bg-slate-50 border border-slate-200 p-4">
+              <div className="prose prose-slate max-w-none text-gray-800">
+                <MarkdownRenderer content={post.content} />
+              </div>
+              {post.images && post.images.length > 0 && (
+                <div className={`mt-4 ${post.images.length > 1 ? 'grid grid-cols-2 gap-2' : 'flex'}`}>
+                  {post.images.map((imageUrl, imgIndex) => {
+                    const fullUrl = imageUrl.startsWith('http') ? imageUrl : (import.meta.env.VITE_API_URL || '') + imageUrl;
+                    const imagesArray = post.images || [];
+                    return (
+                      <img
+                        key={imgIndex}
+                        src={fullUrl}
+                        alt={`Image ${imgIndex + 1}`}
+                        className={imagesArray.length > 1 ? 'w-full h-auto rounded border border-gray-200 cursor-pointer hover:opacity-90' : 'max-w-[200px] h-auto rounded border border-gray-200 cursor-pointer hover:opacity-90'}
+                        onClick={() => window.open(fullUrl, '_blank')}
+                      />
+                    );
+                  })}
                 </div>
               )}
             </div>
           </div>
-        )}
-        <div className="flex justify-between items-start mb-2">
-          <div className="flex items-center gap-3">
-            <Avatar avatarUrl={post.author_avatar} username={post.author_name} size="md" />
-            <div>
-              <span className="font-semibold">{post.author_name}</span>
-              <div className="text-sm text-gray-500">
-                {new Date(post.created_at).toLocaleString('ru-RU')}
-              </div>
-            </div>
-            <span 
-              id={`post-${post.id}`}
-              className="text-blue-600 font-mono text-sm cursor-pointer hover:underline"
-              onClick={(e) => {
-                e.preventDefault();
-                const element = document.getElementById(`post-${post.id}`);
-                if (element) {
-                  element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                }
-              }}
-              title="Ссылка на сообщение"
-            >
-              #{getGlobalId(post.id)}
-            </span>
-          </div>
-          <div className="flex gap-2 items-center">
+
+          {/* Правая колонка: ответить, лайки */}
+          <div className="flex-shrink-0 flex flex-col gap-2 items-end justify-start">
             {user && (
               <>
                 <button
                   onClick={() => onReply(post.id)}
-                  className="px-3 py-1 rounded bg-gray-100 text-gray-700 hover:bg-gray-200 transition text-sm"
+                  className="px-3 py-1.5 rounded border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 transition text-sm"
                 >
                   Ответить
                 </button>
                 <button
                   onClick={() => onReact(post.id, 1)}
-                  className={`px-3 py-1 rounded transition flex items-center gap-1 ${
+                  className={`px-3 py-1.5 rounded border transition flex items-center gap-1 text-sm ${
                     userReaction === 1
-                      ? 'bg-green-500 text-white'
-                      : 'bg-gray-200 text-gray-700 hover:bg-green-100'
+                      ? 'bg-green-500 border-green-500 text-white'
+                      : 'border-gray-300 bg-white text-gray-700 hover:bg-green-50'
                   }`}
                 >
                   👍 {post.upvote_count || 0}
                 </button>
                 <button
                   onClick={() => onReact(post.id, -1)}
-                  className={`px-3 py-1 rounded transition flex items-center gap-1 ${
+                  className={`px-3 py-1.5 rounded border transition flex items-center gap-1 text-sm ${
                     userReaction === -1
-                      ? 'bg-red-500 text-white'
-                      : 'bg-gray-200 text-gray-700 hover:bg-red-100'
+                      ? 'bg-red-500 border-red-500 text-white'
+                      : 'border-gray-300 bg-white text-gray-700 hover:bg-red-50'
                   }`}
                 >
                   👎 {post.downvote_count || 0}
@@ -225,26 +249,6 @@ const PostComponent = ({
               </>
             )}
           </div>
-        </div>
-        <div className="prose max-w-none">
-          <MarkdownRenderer content={post.content} />
-          {post.images && post.images.length > 0 && (
-            <div className={`mt-4 ${post.images.length > 1 ? 'grid grid-cols-2 gap-0' : 'flex'}`}>
-              {post.images.map((imageUrl, imgIndex) => {
-                const fullUrl = imageUrl.startsWith('http') ? imageUrl : (import.meta.env.VITE_API_URL || '') + imageUrl;
-                const imagesArray = post.images || [];
-                return (
-                  <img
-                    key={imgIndex}
-                    src={fullUrl}
-                    alt={`Image ${imgIndex + 1}`}
-                    className={imagesArray.length > 1 ? 'w-full h-auto rounded border cursor-pointer hover:opacity-90' : 'w-1/4 max-w-[25%] h-auto rounded border cursor-pointer hover:opacity-90'}
-                    onClick={() => window.open(fullUrl, '_blank')}
-                  />
-                );
-              })}
-            </div>
-          )}
         </div>
       </div>
       {post.replies.length > 0 && (
@@ -728,7 +732,8 @@ const Topic = () => {
   }
 
   return (
-    <div>
+    <div className="min-h-screen bg-gray-100 py-4 px-2 md:px-4">
+      <div className="max-w-4xl mx-auto">
       <Link
         to={`/category/${topic.category_id}`}
         className="text-blue-600 hover:underline mb-4 inline-block"
@@ -736,7 +741,7 @@ const Topic = () => {
         ← Назад к категории
       </Link>
 
-      <div className="bg-white rounded-lg shadow p-6 mb-6 relative">
+      <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6 mb-6 relative">
         <div className="flex justify-between items-start mb-2">
           <div className="flex items-center gap-3">
             <h1 className="text-3xl font-bold">{topic.title}</h1>
@@ -788,7 +793,7 @@ const Topic = () => {
 
       <div className="space-y-4 mb-6">
         {topic.posts.length === 0 ? (
-          <div className="bg-white rounded-lg shadow p-6 text-center text-gray-500">
+          <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6 text-center text-gray-500">
             Пока нет сообщений. Будьте первым!
           </div>
         ) : (
@@ -812,7 +817,7 @@ const Topic = () => {
         <form
           id="reply-form"
           onSubmit={handleSubmitPost}
-          className="bg-white rounded-lg shadow p-6"
+          className="bg-white rounded-lg border border-gray-200 shadow-sm p-6"
         >
           {replyingTo && (() => {
             const replyingToPost = getReplyingToPost();
@@ -905,6 +910,7 @@ const Topic = () => {
           </div>
         </form>
       )}
+      </div>
     </div>
   );
 };
