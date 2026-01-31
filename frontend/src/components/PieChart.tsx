@@ -268,7 +268,6 @@ const PieChart: React.FC<PieChartProps> = ({
             const rightHeights = segments.map((s) => s.percentage * totalH);
             const leftHeights = segments.map((s) => s.percentage * totalH * 1.35);
             const totalLeft = leftHeights.reduce((a, b) => a + b, 0);
-            const totalRight = totalH;
             const leftScale = totalH / totalLeft;
 
             return segments.map((segment, idx) => {
