@@ -10,7 +10,9 @@ import postRoutes from './routes/posts';
 import statsRoutes from './routes/stats';
 import uploadRoutes from './routes/upload';
 import invitationsRoutes from './routes/invitations';
+import settingsRoutes from './routes/settings';
 import { telegramBotService } from './services/telegram-bot';
+import { addForumSettings } from './migrations/add-forum-settings';
 import path from 'path';
 
 // Load .env from project root
@@ -49,6 +51,7 @@ app.use('/api/posts', postRoutes);
 app.use('/api/stats', statsRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/invitations', invitationsRoutes);
+app.use('/api/settings', settingsRoutes);
 
 // Health check
 app.get('/api/health', async (req, res) => {
@@ -82,13 +85,18 @@ app.get('/api/test-notification', async (req, res) => {
   }
 });
 
-// Start server
-app.listen(PORT, async () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
-  console.log(`📝 Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`🔐 JWT Secret: ${process.env.JWT_SECRET ? '✅ Set' : '❌ NOT SET!'}`);
-  console.log(`🗄️  Database: ${process.env.DB_NAME || 'forum_db'} on ${process.env.DB_HOST || 'localhost'}:${process.env.DB_PORT || '5432'}`);
-  
-  // Initialize Telegram bot
-  await telegramBotService.initialize();
-});
+// Run forum_settings migration then start server
+(async () => {
+  try {
+    await addForumSettings();
+  } catch (e) {
+    console.warn('Forum settings migration:', (e as Error).message);
+  }
+  app.listen(PORT, async () => {
+    console.log(`🚀 Server running on http://localhost:${PORT}`);
+    console.log(`📝 Environment: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`🔐 JWT Secret: ${process.env.JWT_SECRET ? '✅ Set' : '❌ NOT SET!'}`);
+    console.log(`🗄️  Database: ${process.env.DB_NAME || 'forum_db'} on ${process.env.DB_HOST || 'localhost'}:${process.env.DB_PORT || '5432'}`);
+    await telegramBotService.initialize();
+  });
+})();

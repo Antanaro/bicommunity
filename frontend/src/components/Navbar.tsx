@@ -46,6 +46,12 @@ const Navbar = () => {
             {isAiTitle ? 'AI Vibe Forum' : 'BI Vibe Forum'}
           </Link>
           <div className="flex items-center gap-4">
+            <Link
+              to="/about"
+              className="text-gray-700 hover:text-blue-600 transition"
+            >
+              О форуме
+            </Link>
             {user ? (
               <>
                 <Link
