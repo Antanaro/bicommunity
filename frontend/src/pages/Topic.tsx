@@ -6,8 +6,6 @@ import { useAuth } from '../contexts/AuthContext';
 import LinkifyText from '../components/LinkifyText';
 import MarkdownRenderer from '../components/MarkdownRenderer';
 
-const POPUP_EST_WIDTH = 320;
-const POPUP_EST_HEIGHT = 300;
 const POPUP_Z_INDEX = 99999;
 
 interface Post {
@@ -192,16 +190,8 @@ const PostComponent = ({
                         className="bg-white border border-gray-300 rounded-lg shadow-xl p-3"
                         style={{
                           position: 'fixed',
-                          left: (() => {
-                            const baseLeft = tooltipAnchorRect.left + 8;
-                            const centerLeft = window.innerWidth / 2 - POPUP_EST_WIDTH / 2;
-                            return baseLeft * 0.5 + centerLeft * 0.5;
-                          })(),
-                          top: (() => {
-                            const baseTop = tooltipAnchorRect.top - 8 - POPUP_EST_HEIGHT;
-                            const centerTop = window.innerHeight / 2 - POPUP_EST_HEIGHT / 2;
-                            return baseTop * 0.5 + centerTop * 0.5;
-                          })(),
+                          left: tooltipAnchorRect.right + 8,
+                          top: tooltipAnchorRect.bottom + 4,
                           minWidth: 200,
                           maxWidth: Math.min(400, window.innerWidth - 40),
                           width: 'max-content',
@@ -220,7 +210,7 @@ const PostComponent = ({
                           </div>
                           <span className="text-blue-600 font-mono text-xs">#{getGlobalId(tooltipPost.id)}</span>
                         </div>
-                        <p className="text-sm whitespace-pre-wrap line-clamp-4">
+                        <p className="text-sm whitespace-pre-wrap max-h-[60vh] overflow-y-auto">
                           <LinkifyText text={tooltipPost.content} />
                         </p>
                         {tooltipPost.images && tooltipPost.images.length > 0 && (
