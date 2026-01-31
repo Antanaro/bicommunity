@@ -192,8 +192,8 @@ const PostComponent = ({
                             className="bg-white border border-gray-300 rounded-lg shadow-xl p-3"
                             style={{
                               position: 'fixed',
-                              left: tooltipAnchorRect.right + 8,
-                              top: tooltipAnchorRect.bottom + 4,
+                              left: tooltipAnchorRect.left,
+                              bottom: window.innerHeight - tooltipAnchorRect.top + 8,
                               minWidth: 200,
                               maxWidth: Math.min(400, window.innerWidth - 40),
                               width: 'max-content',
