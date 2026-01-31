@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
@@ -8,9 +8,9 @@ interface MarkdownRendererProps {
 }
 
 /**
- * Компонент для рендеринга Markdown с поддержкой GitHub Flavored Markdown
+ * Компонент для рендеринга Markdown с поддержкой GitHub Flavored Markdown (memo для меньшего числа ререндеров)
  */
-const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, className = '' }) => {
+const MarkdownRenderer: React.FC<MarkdownRendererProps> = memo(({ content, className = '' }) => {
   return (
     <div className={`prose prose-sm max-w-none ${className}`}>
       <ReactMarkdown
@@ -76,6 +76,8 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, className 
       </ReactMarkdown>
     </div>
   );
-};
+});
+
+MarkdownRenderer.displayName = 'MarkdownRenderer';
 
 export default MarkdownRenderer;

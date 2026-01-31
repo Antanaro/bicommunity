@@ -254,6 +254,48 @@ router.post(
   }
 );
 
+// Get user's reactions for many posts at once (batch, for Board performance)
+router.get('/reactions', authenticate, async (req: AuthRequest, res: Response) => {
+  try {
+    const postIdsParam = req.query.post_ids;
+    if (!postIdsParam || typeof postIdsParam !== 'string') {
+      return res.status(400).json({ error: 'post_ids query required (comma-separated)' });
+    }
+    const postIds = postIdsParam.split(',').map((id) => parseInt(id.trim(), 10)).filter((id) => !isNaN(id));
+    if (postIds.length === 0) {
+      return res.json({});
+    }
+    if (postIds.length > 500) {
+      return res.status(400).json({ error: 'Max 500 post_ids per request' });
+    }
+
+    const columnCheck = await pool.query(`
+      SELECT column_name FROM information_schema.columns
+      WHERE table_name='likes' AND column_name='reaction_type'
+    `);
+    if (columnCheck.rows.length === 0) {
+      const empty: Record<string, number | null> = {};
+      postIds.forEach((id) => { empty[String(id)] = null; });
+      return res.json(empty);
+    }
+
+    const placeholders = postIds.map((_, i) => `$${i + 1}`).join(',');
+    const result = await pool.query(
+      `SELECT post_id, reaction_type FROM likes WHERE user_id = $${postIds.length + 1} AND post_id IN (${placeholders})`,
+      [...postIds, req.userId]
+    );
+    const map: Record<string, number | null> = {};
+    postIds.forEach((id) => { map[String(id)] = null; });
+    result.rows.forEach((row: { post_id: number; reaction_type: number }) => {
+      map[String(row.post_id)] = row.reaction_type;
+    });
+    res.json(map);
+  } catch (error) {
+    console.error('Get reactions batch error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 // Get user's reaction to a post (for frontend to show current state)
 router.get('/:id/reaction', authenticate, async (req: AuthRequest, res: Response) => {
   try {

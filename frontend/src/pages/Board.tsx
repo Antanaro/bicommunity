@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useCallback, memo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { api, uploadImages } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
@@ -33,8 +33,8 @@ interface Topic {
   last_post_at?: string | null;
 }
 
-// Avatar component
-const Avatar = ({ 
+// Avatar component (memoized to avoid re-renders on parent updates)
+const Avatar = memo(({ 
   avatarUrl, 
   username, 
   size = 'md' 
@@ -72,36 +72,37 @@ const Avatar = ({
       )}
     </div>
   );
-};
+});
 
 interface PostComponentProps {
   post: Post;
   user: any;
-  reactions: Map<number, number | null>;
+  userReaction: number | null;
   onReact: (postId: number, reactionType: number) => void;
-  onReply: (postId: number) => void;
+  onReply: (topicId: number, postId: number) => void;
+  topicId: number;
   allPosts: Post[];
-  globalId: number;
-  getGlobalIdForPost: (postId: number) => number;
+  globalIdMap: Map<string, number>;
 }
 
-const PostComponent = ({
+const PostComponent = memo(({
   post,
   user,
-  reactions,
+  userReaction,
   onReact,
   onReply,
+  topicId,
   allPosts,
-  globalId,
-  getGlobalIdForPost,
+  globalIdMap,
 }: PostComponentProps) => {
+  const globalId = globalIdMap.get(`post-${post.id}`) ?? 0;
+  const getGlobalIdForPost = useCallback((postId: number) => globalIdMap.get(`post-${postId}`) ?? 0, [globalIdMap]);
   const [showTooltip, setShowTooltip] = useState(false);
   const [tooltipPost, setTooltipPost] = useState<Post | null>(null);
-  const userReaction = reactions.get(post.id) || null;
 
   const handleReplyClick = (e: React.MouseEvent) => {
     e.preventDefault();
-    onReply(post.id);
+    onReply(topicId, post.id);
   };
 
   const handleIdClick = (e: React.MouseEvent, targetId: number) => {
@@ -269,7 +270,9 @@ const PostComponent = ({
       </div>
     </div>
   );
-};
+});
+
+PostComponent.displayName = 'PostComponent';
 
 interface CategoryOption {
   id: number;
@@ -377,61 +380,12 @@ const Board = () => {
     fetchCategories();
   }, []);
 
-  // Fetch all topics and posts to create global ID map (only once)
+  // One request for global ID map (was 1 + N topic requests)
   const fetchGlobalIdMap = async () => {
     try {
-      const allTopicsResponse = await api.get('/topics');
-      const allTopics = allTopicsResponse.data;
-      
-      // Fetch all posts for all topics
-      const allTopicsWithPosts = await Promise.all(
-        allTopics.map(async (topic: any) => {
-          try {
-            const topicResponse = await api.get(`/topics/${topic.id}`);
-            return topicResponse.data;
-          } catch (error) {
-            return { ...topic, posts: [] };
-          }
-        })
-      );
-
-      // Create array of all items (topics + posts) sorted by creation date
-      const allItems: Array<{ type: 'topic' | 'post'; id: number; topicId?: number; created_at: string }> = [];
-      
-      for (const topic of allTopicsWithPosts) {
-        allItems.push({
-          type: 'topic',
-          id: topic.id,
-          created_at: topic.created_at,
-        });
-        
-        if (topic.posts) {
-          for (const post of topic.posts) {
-            allItems.push({
-              type: 'post',
-              id: post.id,
-              topicId: topic.id,
-              created_at: post.created_at,
-            });
-          }
-        }
-      }
-
-      // Sort by creation date
-      allItems.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
-
-      // Create global ID map
+      const response = await api.get<Record<string, number>>('/topics/global-id-map');
       const idMap = new Map<string, number>();
-      let globalId = 1;
-      
-      for (const item of allItems) {
-        if (item.type === 'topic') {
-          idMap.set(`topic-${item.id}`, globalId++);
-        } else {
-          idMap.set(`post-${item.id}`, globalId++);
-        }
-      }
-
+      Object.entries(response.data).forEach(([key, val]) => idMap.set(key, val));
       setGlobalIdMap(idMap);
     } catch (error) {
       console.error('Error fetching global ID map:', error);
@@ -485,7 +439,7 @@ const Board = () => {
 
       setTopics(topicsWithPosts);
 
-      // Fetch reactions for all posts in parallel
+      // One batch request for reactions (was N requests)
       if (user) {
         const allPostIds: number[] = [];
         for (const topic of topicsWithPosts) {
@@ -493,20 +447,20 @@ const Board = () => {
             allPostIds.push(...topic.posts.map((p: Post) => p.id));
           }
         }
-
-        // Fetch all reactions in parallel
-        const reactionPromises = allPostIds.map(postId =>
-          api.get(`/posts/${postId}/reaction`)
-            .then(res => ({ postId, reactionType: res.data.reaction_type }))
-            .catch(() => ({ postId, reactionType: null }))
-        );
-
-        const reactionResults = await Promise.all(reactionPromises);
-        const reactionsMap = new Map<number, number | null>();
-        reactionResults.forEach(({ postId, reactionType }) => {
-          reactionsMap.set(postId, reactionType);
-        });
-        setReactions(reactionsMap);
+        if (allPostIds.length > 0) {
+          try {
+            const res = await api.get<Record<string, number | null>>('/posts/reactions', {
+              params: { post_ids: allPostIds.join(',') },
+            });
+            const reactionsMap = new Map<number, number | null>();
+            Object.entries(res.data).forEach(([id, reactionType]) => {
+              reactionsMap.set(parseInt(id, 10), reactionType);
+            });
+            setReactions(reactionsMap);
+          } catch (err) {
+            console.error('Error fetching reactions:', err);
+          }
+        }
       }
     } catch (error) {
       console.error('Error fetching topics:', error);
@@ -595,7 +549,7 @@ const Board = () => {
         reaction_type: reactionType,
       });
 
-      // Update with server response
+      // Update with server response (no extra topic refresh — optimistic update is enough)
       setReactions((prev) => {
         const newMap = new Map(prev);
         if (response.data.removed) {
@@ -605,19 +559,6 @@ const Board = () => {
         }
         return newMap;
       });
-
-      // Refresh only the affected topic (in background, don't block UI)
-      const topicWithPost = topics.find(t => t.posts?.some(p => p.id === postId));
-      if (topicWithPost) {
-        api.get(`/topics/${topicWithPost.id}`).then(topicResponse => {
-          setTopics(prevTopics => prevTopics.map(topic => {
-            if (topic.id === topicWithPost.id) {
-              return topicResponse.data;
-            }
-            return topic;
-          }));
-        }).catch(err => console.error('Error refreshing topic:', err));
-      }
     } catch (error: any) {
       // Revert optimistic update on error
       setReactions((prev) => {
@@ -634,11 +575,10 @@ const Board = () => {
     }
   };
 
-  const handleReply = (topicId: number, postId: number | null) => {
-    setReplyingTo({ topicId, postId: postId || null });
+  const handleReply = useCallback((topicId: number, postId: number | null) => {
+    setReplyingTo({ topicId, postId: postId ?? null });
     setNewPost('');
     setSelectedImages([]);
-    // Scroll to reply form
     setTimeout(() => {
       const form = document.querySelector(`[data-topic-id="${topicId}"] form`);
       if (form) {
@@ -649,7 +589,7 @@ const Board = () => {
         }
       }
     }, 100);
-  };
+  }, []);
 
   const handleSubmitPost = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -727,18 +667,8 @@ const Board = () => {
         return topic;
       }));
 
-      // Update global ID map with new post
+      // Update global ID map with new post (no extra topic refresh — we already have the post)
       updateGlobalIdMapForNewPost(response.data.id);
-
-      // Refresh only the affected topic (in background, don't block UI)
-      api.get(`/topics/${topicId}`).then(topicResponse => {
-        setTopics(prevTopics => prevTopics.map(topic => {
-          if (topic.id === topicId) {
-            return topicResponse.data;
-          }
-          return topic;
-        }));
-      }).catch(err => console.error('Error refreshing topic:', err));
     } catch (error) {
       console.error('Error creating post:', error);
       // Revert optimistic update on error
@@ -1054,26 +984,20 @@ const Board = () => {
 
                   {/* Posts */}
                   <div className="space-y-2">
-                    {visiblePosts.map((post) => {
-                      const postGlobalId = getGlobalId(topic.id, post.id, false);
-                      const getGlobalIdForPost = (postId: number) => {
-                        return getGlobalId(topic.id, postId, false);
-                      };
-                      return (
+                    {visiblePosts.map((post) => (
                         <div key={post.id} id={`post-${post.id}`}>
                           <PostComponent
                             post={post}
                             user={user}
-                            reactions={reactions}
+                            userReaction={reactions.get(post.id) ?? null}
                             onReact={handleReact}
-                            onReply={(postId) => handleReply(topic.id, postId)}
+                            onReply={handleReply}
+                            topicId={topic.id}
                             allPosts={allPosts}
-                            globalId={postGlobalId}
-                            getGlobalIdForPost={getGlobalIdForPost}
+                            globalIdMap={globalIdMap}
                           />
                         </div>
-                      );
-                    })}
+                      ))}
                   </div>
 
                   {/* Reply Form */}

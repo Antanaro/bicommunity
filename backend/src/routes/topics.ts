@@ -47,6 +47,39 @@ router.get('/', async (req: Request, res: Response) => {
   }
 });
 
+// Global ID map for Board (#1, #2, ...) — one query instead of 1 + N topic requests
+router.get('/global-id-map', async (req: Request, res: Response) => {
+  try {
+    const result = await pool.query(`
+      WITH topic_rows AS (
+        SELECT id, created_at, 'topic' AS type FROM topics
+      ),
+      post_rows AS (
+        SELECT p.id, p.created_at, 'post' AS type FROM posts p
+      ),
+      combined AS (
+        SELECT id, created_at, type FROM topic_rows
+        UNION ALL
+        SELECT id, created_at, type FROM post_rows
+      ),
+      ordered AS (
+        SELECT id, type, ROW_NUMBER() OVER (ORDER BY created_at ASC) AS global_id
+        FROM combined
+      )
+      SELECT id, type, global_id FROM ordered
+    `);
+    const map: Record<string, number> = {};
+    result.rows.forEach((row: { id: number; type: string; global_id: string }) => {
+      const key = row.type === 'topic' ? `topic-${row.id}` : `post-${row.id}`;
+      map[key] = parseInt(row.global_id, 10);
+    });
+    res.json(map);
+  } catch (error) {
+    console.error('Get global-id-map error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 // Get single topic with posts
 router.get('/:id', async (req: Request, res: Response) => {
   try {
