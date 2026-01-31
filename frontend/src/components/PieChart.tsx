@@ -426,7 +426,7 @@ const PieChart: React.FC<PieChartProps> = ({
           })()}
         </svg>
       ) : isRadarChart ? (
-        // Радар: выпуклый пятиугольник (не обязательно правильный) — углы и радиусы произвольные, вершины по порядку угла
+        // Радар: 5 лучей из центра; на каждом луче — по 3 точки (по одной на цвет); каждый цвет соединяет свои 5 точек в пятиугольник
         <svg
           width={size}
           height={size}
@@ -440,50 +440,63 @@ const PieChart: React.FC<PieChartProps> = ({
           {(() => {
             const cx = VIEWBOX_SIZE / 2;
             const cy = VIEWBOX_SIZE / 2;
-            const Rmin = CHART_INSET + (VIEWBOX_SIZE / 2 - CHART_INSET) * 0.2;
+            const Rmin = CHART_INSET + (VIEWBOX_SIZE / 2 - CHART_INSET) * 0.15;
             const Rmax = VIEWBOX_SIZE / 2 - CHART_INSET - 1;
             const hash = (n: number) => ((n * 2654435761) % 1000) / 1000;
+            const numAxes = 5;
             const numSeries = 3;
-            const numVertices = 5;
-            return Array.from({ length: numSeries }, (_, seriesIndex) => {
-              // 5 вершин: угол и радиус (произвольные) — сортируем по углу → выпуклый пятиугольник
-              const raw = Array.from({ length: numVertices }, (_, i) => {
-                const angle = hash(seriesIndex * 19 + i * 7) * 2 * Math.PI; // произвольный угол
-                const r = Rmin + hash(seriesIndex * 31 + i * 13) * (Rmax - Rmin); // произвольный радиус
-                return { angle, r };
-              });
-              raw.sort((a, b) => a.angle - b.angle);
-              const points = raw.map(({ angle, r }) => ({
-                x: cx + r * Math.cos(angle),
-                y: cy + r * Math.sin(angle),
-              }));
-              const d = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ') + ' Z';
-              return (
-                <g key={seriesIndex}>
-                  <path
-                    d={d}
-                    fill="none"
-                    stroke={colors[seriesIndex % colors.length]}
-                    strokeWidth="1.2"
-                    style={{
-                      transition: 'all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1)',
-                    }}
-                  />
-                  {points.map((p, pi) => (
-                    <circle
-                      key={pi}
-                      cx={p.x}
-                      cy={p.y}
-                      r="1.2"
-                      fill={colors[seriesIndex % colors.length]}
-                      style={{
-                        transition: 'all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1)',
-                      }}
-                    />
-                  ))}
-                </g>
-              );
+            // 5 лучей: углы (можно слегка неправильный пятиугольник)
+            const angles = Array.from({ length: numAxes }, (_, i) => {
+              const base = (-Math.PI / 2) + (i * 2 * Math.PI) / numAxes;
+              const offset = (hash(i * 11) - 0.5) * 0.15;
+              return base + offset;
             });
+            // На каждой оси — по 3 радиуса (один на серию): точки разных цветов на одной линии
+            const radiiByAxis: number[][] = Array.from({ length: numAxes }, (_, axisIndex) =>
+              Array.from({ length: numSeries }, (_, seriesIndex) => {
+                const t = hash(axisIndex * 7 + seriesIndex * 13);
+                return Rmin + t * (Rmax - Rmin);
+              })
+            );
+            return (
+              <>
+                {Array.from({ length: numSeries }, (_, seriesIndex) => {
+                  const points = angles.map((angle, axisIndex) => {
+                    const r = radiiByAxis[axisIndex][seriesIndex];
+                    return {
+                      x: cx + r * Math.cos(angle),
+                      y: cy + r * Math.sin(angle),
+                    };
+                  });
+                  const d = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ') + ' Z';
+                  return (
+                    <g key={seriesIndex}>
+                      <path
+                        d={d}
+                        fill="none"
+                        stroke={colors[seriesIndex % colors.length]}
+                        strokeWidth="1.2"
+                        style={{
+                          transition: 'all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                        }}
+                      />
+                      {points.map((p, pi) => (
+                        <circle
+                          key={pi}
+                          cx={p.x}
+                          cy={p.y}
+                          r="1.2"
+                          fill={colors[seriesIndex % colors.length]}
+                          style={{
+                            transition: 'all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                          }}
+                        />
+                      ))}
+                    </g>
+                  );
+                })}
+              </>
+            );
           })()}
         </svg>
       ) : isAreaChart ? (

@@ -158,97 +158,129 @@ const PostComponent = ({
             </div>
           </div>
 
-          {/* Центр: ID сообщения, ответ на #X (если есть) + окошко с сообщением */}
+          {/* Центр: верхняя строка (#id, ответ на #X) + кнопки справа; ниже — окошко с сообщением */}
           <div className="flex-1 min-w-0 flex flex-col">
-            {(post.parent_id && parentPost) && (
-              <div className="mb-2 text-sm text-gray-600 flex items-center gap-2">
-                <span
-                  id={`post-${post.id}`}
-                  className="text-blue-600 font-mono text-sm cursor-pointer hover:underline flex-shrink-0"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    document.getElementById(`post-${post.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                  }}
-                  title="Ссылка на сообщение"
-                >
-                  #{getGlobalId(post.id)}
-                </span>
-                <span>Ответ на{' '}</span>
-                <span className="relative inline-block">
-                  <button
-                    ref={anchorRef}
-                    onClick={(e) => handleIdClick(e, post.parent_id!)}
-                    className="text-blue-600 hover:underline font-mono"
-                    onMouseEnter={openTooltipOnHover}
-                    onMouseLeave={scheduleClose}
-                  >
-                    #{getGlobalId(post.parent_id)}
-                  </button>
-                  {showTooltip && tooltipPost && tooltipPost.id === post.parent_id && tooltipAnchorRect &&
-                    createPortal(
-                      <div
-                        className="bg-white border border-gray-300 rounded-lg shadow-xl p-3"
-                        style={{
-                          position: 'fixed',
-                          left: tooltipAnchorRect.right + 8,
-                          top: tooltipAnchorRect.bottom + 4,
-                          minWidth: 200,
-                          maxWidth: Math.min(400, window.innerWidth - 40),
-                          width: 'max-content',
-                          zIndex: POPUP_Z_INDEX,
-                        }}
-                        onMouseEnter={cancelClose}
-                        onMouseLeave={closeTooltip}
+            <div className="flex items-center justify-between gap-2 mb-2">
+              <div className="text-sm text-gray-600 flex items-center gap-2 min-w-0">
+                {(post.parent_id && parentPost) && (
+                  <>
+                    <span
+                      id={`post-${post.id}`}
+                      className="text-blue-600 font-mono text-sm cursor-pointer hover:underline flex-shrink-0"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        document.getElementById(`post-${post.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                      }}
+                      title="Ссылка на сообщение"
+                    >
+                      #{getGlobalId(post.id)}
+                    </span>
+                    <span>Ответ на{' '}</span>
+                    <span className="relative inline-block">
+                      <button
+                        ref={anchorRef}
+                        onClick={(e) => handleIdClick(e, post.parent_id!)}
+                        className="text-blue-600 hover:underline font-mono"
+                        onMouseEnter={openTooltipOnHover}
+                        onMouseLeave={scheduleClose}
                       >
-                        <div className="flex items-center gap-2 mb-2">
-                          <Avatar avatarUrl={tooltipPost.author_avatar} username={tooltipPost.author_name} size="sm" />
-                          <div>
-                            <span className="font-semibold text-sm">{tooltipPost.author_name}</span>
-                            <div className="text-xs text-gray-500">
-                              {new Date(tooltipPost.created_at).toLocaleString('ru-RU')}
+                        #{getGlobalId(post.parent_id)}
+                      </button>
+                      {showTooltip && tooltipPost && tooltipPost.id === post.parent_id && tooltipAnchorRect &&
+                        createPortal(
+                          <div
+                            className="bg-white border border-gray-300 rounded-lg shadow-xl p-3"
+                            style={{
+                              position: 'fixed',
+                              left: tooltipAnchorRect.right + 8,
+                              top: tooltipAnchorRect.bottom + 4,
+                              minWidth: 200,
+                              maxWidth: Math.min(400, window.innerWidth - 40),
+                              width: 'max-content',
+                              zIndex: POPUP_Z_INDEX,
+                            }}
+                            onMouseEnter={cancelClose}
+                            onMouseLeave={closeTooltip}
+                          >
+                            <div className="flex items-center gap-2 mb-2">
+                              <Avatar avatarUrl={tooltipPost.author_avatar} username={tooltipPost.author_name} size="sm" />
+                              <div>
+                                <span className="font-semibold text-sm">{tooltipPost.author_name}</span>
+                                <div className="text-xs text-gray-500">
+                                  {new Date(tooltipPost.created_at).toLocaleString('ru-RU')}
+                                </div>
+                              </div>
+                              <span className="text-blue-600 font-mono text-xs">#{getGlobalId(tooltipPost.id)}</span>
                             </div>
-                          </div>
-                          <span className="text-blue-600 font-mono text-xs">#{getGlobalId(tooltipPost.id)}</span>
-                        </div>
-                        <p className="text-sm whitespace-pre-wrap max-h-[60vh] overflow-y-auto">
-                          <LinkifyText text={tooltipPost.content} />
-                        </p>
-                        {tooltipPost.images && tooltipPost.images.length > 0 && (
-                          <div className="mt-2">
-                            <img
-                              src={tooltipPost.images[0].startsWith('http') ? tooltipPost.images[0] : (import.meta.env.VITE_API_URL || '') + tooltipPost.images[0]}
-                              alt="Preview"
-                              className="w-20 h-20 object-cover rounded border"
-                            />
-                          </div>
+                            <p className="text-sm whitespace-pre-wrap max-h-[60vh] overflow-y-auto">
+                              <LinkifyText text={tooltipPost.content} />
+                            </p>
+                            {tooltipPost.images && tooltipPost.images.length > 0 && (
+                              <div className="mt-2">
+                                <img
+                                  src={tooltipPost.images[0].startsWith('http') ? tooltipPost.images[0] : (import.meta.env.VITE_API_URL || '') + tooltipPost.images[0]}
+                                  alt="Preview"
+                                  className="w-20 h-20 object-cover rounded border"
+                                />
+                              </div>
+                            )}
+                            <button
+                              onClick={closeTooltip}
+                              className="mt-2 text-xs text-blue-600 hover:underline"
+                            >
+                              Закрыть
+                            </button>
+                          </div>,
+                          document.body
                         )}
-                        <button
-                          onClick={closeTooltip}
-                          className="mt-2 text-xs text-blue-600 hover:underline"
-                        >
-                          Закрыть
-                        </button>
-                      </div>,
-                      document.body
-                    )}
-                </span>
+                    </span>
+                  </>
+                )}
+                {!post.parent_id && (
+                  <span
+                    id={`post-${post.id}`}
+                    className="text-blue-600 font-mono text-sm cursor-pointer hover:underline"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      document.getElementById(`post-${post.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }}
+                    title="Ссылка на сообщение"
+                  >
+                    #{getGlobalId(post.id)}
+                  </span>
+                )}
               </div>
-            )}
-            {!post.parent_id && (
-              <div className="mb-2">
-                <span
-                  id={`post-${post.id}`}
-                  className="text-blue-600 font-mono text-sm cursor-pointer hover:underline"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    document.getElementById(`post-${post.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                  }}
-                  title="Ссылка на сообщение"
-                >
-                  #{getGlobalId(post.id)}
-                </span>
-              </div>
-            )}
+              {user && (
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <button
+                    onClick={() => onReply(post.id)}
+                    className="px-3 py-1.5 rounded border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 transition text-sm"
+                  >
+                    Ответить
+                  </button>
+                  <button
+                    onClick={() => onReact(post.id, 1)}
+                    className={`px-3 py-1.5 rounded border transition flex items-center gap-1 text-sm ${
+                      userReaction === 1
+                        ? 'bg-green-500 border-green-500 text-white'
+                        : 'border-gray-300 bg-white text-gray-700 hover:bg-green-50'
+                    }`}
+                  >
+                    👍 {post.upvote_count || 0}
+                  </button>
+                  <button
+                    onClick={() => onReact(post.id, -1)}
+                    className={`px-3 py-1.5 rounded border transition flex items-center gap-1 text-sm ${
+                      userReaction === -1
+                        ? 'bg-red-500 border-red-500 text-white'
+                        : 'border-gray-300 bg-white text-gray-700 hover:bg-red-50'
+                    }`}
+                  >
+                    👎 {post.downvote_count || 0}
+                  </button>
+                </div>
+              )}
+            </div>
             <div className="flex-1 rounded-lg bg-slate-50 border border-slate-200 p-4">
               <div className="prose prose-slate max-w-none text-gray-800">
                 <MarkdownRenderer content={post.content} />
@@ -271,40 +303,6 @@ const PostComponent = ({
                 </div>
               )}
             </div>
-          </div>
-
-          {/* Правая колонка: ответить, лайки */}
-          <div className="flex-shrink-0 flex flex-col gap-2 items-end justify-start">
-            {user && (
-              <>
-                <button
-                  onClick={() => onReply(post.id)}
-                  className="px-3 py-1.5 rounded border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 transition text-sm"
-                >
-                  Ответить
-                </button>
-                <button
-                  onClick={() => onReact(post.id, 1)}
-                  className={`px-3 py-1.5 rounded border transition flex items-center gap-1 text-sm ${
-                    userReaction === 1
-                      ? 'bg-green-500 border-green-500 text-white'
-                      : 'border-gray-300 bg-white text-gray-700 hover:bg-green-50'
-                  }`}
-                >
-                  👍 {post.upvote_count || 0}
-                </button>
-                <button
-                  onClick={() => onReact(post.id, -1)}
-                  className={`px-3 py-1.5 rounded border transition flex items-center gap-1 text-sm ${
-                    userReaction === -1
-                      ? 'bg-red-500 border-red-500 text-white'
-                      : 'border-gray-300 bg-white text-gray-700 hover:bg-red-50'
-                  }`}
-                >
-                  👎 {post.downvote_count || 0}
-                </button>
-              </>
-            )}
           </div>
         </div>
       </div>

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -29,13 +30,20 @@ const NavbarAvatar = ({ avatarUrl, username }: { avatarUrl?: string | null; user
 
 const Navbar = () => {
   const { user, logout } = useAuth();
+  const [isAiTitle, setIsAiTitle] = useState(false);
 
   return (
     <nav className="bg-white shadow-md">
       <div className="container mx-auto px-4">
         <div className="flex justify-between items-center h-16">
-          <Link to="/" className="text-xl font-bold text-blue-600">
-            BI Vibe Forum
+          <Link
+            to="/"
+            onClick={(e) => {
+              setIsAiTitle((prev) => !prev);
+            }}
+            className={`text-xl font-bold cursor-pointer transition-colors ${isAiTitle ? 'text-red-500' : 'text-blue-600'}`}
+          >
+            {isAiTitle ? 'AI Vibe Forum' : 'BI Vibe Forum'}
           </Link>
           <div className="flex items-center gap-4">
             {user ? (
