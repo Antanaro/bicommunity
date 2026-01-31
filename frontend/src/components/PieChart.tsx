@@ -9,6 +9,7 @@ interface PieChartProps {
 }
 
 const VIEWBOX_SIZE = 40; // Единая система координат для всех чартов — без прыгания по размеру
+const CHART_INSET = 2;   // Отступ от краёв viewBox, чтобы графики не обрезались по границе контейнера
 
 const PieChart: React.FC<PieChartProps> = ({
   size = 40,
@@ -63,7 +64,7 @@ const PieChart: React.FC<PieChartProps> = ({
     const generateLinePoints = () => {
       return data.map(() => {
         const points = [];
-        const padding = VIEWBOX_SIZE * 0.1;
+        const padding = CHART_INSET + (VIEWBOX_SIZE - 2 * CHART_INSET) * 0.08;
         const availableWidth = VIEWBOX_SIZE - 2 * padding;
         const availableHeight = VIEWBOX_SIZE - 2 * padding;
         for (let i = 0; i < 3; i++) {
@@ -134,7 +135,7 @@ const PieChart: React.FC<PieChartProps> = ({
         <circle
           cx={VIEWBOX_SIZE / 2}
           cy={VIEWBOX_SIZE / 2}
-          r={VIEWBOX_SIZE / 2 - 2}
+          r={VIEWBOX_SIZE / 2 - CHART_INSET - 1}
           fill="none"
           stroke="#e5e7eb"
           strokeWidth="2"
@@ -143,7 +144,7 @@ const PieChart: React.FC<PieChartProps> = ({
     );
   }
 
-  const radius = VIEWBOX_SIZE / 2 - 2;
+  const radius = VIEWBOX_SIZE / 2 - CHART_INSET - 1;
   const centerX = VIEWBOX_SIZE / 2;
   const centerY = VIEWBOX_SIZE / 2;
   let currentAngle = -90;
@@ -190,17 +191,19 @@ const PieChart: React.FC<PieChartProps> = ({
     const translateX = isExploded ? Math.cos(direction) * explodeDistance : 0;
     const translateY = isExploded ? Math.sin(direction) * explodeDistance : 0;
 
-    // Параметры для вертикального bar chart (в едином viewBox)
-    const barWidth = VIEWBOX_SIZE / data.length;
-    const barHeight = (percentage * VIEWBOX_SIZE);
-    const barX = index * barWidth;
-    const barY = VIEWBOX_SIZE - barHeight;
+    // Параметры для вертикального bar chart (в едином viewBox, с отступом от краёв)
+    const innerW = VIEWBOX_SIZE - 2 * CHART_INSET;
+    const innerH = VIEWBOX_SIZE - 2 * CHART_INSET;
+    const barWidth = innerW / data.length;
+    const barHeight = percentage * innerH;
+    const barX = CHART_INSET + index * barWidth;
+    const barY = VIEWBOX_SIZE - CHART_INSET - barHeight;
 
     // Параметры для горизонтального bar chart
-    const horizontalBarHeight = VIEWBOX_SIZE / data.length;
-    const horizontalBarWidth = (percentage * VIEWBOX_SIZE);
-    const horizontalBarX = 0;
-    const horizontalBarY = index * horizontalBarHeight;
+    const horizontalBarHeight = innerH / data.length;
+    const horizontalBarWidth = percentage * innerW;
+    const horizontalBarX = CHART_INSET;
+    const horizontalBarY = CHART_INSET + index * horizontalBarHeight;
 
     return {
       pathData,
@@ -261,7 +264,7 @@ const PieChart: React.FC<PieChartProps> = ({
           }}
         >
           {(() => {
-            const padding = VIEWBOX_SIZE * 0.1;
+            const padding = CHART_INSET + (VIEWBOX_SIZE - 2 * CHART_INSET) * 0.06;
             const totalH = VIEWBOX_SIZE - 2 * padding;
             const leftX = padding;
             const rightX = VIEWBOX_SIZE - padding;
@@ -343,7 +346,7 @@ const PieChart: React.FC<PieChartProps> = ({
           }}
         >
           {(() => {
-            const pad = VIEWBOX_SIZE * 0.15;
+            const pad = CHART_INSET + (VIEWBOX_SIZE - 2 * CHART_INSET) * 0.1;
             const W = VIEWBOX_SIZE - 2 * pad;
             const H = VIEWBOX_SIZE - 2 * pad;
             // По 3 точки на каждый из 3 цветов — всего 9. Расположены по осям, разный радиус
@@ -389,7 +392,7 @@ const PieChart: React.FC<PieChartProps> = ({
           }}
         >
           {(() => {
-            const pad = VIEWBOX_SIZE * 0.1;
+            const pad = CHART_INSET + (VIEWBOX_SIZE - 2 * CHART_INSET) * 0.06;
             const W = VIEWBOX_SIZE - 2 * pad;
             const H = VIEWBOX_SIZE - 2 * pad;
             const bellCurves = [
@@ -423,7 +426,7 @@ const PieChart: React.FC<PieChartProps> = ({
           })()}
         </svg>
       ) : isRadarChart ? (
-        // Радар: произвольные точки, линии могут пересекаться, концентричность не обязательна
+        // Радар: выпуклый пятиугольник (не обязательно правильный) — углы и радиусы произвольные, вершины по порядку угла
         <svg
           width={size}
           height={size}
@@ -435,23 +438,25 @@ const PieChart: React.FC<PieChartProps> = ({
           }}
         >
           {(() => {
-            const pad = VIEWBOX_SIZE * 0.08;
-            const W = VIEWBOX_SIZE - 2 * pad;
-            const H = VIEWBOX_SIZE - 2 * pad;
+            const cx = VIEWBOX_SIZE / 2;
+            const cy = VIEWBOX_SIZE / 2;
+            const Rmin = CHART_INSET + (VIEWBOX_SIZE / 2 - CHART_INSET) * 0.2;
+            const Rmax = VIEWBOX_SIZE / 2 - CHART_INSET - 1;
             const hash = (n: number) => ((n * 2654435761) % 1000) / 1000;
-            // Для каждой серии — свой набор произвольных точек (4–6 точек), без правильного многоугольника
             const numSeries = 3;
+            const numVertices = 5;
             return Array.from({ length: numSeries }, (_, seriesIndex) => {
-              const numPoints = 4 + (seriesIndex % 3); // 4, 5 или 6 точек
-              const points: Array<{ x: number; y: number }> = [];
-              for (let i = 0; i < numPoints; i++) {
-                const sx = hash(seriesIndex * 7 + i * 11);
-                const sy = hash(seriesIndex * 13 + i * 17 + 100);
-                points.push({
-                  x: pad + sx * W,
-                  y: pad + sy * H,
-                });
-              }
+              // 5 вершин: угол и радиус (произвольные) — сортируем по углу → выпуклый пятиугольник
+              const raw = Array.from({ length: numVertices }, (_, i) => {
+                const angle = hash(seriesIndex * 19 + i * 7) * 2 * Math.PI; // произвольный угол
+                const r = Rmin + hash(seriesIndex * 31 + i * 13) * (Rmax - Rmin); // произвольный радиус
+                return { angle, r };
+              });
+              raw.sort((a, b) => a.angle - b.angle);
+              const points = raw.map(({ angle, r }) => ({
+                x: cx + r * Math.cos(angle),
+                y: cy + r * Math.sin(angle),
+              }));
               const d = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ') + ' Z';
               return (
                 <g key={seriesIndex}>
@@ -494,7 +499,7 @@ const PieChart: React.FC<PieChartProps> = ({
           }}
         >
           {(() => {
-            const pad = VIEWBOX_SIZE * 0.1;
+            const pad = CHART_INSET + (VIEWBOX_SIZE - 2 * CHART_INSET) * 0.06;
             const H = VIEWBOX_SIZE - 2 * pad;
             const bottomY = VIEWBOX_SIZE - pad;
             const raw: number[][] = segments.map((_, i) => {
@@ -586,8 +591,8 @@ const PieChart: React.FC<PieChartProps> = ({
               const endAngle = currentAngle + angle;
               currentAngle += angle;
 
-              const innerRadius = VIEWBOX_SIZE * 0.2;
-              const outerRadius = VIEWBOX_SIZE / 2 - 2;
+              const innerRadius = CHART_INSET + (VIEWBOX_SIZE / 2 - CHART_INSET) * 0.35;
+              const outerRadius = VIEWBOX_SIZE / 2 - CHART_INSET - 1;
 
               const startAngleRad = (startAngle * Math.PI) / 180;
               const endAngleRad = (endAngle * Math.PI) / 180;
