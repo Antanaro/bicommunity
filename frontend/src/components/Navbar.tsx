@@ -38,7 +38,7 @@ const Navbar = () => {
         <div className="flex justify-between items-center h-16">
           <Link
             to="/"
-            onClick={(e) => {
+            onClick={() => {
               setIsAiTitle((prev) => !prev);
             }}
             className={`text-xl font-bold cursor-pointer transition-colors ${isAiTitle ? 'text-red-500' : 'text-blue-600'}`}
