@@ -246,7 +246,7 @@ const PieChart: React.FC<PieChartProps> = ({
       className="pie-chart-container"
     >
       {isSankeyChart ? (
-        // Sankey: начальные и конечные узлы разного размера; 100% справа налево
+        // Sankey: рандомное распределение — узлы в начале и в конце разного размера
         <svg
           width={size}
           height={size}
@@ -262,20 +262,24 @@ const PieChart: React.FC<PieChartProps> = ({
             const leftX = padding;
             const rightX = size - padding;
             const nodeWidth = 4;
-            // Правый столбец (источник) = 100%, левый (приёмник) — узлы крупнее по высоте
+            const hash = (n: number) => ((n * 2654435761) % 1000) / 1000;
+            const leftRatios = segments.map((_, i) => 0.4 + hash(i) * 0.5);
+            const rightRatios = segments.map((_, i) => 0.4 + hash(i + 17) * 0.5);
+            const leftRaw = segments.map((s, i) => s.percentage * totalH * leftRatios[i]);
+            const rightRaw = segments.map((s, i) => s.percentage * totalH * rightRatios[i]);
+            const sumLeft = leftRaw.reduce((a, b) => a + b, 0);
+            const sumRight = rightRaw.reduce((a, b) => a + b, 0);
+            const leftHeights = leftRaw.map((h) => (totalH / sumLeft) * h);
+            const rightHeights = rightRaw.map((h) => (totalH / sumRight) * h);
             let leftY = padding;
             let rightY = padding;
-            const rightHeights = segments.map((s) => s.percentage * totalH);
-            const leftHeights = segments.map((s) => s.percentage * totalH * 1.35);
-            const totalLeft = leftHeights.reduce((a, b) => a + b, 0);
-            const leftScale = totalH / totalLeft;
 
             return segments.map((segment, idx) => {
               const rightNodeHeight = rightHeights[idx];
-              const leftNodeHeight = leftHeights[idx] * leftScale;
+              const leftNodeHeight = leftHeights[idx];
               const leftNodeY = leftY;
               const rightNodeY = rightY;
-              leftY += leftHeights[idx] * leftScale;
+              leftY += leftNodeHeight;
               rightY += rightNodeHeight;
 
               const midX = size / 2;
@@ -413,7 +417,7 @@ const PieChart: React.FC<PieChartProps> = ({
           })()}
         </svg>
       ) : isRadarChart ? (
-        // Радар: 5 осей, по 5 точек на каждый цвет — формируют полигон
+        // Радар: замкнутые полигоны, вложенные друг в друга, чётко различаются
         <svg
           width={size}
           height={size}
@@ -426,22 +430,27 @@ const PieChart: React.FC<PieChartProps> = ({
           {(() => {
             const cx = size / 2;
             const cy = size / 2;
-            const R = size * 0.38;
+            const R = size * 0.4;
             const axes = 5;
             const angleStep = (2 * Math.PI) / axes;
             const getAngle = (i: number) => -Math.PI / 2 + i * angleStep;
-            // Значения по осям для каждого цвета (5 точек) — разная форма у каждой серии
-            const radarValues = colors.slice(0, 3).map((_, ci) => {
-              const base = [0.55, 0.65, 0.7, 0.5, 0.6];
-              return base.map((b, i) => b + (ci * 0.08) + (data[i % data.length] / (total || 1)) * 0.2);
-            });
+            const baseBySeries = [
+              [0.28, 0.32, 0.3, 0.25, 0.3],
+              [0.5, 0.55, 0.52, 0.48, 0.53],
+              [0.72, 0.78, 0.75, 0.7, 0.76],
+            ];
+            const radarValues = colors.slice(0, 3).map((_, ci) =>
+              (baseBySeries[ci] ?? baseBySeries[0]).map((b, i) =>
+                b + (data[i % data.length] / (total || 1)) * 0.06
+              )
+            );
             return radarValues.map((values, seriesIndex) => {
               const points = values.map((v, i) => {
                 const a = getAngle(i);
-                const r = R * v;
+                const r = R * Math.min(1, Math.max(0, v));
                 return { x: cx + r * Math.cos(a), y: cy + r * Math.sin(a) };
               });
-              const d = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
+              const d = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ') + ' Z';
               return (
                 <g key={seriesIndex}>
                   <path
@@ -458,7 +467,7 @@ const PieChart: React.FC<PieChartProps> = ({
                       key={pi}
                       cx={p.x}
                       cy={p.y}
-                      r="1.8"
+                      r="1.5"
                       fill={colors[seriesIndex % colors.length]}
                       style={{
                         transition: 'all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1)',
@@ -471,7 +480,7 @@ const PieChart: React.FC<PieChartProps> = ({
           })()}
         </svg>
       ) : isAreaChart ? (
-        // Area chart — стакнутый (stacked)
+        // Area chart — стакнутый, 100% в каждой точке, вписан в размер
         <svg
           width={size}
           height={size}
@@ -484,12 +493,22 @@ const PieChart: React.FC<PieChartProps> = ({
           {(() => {
             const pad = size * 0.1;
             const H = size - 2 * pad;
-            const values: number[][] = segments.map((_, i) => {
+            const bottomY = size - pad;
+            const raw: number[][] = segments.map((_, i) => {
               const pts = linePoints[i] || [];
               return pts.length === 3
-                ? [size - pts[0].y, size - pts[1].y, size - pts[2].y]
+                ? [Math.max(0, bottomY - pts[0].y), Math.max(0, bottomY - pts[1].y), Math.max(0, bottomY - pts[2].y)]
                 : [0, 0, 0];
             });
+            const values: number[][] = raw.map((row) => [...row]);
+            for (let j = 0; j < 3; j++) {
+              const sumJ = values.reduce((s, row) => s + (row[j] ?? 0), 0);
+              if (sumJ > 0) {
+                for (let i = 0; i < values.length; i++) {
+                  values[i][j] = (values[i][j] / sumJ) * H;
+                }
+              }
+            }
             const cum: number[][] = [];
             for (let j = 0; j < 3; j++) {
               cum[j] = [0];
@@ -499,12 +518,12 @@ const PieChart: React.FC<PieChartProps> = ({
                 cum[j].push(s);
               }
             }
-            const basePoints = linePoints[0]?.length === 3 ? linePoints[0] : [{ x: pad, y: size - pad }, { x: size / 2, y: pad + H / 2 }, { x: size - pad, y: pad }];
+            const basePoints = linePoints[0]?.length === 3 ? linePoints[0] : [{ x: pad, y: bottomY }, { x: size / 2, y: pad + H / 2 }, { x: size - pad, y: pad }];
             const x0 = basePoints[0].x, x1 = basePoints[1].x, x2 = basePoints[2].x;
             return segments.map((segment, index) => {
               if ((linePoints[index] || []).length < 3) return null;
-              const top0 = size - cum[0][index + 1], top1 = size - cum[1][index + 1], top2 = size - cum[2][index + 1];
-              const bot0 = size - cum[0][index], bot1 = size - cum[1][index], bot2 = size - cum[2][index];
+              const top0 = bottomY - cum[0][index + 1], top1 = bottomY - cum[1][index + 1], top2 = bottomY - cum[2][index + 1];
+              const bot0 = bottomY - cum[0][index], bot1 = bottomY - cum[1][index], bot2 = bottomY - cum[2][index];
               const areaPath = `M ${x0} ${bot0} L ${x0} ${top0} L ${x1} ${top1} L ${x2} ${top2} L ${x2} ${bot2} L ${x1} ${bot1} L ${x0} ${bot0} Z`;
               const linePath = `M ${x0} ${top0} L ${x1} ${top1} L ${x2} ${top2}`;
               return (
