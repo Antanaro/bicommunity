@@ -235,7 +235,7 @@ const Home = () => {
                 : 'text-gray-600 hover:text-gray-800'
             }`}
           >
-            Бордом
+            Board
           </button>
           <button
             onClick={() => {
@@ -247,7 +247,7 @@ const Home = () => {
                 : 'text-gray-600 hover:text-gray-800'
             }`}
           >
-            По категориям
+            By Category
           </button>
         </div>
       </div>

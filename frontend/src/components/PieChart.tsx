@@ -246,7 +246,7 @@ const PieChart: React.FC<PieChartProps> = ({
       className="pie-chart-container"
     >
       {isSankeyChart ? (
-        // Sankey диаграмма (упрощенная версия)
+        // Sankey: начальные и конечные узлы разного размера; 100% справа налево
         <svg
           width={size}
           height={size}
@@ -258,43 +258,47 @@ const PieChart: React.FC<PieChartProps> = ({
         >
           {(() => {
             const padding = size * 0.1;
+            const totalH = size - 2 * padding;
             const leftX = padding;
             const rightX = size - padding;
             const nodeWidth = 4;
-            const nodeSpacing = (size - 2 * padding) / data.length;
-            let currentY = padding;
+            // Правый столбец (источник) = 100%, левый (приёмник) — узлы крупнее по высоте
+            let leftY = padding;
+            let rightY = padding;
+            const rightHeights = segments.map((s) => s.percentage * totalH);
+            const leftHeights = segments.map((s) => s.percentage * totalH * 1.35);
+            const totalLeft = leftHeights.reduce((a, b) => a + b, 0);
+            const totalRight = totalH;
+            const leftScale = totalH / totalLeft;
 
-            return segments.map((segment) => {
-              const nodeHeight = segment.percentage * (size - 2 * padding);
-              const nodeY = currentY;
-              currentY += nodeSpacing;
+            return segments.map((segment, idx) => {
+              const rightNodeHeight = rightHeights[idx];
+              const leftNodeHeight = leftHeights[idx] * leftScale;
+              const leftNodeY = leftY;
+              const rightNodeY = rightY;
+              leftY += leftHeights[idx] * leftScale;
+              rightY += rightNodeHeight;
 
-              // Вычисляем координаты для потока (изогнутый путь)
               const midX = size / 2;
-              const controlY1 = nodeY + nodeHeight / 2;
-              const controlY2 = nodeY + nodeHeight / 2;
-
-              // Создаем путь для потока
-              const flowPath = `M ${leftX + nodeWidth} ${nodeY} 
-                                C ${midX} ${controlY1}, ${midX} ${controlY2}, ${rightX - nodeWidth} ${nodeY}
-                                L ${rightX - nodeWidth} ${nodeY + nodeHeight}
-                                C ${midX} ${controlY2 + nodeHeight}, ${midX} ${controlY1 + nodeHeight}, ${leftX + nodeWidth} ${nodeY + nodeHeight}
+              const flowPath = `M ${rightX - nodeWidth} ${rightNodeY}
+                                C ${midX} ${rightNodeY}, ${midX} ${leftNodeY}, ${leftX + nodeWidth} ${leftNodeY}
+                                L ${leftX + nodeWidth} ${leftNodeY + leftNodeHeight}
+                                C ${midX} ${leftNodeY + leftNodeHeight}, ${midX} ${rightNodeY + rightNodeHeight}, ${rightX - nodeWidth} ${rightNodeY + rightNodeHeight}
                                 Z`;
 
               return (
                 <g key={segment.index}>
-                  {/* Левый узел */}
+                  {/* Левый узел (приёмник) — крупнее */}
                   <rect
                     x={leftX}
-                    y={nodeY}
+                    y={leftNodeY}
                     width={nodeWidth}
-                    height={nodeHeight}
+                    height={leftNodeHeight}
                     fill={segment.color}
                     style={{
                       transition: 'all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1)',
                     }}
                   />
-                  {/* Поток */}
                   <path
                     d={flowPath}
                     fill={segment.color}
@@ -303,12 +307,12 @@ const PieChart: React.FC<PieChartProps> = ({
                       transition: 'all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1)',
                     }}
                   />
-                  {/* Правый узел */}
+                  {/* Правый узел (источник 100%) — мельче */}
                   <rect
                     x={rightX - nodeWidth}
-                    y={nodeY}
+                    y={rightNodeY}
                     width={nodeWidth}
-                    height={nodeHeight}
+                    height={rightNodeHeight}
                     fill={segment.color}
                     style={{
                       transition: 'all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1)',
@@ -438,13 +442,12 @@ const PieChart: React.FC<PieChartProps> = ({
                 const r = R * v;
                 return { x: cx + r * Math.cos(a), y: cy + r * Math.sin(a) };
               });
-              const d = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ') + ' Z';
+              const d = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
               return (
                 <g key={seriesIndex}>
                   <path
                     d={d}
-                    fill={colors[seriesIndex % colors.length]}
-                    opacity={0.4}
+                    fill="none"
                     stroke={colors[seriesIndex % colors.length]}
                     strokeWidth="1.2"
                     style={{
@@ -469,7 +472,7 @@ const PieChart: React.FC<PieChartProps> = ({
           })()}
         </svg>
       ) : isAreaChart ? (
-        // Area chart режим
+        // Area chart — стакнутый (stacked)
         <svg
           width={size}
           height={size}
@@ -479,58 +482,67 @@ const PieChart: React.FC<PieChartProps> = ({
             transition: 'all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1)',
           }}
         >
-          {segments.map((segment, index) => {
-            const points = linePoints[index] || [];
-            if (points.length === 0) return null;
-            
-            // Создаем path для области под линией
-            const areaPath = `M ${points[0].x} ${size} 
-                              L ${points[0].x} ${points[0].y} 
-                              L ${points[1].x} ${points[1].y} 
-                              L ${points[2].x} ${points[2].y} 
-                              L ${points[2].x} ${size} 
-                              Z`;
-            
-            // Создаем path для линии
-            const linePath = `M ${points[0].x} ${points[0].y} L ${points[1].x} ${points[1].y} L ${points[2].x} ${points[2].y}`;
-            
-            return (
-              <g key={segment.index}>
-                {/* Заливка области */}
-                <path
-                  d={areaPath}
-                  fill={segment.color}
-                  opacity="0.3"
-                  style={{
-                    transition: 'all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1)',
-                  }}
-                />
-                {/* Линия */}
-                <path
-                  d={linePath}
-                  fill="none"
-                  stroke={segment.color}
-                  strokeWidth="2"
-                  style={{
-                    transition: 'all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1)',
-                  }}
-                />
-                {/* Точки */}
-                {points.map((point, pointIndex) => (
-                  <circle
-                    key={pointIndex}
-                    cx={point.x}
-                    cy={point.y}
-                    r="2"
+          {(() => {
+            const pad = size * 0.1;
+            const H = size - 2 * pad;
+            const values: number[][] = segments.map((_, i) => {
+              const pts = linePoints[i] || [];
+              return pts.length === 3
+                ? [size - pts[0].y, size - pts[1].y, size - pts[2].y]
+                : [0, 0, 0];
+            });
+            const cum: number[][] = [];
+            for (let j = 0; j < 3; j++) {
+              cum[j] = [0];
+              let s = 0;
+              for (let i = 0; i < segments.length; i++) {
+                s += values[i][j] ?? 0;
+                cum[j].push(s);
+              }
+            }
+            const basePoints = linePoints[0]?.length === 3 ? linePoints[0] : [{ x: pad, y: size - pad }, { x: size / 2, y: pad + H / 2 }, { x: size - pad, y: pad }];
+            const x0 = basePoints[0].x, x1 = basePoints[1].x, x2 = basePoints[2].x;
+            return segments.map((segment, index) => {
+              if ((linePoints[index] || []).length < 3) return null;
+              const top0 = size - cum[0][index + 1], top1 = size - cum[1][index + 1], top2 = size - cum[2][index + 1];
+              const bot0 = size - cum[0][index], bot1 = size - cum[1][index], bot2 = size - cum[2][index];
+              const areaPath = `M ${x0} ${bot0} L ${x0} ${top0} L ${x1} ${top1} L ${x2} ${top2} L ${x2} ${bot2} L ${x1} ${bot1} L ${x0} ${bot0} Z`;
+              const linePath = `M ${x0} ${top0} L ${x1} ${top1} L ${x2} ${top2}`;
+              return (
+                <g key={segment.index}>
+                  <path
+                    d={areaPath}
                     fill={segment.color}
+                    opacity="0.4"
                     style={{
                       transition: 'all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1)',
                     }}
                   />
-                ))}
-              </g>
-            );
-          })}
+                  <path
+                    d={linePath}
+                    fill="none"
+                    stroke={segment.color}
+                    strokeWidth="1.5"
+                    style={{
+                      transition: 'all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                    }}
+                  />
+                  {[top0, top1, top2].map((y, pointIndex) => (
+                    <circle
+                      key={pointIndex}
+                      cx={[x0, x1, x2][pointIndex]}
+                      cy={y}
+                      r="1.8"
+                      fill={segment.color}
+                      style={{
+                        transition: 'all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                      }}
+                    />
+                  ))}
+                </g>
+              );
+            });
+          })()}
         </svg>
       ) : isDonutChart ? (
         // Donut chart режим
