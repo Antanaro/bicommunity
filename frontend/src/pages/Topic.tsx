@@ -1,9 +1,14 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { api, uploadImages } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import LinkifyText from '../components/LinkifyText';
 import MarkdownRenderer from '../components/MarkdownRenderer';
+
+const POPUP_EST_WIDTH = 320;
+const POPUP_EST_HEIGHT = 300;
+const POPUP_Z_INDEX = 99999;
 
 interface Post {
   id: number;
@@ -88,6 +93,9 @@ const PostComponent = ({
 }: PostComponentProps) => {
   const [showTooltip, setShowTooltip] = useState(false);
   const [tooltipPost, setTooltipPost] = useState<Post | null>(null);
+  const [tooltipAnchorRect, setTooltipAnchorRect] = useState<DOMRect | null>(null);
+  const anchorRef = useRef<HTMLButtonElement>(null);
+  const leaveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const parentPost = post.parent_id ? allPosts.find((p) => p.id === post.parent_id) : null;
   const userReaction = reactions.get(post.id) || null;
   
@@ -95,10 +103,41 @@ const PostComponent = ({
     e.preventDefault();
     const targetPost = allPosts.find(p => p.id === targetId);
     if (targetPost) {
+      const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+      setTooltipAnchorRect(rect);
       setTooltipPost(targetPost);
       setShowTooltip(true);
     }
   };
+
+  const openTooltipOnHover = () => {
+    const targetPost = allPosts.find(p => p.id === post.parent_id);
+    if (targetPost && anchorRef.current) {
+      setTooltipAnchorRect(anchorRef.current.getBoundingClientRect());
+      setTooltipPost(targetPost);
+      setShowTooltip(true);
+    }
+  };
+
+  const closeTooltip = () => {
+    setShowTooltip(false);
+    setTooltipAnchorRect(null);
+  };
+
+  const scheduleClose = () => {
+    leaveTimeoutRef.current = setTimeout(closeTooltip, 150);
+  };
+
+  const cancelClose = () => {
+    if (leaveTimeoutRef.current) {
+      clearTimeout(leaveTimeoutRef.current);
+      leaveTimeoutRef.current = null;
+    }
+  };
+
+  useEffect(() => () => {
+    if (leaveTimeoutRef.current) clearTimeout(leaveTimeoutRef.current);
+  }, []);
 
   return (
     <div className={level > 0 ? 'mt-2' : ''}>
@@ -139,60 +178,69 @@ const PostComponent = ({
                 <span>Ответ на{' '}</span>
                 <span className="relative inline-block">
                   <button
+                    ref={anchorRef}
                     onClick={(e) => handleIdClick(e, post.parent_id!)}
                     className="text-blue-600 hover:underline font-mono"
-                    onMouseEnter={() => {
-                      const targetPost = allPosts.find(p => p.id === post.parent_id);
-                      if (targetPost) {
-                        setTooltipPost(targetPost);
-                        setShowTooltip(true);
-                      }
-                    }}
-                    onMouseLeave={() => setShowTooltip(false)}
+                    onMouseEnter={openTooltipOnHover}
+                    onMouseLeave={scheduleClose}
                   >
                     #{getGlobalId(post.parent_id)}
                   </button>
-                  {showTooltip && tooltipPost && tooltipPost.id === post.parent_id && (
-                    <div
-                      className="absolute right-0 top-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg p-3 z-50"
-                      style={{ 
-                        minWidth: '200px',
-                        maxWidth: 'min(400px, calc(100vw - 40px))',
-                        width: 'max-content'
-                      }}
-                      onMouseEnter={() => setShowTooltip(true)}
-                      onMouseLeave={() => setShowTooltip(false)}
-                    >
-                      <div className="flex items-center gap-2 mb-2">
-                        <Avatar avatarUrl={tooltipPost.author_avatar} username={tooltipPost.author_name} size="sm" />
-                        <div>
-                          <span className="font-semibold text-sm">{tooltipPost.author_name}</span>
-                          <div className="text-xs text-gray-500">
-                            {new Date(tooltipPost.created_at).toLocaleString('ru-RU')}
-                          </div>
-                        </div>
-                        <span className="text-blue-600 font-mono text-xs">#{getGlobalId(tooltipPost.id)}</span>
-                      </div>
-                      <p className="text-sm whitespace-pre-wrap line-clamp-4">
-                        <LinkifyText text={tooltipPost.content} />
-                      </p>
-                      {tooltipPost.images && tooltipPost.images.length > 0 && (
-                        <div className="mt-2">
-                          <img
-                            src={tooltipPost.images[0].startsWith('http') ? tooltipPost.images[0] : (import.meta.env.VITE_API_URL || '') + tooltipPost.images[0]}
-                            alt="Preview"
-                            className="w-20 h-20 object-cover rounded border"
-                          />
-                        </div>
-                      )}
-                      <button
-                        onClick={() => setShowTooltip(false)}
-                        className="mt-2 text-xs text-blue-600 hover:underline"
+                  {showTooltip && tooltipPost && tooltipPost.id === post.parent_id && tooltipAnchorRect &&
+                    createPortal(
+                      <div
+                        className="bg-white border border-gray-300 rounded-lg shadow-xl p-3"
+                        style={{
+                          position: 'fixed',
+                          left: (() => {
+                            const baseLeft = tooltipAnchorRect.left + 8;
+                            const centerLeft = window.innerWidth / 2 - POPUP_EST_WIDTH / 2;
+                            return baseLeft * 0.5 + centerLeft * 0.5;
+                          })(),
+                          top: (() => {
+                            const baseTop = tooltipAnchorRect.top - 8 - POPUP_EST_HEIGHT;
+                            const centerTop = window.innerHeight / 2 - POPUP_EST_HEIGHT / 2;
+                            return baseTop * 0.5 + centerTop * 0.5;
+                          })(),
+                          minWidth: 200,
+                          maxWidth: Math.min(400, window.innerWidth - 40),
+                          width: 'max-content',
+                          zIndex: POPUP_Z_INDEX,
+                        }}
+                        onMouseEnter={cancelClose}
+                        onMouseLeave={closeTooltip}
                       >
-                        Закрыть
-                      </button>
-                    </div>
-                  )}
+                        <div className="flex items-center gap-2 mb-2">
+                          <Avatar avatarUrl={tooltipPost.author_avatar} username={tooltipPost.author_name} size="sm" />
+                          <div>
+                            <span className="font-semibold text-sm">{tooltipPost.author_name}</span>
+                            <div className="text-xs text-gray-500">
+                              {new Date(tooltipPost.created_at).toLocaleString('ru-RU')}
+                            </div>
+                          </div>
+                          <span className="text-blue-600 font-mono text-xs">#{getGlobalId(tooltipPost.id)}</span>
+                        </div>
+                        <p className="text-sm whitespace-pre-wrap line-clamp-4">
+                          <LinkifyText text={tooltipPost.content} />
+                        </p>
+                        {tooltipPost.images && tooltipPost.images.length > 0 && (
+                          <div className="mt-2">
+                            <img
+                              src={tooltipPost.images[0].startsWith('http') ? tooltipPost.images[0] : (import.meta.env.VITE_API_URL || '') + tooltipPost.images[0]}
+                              alt="Preview"
+                              className="w-20 h-20 object-cover rounded border"
+                            />
+                          </div>
+                        )}
+                        <button
+                          onClick={closeTooltip}
+                          className="mt-2 text-xs text-blue-600 hover:underline"
+                        >
+                          Закрыть
+                        </button>
+                      </div>,
+                      document.body
+                    )}
                 </span>
               </div>
             )}
