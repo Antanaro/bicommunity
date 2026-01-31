@@ -8,6 +8,8 @@ interface PieChartProps {
   initialChartType?: 'pie' | 'bar' | 'line' | 'horizontalBar' | 'donut' | 'area' | 'sankey' | 'scatter' | 'bellCurve' | 'radar';
 }
 
+const VIEWBOX_SIZE = 40; // Единая система координат для всех чартов — без прыгания по размеру
+
 const PieChart: React.FC<PieChartProps> = ({
   size = 40,
   data,
@@ -56,29 +58,27 @@ const PieChart: React.FC<PieChartProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const total = data.reduce((sum, value) => sum + value, 0);
   
-  // Генерируем случайные точки для линий при первом рендере
+  // Генерируем случайные точки для линий при первом рендере (в едином viewBox)
   useEffect(() => {
     const generateLinePoints = () => {
       return data.map(() => {
         const points = [];
-        const padding = size * 0.1; // Отступы от краев
-        const availableWidth = size - 2 * padding;
-        
+        const padding = VIEWBOX_SIZE * 0.1;
+        const availableWidth = VIEWBOX_SIZE - 2 * padding;
+        const availableHeight = VIEWBOX_SIZE - 2 * padding;
         for (let i = 0; i < 3; i++) {
-          // Равномерно распределяем точки по X с небольшим случайным смещением
           const baseX = padding + (i * availableWidth) / 2;
           const randomOffset = (Math.random() - 0.5) * (availableWidth / 6);
-          
           points.push({
             x: baseX + randomOffset,
-            y: padding + Math.random() * (size - 2 * padding), // Случайная высота с отступами
+            y: padding + Math.random() * availableHeight,
           });
         }
         return points;
       });
     };
     setLinePoints(generateLinePoints());
-  }, [data, size]);
+  }, [data]);
   
   useEffect(() => {
     if (isExploded) {
@@ -127,13 +127,14 @@ const PieChart: React.FC<PieChartProps> = ({
       <svg
         width={size}
         height={size}
-        viewBox="0 0 40 40"
+        viewBox={`0 0 ${VIEWBOX_SIZE} ${VIEWBOX_SIZE}`}
+        preserveAspectRatio="xMidYMid meet"
         className={className}
       >
         <circle
-          cx="20"
-          cy="20"
-          r="18"
+          cx={VIEWBOX_SIZE / 2}
+          cy={VIEWBOX_SIZE / 2}
+          r={VIEWBOX_SIZE / 2 - 2}
           fill="none"
           stroke="#e5e7eb"
           strokeWidth="2"
@@ -142,9 +143,9 @@ const PieChart: React.FC<PieChartProps> = ({
     );
   }
 
-  const radius = 18;
-  const centerX = 20;
-  const centerY = 20;
+  const radius = VIEWBOX_SIZE / 2 - 2;
+  const centerX = VIEWBOX_SIZE / 2;
+  const centerY = VIEWBOX_SIZE / 2;
   let currentAngle = -90;
 
   // Направления для разлета в разные стороны (в радианах)
@@ -189,15 +190,15 @@ const PieChart: React.FC<PieChartProps> = ({
     const translateX = isExploded ? Math.cos(direction) * explodeDistance : 0;
     const translateY = isExploded ? Math.sin(direction) * explodeDistance : 0;
 
-    // Параметры для вертикального bar chart
-    const barWidth = size / data.length;
-    const barHeight = (percentage * size);
+    // Параметры для вертикального bar chart (в едином viewBox)
+    const barWidth = VIEWBOX_SIZE / data.length;
+    const barHeight = (percentage * VIEWBOX_SIZE);
     const barX = index * barWidth;
-    const barY = size - barHeight;
+    const barY = VIEWBOX_SIZE - barHeight;
 
     // Параметры для горизонтального bar chart
-    const horizontalBarHeight = size / data.length;
-    const horizontalBarWidth = (percentage * size);
+    const horizontalBarHeight = VIEWBOX_SIZE / data.length;
+    const horizontalBarWidth = (percentage * VIEWBOX_SIZE);
     const horizontalBarX = 0;
     const horizontalBarY = index * horizontalBarHeight;
 
@@ -236,7 +237,9 @@ const PieChart: React.FC<PieChartProps> = ({
         position: 'relative',
         width: size,
         height: size,
-        overflow: 'visible',
+        minWidth: size,
+        minHeight: size,
+        overflow: 'hidden',
         cursor: 'pointer',
         userSelect: 'none',
         WebkitUserSelect: 'none',
@@ -250,17 +253,18 @@ const PieChart: React.FC<PieChartProps> = ({
         <svg
           width={size}
           height={size}
-          viewBox={`0 0 ${size} ${size}`}
+          viewBox={`0 0 ${VIEWBOX_SIZE} ${VIEWBOX_SIZE}`}
+          preserveAspectRatio="xMidYMid meet"
           className={className}
           style={{
             transition: 'all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1)',
           }}
         >
           {(() => {
-            const padding = size * 0.1;
-            const totalH = size - 2 * padding;
+            const padding = VIEWBOX_SIZE * 0.1;
+            const totalH = VIEWBOX_SIZE - 2 * padding;
             const leftX = padding;
-            const rightX = size - padding;
+            const rightX = VIEWBOX_SIZE - padding;
             const nodeWidth = 4;
             const hash = (n: number) => ((n * 2654435761) % 1000) / 1000;
             const leftRatios = segments.map((_, i) => 0.4 + hash(i) * 0.5);
@@ -282,7 +286,7 @@ const PieChart: React.FC<PieChartProps> = ({
               leftY += leftNodeHeight;
               rightY += rightNodeHeight;
 
-              const midX = size / 2;
+              const midX = VIEWBOX_SIZE / 2;
               const flowPath = `M ${rightX - nodeWidth} ${rightNodeY}
                                 C ${midX} ${rightNodeY}, ${midX} ${leftNodeY}, ${leftX + nodeWidth} ${leftNodeY}
                                 L ${leftX + nodeWidth} ${leftNodeY + leftNodeHeight}
@@ -331,16 +335,17 @@ const PieChart: React.FC<PieChartProps> = ({
         <svg
           width={size}
           height={size}
-          viewBox={`0 0 ${size} ${size}`}
+          viewBox={`0 0 ${VIEWBOX_SIZE} ${VIEWBOX_SIZE}`}
+          preserveAspectRatio="xMidYMid meet"
           className={className}
           style={{
             transition: 'all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1)',
           }}
         >
           {(() => {
-            const pad = size * 0.15;
-            const W = size - 2 * pad;
-            const H = size - 2 * pad;
+            const pad = VIEWBOX_SIZE * 0.15;
+            const W = VIEWBOX_SIZE - 2 * pad;
+            const H = VIEWBOX_SIZE - 2 * pad;
             // По 3 точки на каждый из 3 цветов — всего 9. Расположены по осям, разный радиус
             const scatterPoints: Array<{ x: number; y: number; r: number; color: string }> = [];
             const colorSet = colors.slice(0, 3);
@@ -376,16 +381,17 @@ const PieChart: React.FC<PieChartProps> = ({
         <svg
           width={size}
           height={size}
-          viewBox={`0 0 ${size} ${size}`}
+          viewBox={`0 0 ${VIEWBOX_SIZE} ${VIEWBOX_SIZE}`}
+          preserveAspectRatio="xMidYMid meet"
           className={className}
           style={{
             transition: 'all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1)',
           }}
         >
           {(() => {
-            const pad = size * 0.1;
-            const W = size - 2 * pad;
-            const H = size - 2 * pad;
+            const pad = VIEWBOX_SIZE * 0.1;
+            const W = VIEWBOX_SIZE - 2 * pad;
+            const H = VIEWBOX_SIZE - 2 * pad;
             const bellCurves = [
               { color: colors[0], mu: 0.3, sigma: 0.12, scale: 0.85 },
               { color: colors[1], mu: 0.55, sigma: 0.14, scale: 0.9 },
@@ -417,39 +423,35 @@ const PieChart: React.FC<PieChartProps> = ({
           })()}
         </svg>
       ) : isRadarChart ? (
-        // Радар: замкнутые полигоны, вложенные друг в друга, чётко различаются
+        // Радар: произвольные точки, линии могут пересекаться, концентричность не обязательна
         <svg
           width={size}
           height={size}
-          viewBox={`0 0 ${size} ${size}`}
+          viewBox={`0 0 ${VIEWBOX_SIZE} ${VIEWBOX_SIZE}`}
           className={className}
+          preserveAspectRatio="xMidYMid meet"
           style={{
             transition: 'all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1)',
           }}
         >
           {(() => {
-            const cx = size / 2;
-            const cy = size / 2;
-            const R = size * 0.4;
-            const axes = 5;
-            const angleStep = (2 * Math.PI) / axes;
-            const getAngle = (i: number) => -Math.PI / 2 + i * angleStep;
-            const baseBySeries = [
-              [0.28, 0.32, 0.3, 0.25, 0.3],
-              [0.5, 0.55, 0.52, 0.48, 0.53],
-              [0.72, 0.78, 0.75, 0.7, 0.76],
-            ];
-            const radarValues = colors.slice(0, 3).map((_, ci) =>
-              (baseBySeries[ci] ?? baseBySeries[0]).map((b, i) =>
-                b + (data[i % data.length] / (total || 1)) * 0.06
-              )
-            );
-            return radarValues.map((values, seriesIndex) => {
-              const points = values.map((v, i) => {
-                const a = getAngle(i);
-                const r = R * Math.min(1, Math.max(0, v));
-                return { x: cx + r * Math.cos(a), y: cy + r * Math.sin(a) };
-              });
+            const pad = VIEWBOX_SIZE * 0.08;
+            const W = VIEWBOX_SIZE - 2 * pad;
+            const H = VIEWBOX_SIZE - 2 * pad;
+            const hash = (n: number) => ((n * 2654435761) % 1000) / 1000;
+            // Для каждой серии — свой набор произвольных точек (4–6 точек), без правильного многоугольника
+            const numSeries = 3;
+            return Array.from({ length: numSeries }, (_, seriesIndex) => {
+              const numPoints = 4 + (seriesIndex % 3); // 4, 5 или 6 точек
+              const points: Array<{ x: number; y: number }> = [];
+              for (let i = 0; i < numPoints; i++) {
+                const sx = hash(seriesIndex * 7 + i * 11);
+                const sy = hash(seriesIndex * 13 + i * 17 + 100);
+                points.push({
+                  x: pad + sx * W,
+                  y: pad + sy * H,
+                });
+              }
               const d = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ') + ' Z';
               return (
                 <g key={seriesIndex}>
@@ -467,7 +469,7 @@ const PieChart: React.FC<PieChartProps> = ({
                       key={pi}
                       cx={p.x}
                       cy={p.y}
-                      r="1.5"
+                      r="1.2"
                       fill={colors[seriesIndex % colors.length]}
                       style={{
                         transition: 'all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1)',
@@ -484,16 +486,17 @@ const PieChart: React.FC<PieChartProps> = ({
         <svg
           width={size}
           height={size}
-          viewBox={`0 0 ${size} ${size}`}
+          viewBox={`0 0 ${VIEWBOX_SIZE} ${VIEWBOX_SIZE}`}
+          preserveAspectRatio="xMidYMid meet"
           className={className}
           style={{
             transition: 'all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1)',
           }}
         >
           {(() => {
-            const pad = size * 0.1;
-            const H = size - 2 * pad;
-            const bottomY = size - pad;
+            const pad = VIEWBOX_SIZE * 0.1;
+            const H = VIEWBOX_SIZE - 2 * pad;
+            const bottomY = VIEWBOX_SIZE - pad;
             const raw: number[][] = segments.map((_, i) => {
               const pts = linePoints[i] || [];
               return pts.length === 3
@@ -518,7 +521,7 @@ const PieChart: React.FC<PieChartProps> = ({
                 cum[j].push(s);
               }
             }
-            const basePoints = linePoints[0]?.length === 3 ? linePoints[0] : [{ x: pad, y: bottomY }, { x: size / 2, y: pad + H / 2 }, { x: size - pad, y: pad }];
+            const basePoints = linePoints[0]?.length === 3 ? linePoints[0] : [{ x: pad, y: bottomY }, { x: VIEWBOX_SIZE / 2, y: pad + H / 2 }, { x: VIEWBOX_SIZE - pad, y: pad }];
             const x0 = basePoints[0].x, x1 = basePoints[1].x, x2 = basePoints[2].x;
             return segments.map((segment, index) => {
               if ((linePoints[index] || []).length < 3) return null;
@@ -567,7 +570,8 @@ const PieChart: React.FC<PieChartProps> = ({
         <svg
           width={size}
           height={size}
-          viewBox="0 0 40 40"
+          viewBox={`0 0 ${VIEWBOX_SIZE} ${VIEWBOX_SIZE}`}
+          preserveAspectRatio="xMidYMid meet"
           className={className}
           style={{
             transition: 'all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1)',
@@ -582,8 +586,8 @@ const PieChart: React.FC<PieChartProps> = ({
               const endAngle = currentAngle + angle;
               currentAngle += angle;
 
-              const innerRadius = 8; // Радиус внутреннего отверстия
-              const outerRadius = 18;
+              const innerRadius = VIEWBOX_SIZE * 0.2;
+              const outerRadius = VIEWBOX_SIZE / 2 - 2;
 
               const startAngleRad = (startAngle * Math.PI) / 180;
               const endAngleRad = (endAngle * Math.PI) / 180;
@@ -627,7 +631,8 @@ const PieChart: React.FC<PieChartProps> = ({
         <svg
           width={size}
           height={size}
-          viewBox={`0 0 ${size} ${size}`}
+          viewBox={`0 0 ${VIEWBOX_SIZE} ${VIEWBOX_SIZE}`}
+          preserveAspectRatio="xMidYMid meet"
           className={className}
           style={{
             transition: 'all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1)',
@@ -654,7 +659,8 @@ const PieChart: React.FC<PieChartProps> = ({
         <svg
           width={size}
           height={size}
-          viewBox={`0 0 ${size} ${size}`}
+          viewBox={`0 0 ${VIEWBOX_SIZE} ${VIEWBOX_SIZE}`}
+          preserveAspectRatio="xMidYMid meet"
           className={className}
           style={{
             transition: 'all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1)',
@@ -699,7 +705,8 @@ const PieChart: React.FC<PieChartProps> = ({
         <svg
           width={size}
           height={size}
-          viewBox={`0 0 ${size} ${size}`}
+          viewBox={`0 0 ${VIEWBOX_SIZE} ${VIEWBOX_SIZE}`}
+          preserveAspectRatio="xMidYMid meet"
           className={className}
           style={{
             transition: 'all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1)',
@@ -729,7 +736,8 @@ const PieChart: React.FC<PieChartProps> = ({
               key={segment.index}
               width={size}
               height={size}
-              viewBox="0 0 40 40"
+              viewBox={`0 0 ${VIEWBOX_SIZE} ${VIEWBOX_SIZE}`}
+              preserveAspectRatio="xMidYMid meet"
               className={className}
               style={{
                 position: 'absolute',

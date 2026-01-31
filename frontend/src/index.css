@@ -28,7 +28,7 @@ code {
 }
 
 .pie-chart-container {
-  overflow: visible !important;
+  overflow: hidden;
   user-select: none;
   -webkit-user-select: none;
   -moz-user-select: none;
