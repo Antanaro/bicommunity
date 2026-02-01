@@ -50,7 +50,7 @@ const Avatar = memo(({
     sm: 'w-6 h-6 text-xs',
     md: 'w-10 h-10 text-sm',
     lg: 'w-12 h-12 text-base',
-    xl: 'w-14 h-14 text-base',
+    xl: 'w-[60px] h-[60px] text-base',
   };
   
   const getFullUrl = (url: string | null | undefined) => {
@@ -167,7 +167,7 @@ const PostComponent = memo(({
       <div className="flex gap-3 p-3">
         {/* Левая колонка: аватар, логин */}
         <div className="flex-shrink-0 w-24 flex flex-col items-center text-center">
-          <Avatar avatarUrl={post.author_avatar} username={post.author_name} size="md" />
+          <Avatar avatarUrl={post.author_avatar} username={post.author_name} size="xl" />
           <div className="mt-1.5 w-full">
             <span className="font-semibold text-gray-800 text-sm block truncate" title={post.author_name}>
               {post.author_name}

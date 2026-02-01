@@ -52,7 +52,7 @@ const Avatar = ({
     sm: 'w-6 h-6 text-xs',
     md: 'w-10 h-10 text-sm',
     lg: 'w-12 h-12 text-base',
-    xl: 'w-14 h-14 text-base',
+    xl: 'w-[84px] h-[84px] text-base',
   };
   
   const getFullUrl = (url: string | null | undefined) => {
