@@ -183,9 +183,6 @@ const Category = () => {
   };
 
   const isAdmin = user?.role === 'admin';
-  
-  // Проверяем, является ли текущая категория "Все темы"
-  const isAllTopicsCategory = category?.name === 'Все темы' || id === 'all-topics';
 
   if (loading) {
     return (
