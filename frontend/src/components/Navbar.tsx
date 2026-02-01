@@ -50,27 +50,29 @@ const Navbar = () => {
           >
             {currentTitle}
           </button>
-          <div className="flex items-center gap-4 mr-[100px]">
-            <Link
-              to="/board"
-              className="text-gray-700 hover:text-blue-600 transition"
-            >
-              Всё подряд
-            </Link>
-            <Link
-              to="/categories"
-              className="text-gray-700 hover:text-blue-600 transition"
-            >
-              По категориям
-            </Link>
-            <Link
-              to="/about"
-              className="text-gray-700 hover:text-blue-600 transition"
-            >
-              О форуме
-            </Link>
+          <div className="flex items-center flex-1 justify-end gap-4">
+            <div className="flex items-center gap-4 mr-8">
+              <Link
+                to="/board"
+                className="text-gray-700 hover:text-blue-600 transition"
+              >
+                Всё подряд
+              </Link>
+              <Link
+                to="/categories"
+                className="text-gray-700 hover:text-blue-600 transition"
+              >
+                По категориям
+              </Link>
+              <Link
+                to="/about"
+                className="text-gray-700 hover:text-blue-600 transition"
+              >
+                О форуме
+              </Link>
+            </div>
             {user ? (
-              <>
+              <div className="flex items-center gap-4">
                 <Link
                   to="/profile"
                   className="flex items-center gap-2 text-gray-700 hover:text-blue-600 transition"
@@ -84,9 +86,9 @@ const Navbar = () => {
                 >
                   Выйти
                 </button>
-              </>
+              </div>
             ) : (
-              <>
+              <div className="flex items-center gap-4">
                 <Link
                   to="/login"
                   className="text-gray-700 hover:text-blue-600 transition"
@@ -99,7 +101,7 @@ const Navbar = () => {
                 >
                   Регистрация
                 </Link>
-              </>
+              </div>
             )}
           </div>
         </div>
