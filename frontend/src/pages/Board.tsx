@@ -44,12 +44,13 @@ const Avatar = memo(({
 }: { 
   avatarUrl?: string | null; 
   username: string; 
-  size?: 'sm' | 'md' | 'lg';
+  size?: 'sm' | 'md' | 'lg' | 'xl';
 }) => {
   const sizeClasses = {
     sm: 'w-6 h-6 text-xs',
     md: 'w-10 h-10 text-sm',
     lg: 'w-12 h-12 text-base',
+    xl: 'w-14 h-14 text-base',
   };
   
   const getFullUrl = (url: string | null | undefined) => {
@@ -76,6 +77,16 @@ const Avatar = memo(({
     </div>
   );
 });
+
+const formatPostDate = (iso: string) => {
+  const d = new Date(iso);
+  const dd = String(d.getDate()).padStart(2, '0');
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const yy = String(d.getFullYear() % 100).padStart(2, '0');
+  const hh = String(d.getHours()).padStart(2, '0');
+  const min = String(d.getMinutes()).padStart(2, '0');
+  return `${dd}.${mm}.${yy} ${hh}:${min}`;
+};
 
 interface PostComponentProps {
   post: Post;
@@ -154,23 +165,23 @@ const PostComponent = memo(({
   return (
     <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden mb-2">
       <div className="flex gap-3 p-3">
-        {/* Левая колонка: аватар, логин, дата */}
+        {/* Левая колонка: аватар, логин */}
         <div className="flex-shrink-0 w-24 flex flex-col items-center text-center">
-          <Avatar avatarUrl={post.author_avatar} username={post.author_name} size="sm" />
+          <Avatar avatarUrl={post.author_avatar} username={post.author_name} size="md" />
           <div className="mt-1.5 w-full">
-            <span className="font-semibold text-gray-800 text-xs block truncate" title={post.author_name}>
+            <span className="font-semibold text-gray-800 text-sm block truncate" title={post.author_name}>
               {post.author_name}
             </span>
-            <div className="text-xs text-gray-500 mt-0.5">
-              {new Date(post.created_at).toLocaleString('ru-RU')}
-            </div>
           </div>
         </div>
 
-        {/* Центр: верхняя строка (#id, ответ на #X) + кнопки справа; ниже — окошко с сообщением */}
+        {/* Центр: верхняя строка (дата, #id, ответ на #X) + кнопки справа; ниже — окошко с сообщением */}
         <div className="flex-1 min-w-0 flex flex-col">
           <div className="flex items-center justify-between gap-2 mb-1.5">
             <div className="text-xs text-gray-600 flex items-center gap-2 min-w-0">
+              <span className="text-gray-500 flex-shrink-0" title={new Date(post.created_at).toLocaleString('ru-RU')}>
+                {formatPostDate(post.created_at)}
+              </span>
               {post.parent_id && (
                 <>
                   <span
@@ -216,10 +227,9 @@ const PostComponent = memo(({
                             <div>
                               <span className="font-semibold text-sm">{tooltipPost.author_name}</span>
                               <div className="text-xs text-gray-500">
-                                {new Date(tooltipPost.created_at).toLocaleString('ru-RU')}
+                                {formatPostDate(tooltipPost.created_at)} #{getGlobalIdForPost(tooltipPost.id)}
                               </div>
                             </div>
-                            <span className="text-blue-600 font-mono text-xs">#{getGlobalIdForPost(tooltipPost.id)}</span>
                           </div>
                           <p className="text-sm whitespace-pre-wrap max-h-[60vh] overflow-y-auto">
                             <LinkifyText text={tooltipPost.content} />
