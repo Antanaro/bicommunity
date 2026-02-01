@@ -844,7 +844,7 @@ const Board = () => {
               initialChartType={initialChartType}
             />
           </div>
-          <h1 className="text-3xl font-bold">Board</h1>
+          <h1 className="text-3xl font-bold">Всё подряд</h1>
         </div>
         {user && (
           <button

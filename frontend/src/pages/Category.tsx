@@ -197,7 +197,7 @@ const Category = () => {
 
   return (
     <div>
-      <Link to="/" className="text-blue-600 hover:underline mb-4 inline-block">
+      <Link to="/categories" className="text-blue-600 hover:underline mb-4 inline-block">
         ← Назад к категориям
       </Link>
       {category && (

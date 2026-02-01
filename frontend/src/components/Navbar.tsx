@@ -47,6 +47,18 @@ const Navbar = () => {
           </Link>
           <div className="flex items-center gap-4">
             <Link
+              to="/board"
+              className="text-gray-700 hover:text-blue-600 transition"
+            >
+              Всё подряд
+            </Link>
+            <Link
+              to="/categories"
+              className="text-gray-700 hover:text-blue-600 transition"
+            >
+              По категориям
+            </Link>
+            <Link
               to="/about"
               className="text-gray-700 hover:text-blue-600 transition"
             >

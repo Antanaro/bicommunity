@@ -2,6 +2,8 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider } from './contexts/AuthContext';
 import Navbar from './components/Navbar';
 import Home from './pages/Home';
+import Board from './pages/Board';
+import CategoriesList from './pages/CategoriesList';
 import Category from './pages/Category';
 import Topic from './pages/Topic';
 import Login from './pages/Login';
@@ -23,6 +25,8 @@ function App() {
           <main className="container mx-auto px-4 py-8">
             <Routes>
               <Route path="/" element={<Home />} />
+              <Route path="/board" element={<Board />} />
+              <Route path="/categories" element={<CategoriesList />} />
               <Route path="/category/:id" element={<Category />} />
               <Route path="/topic/:id" element={<Topic />} />
               <Route path="/login" element={<Login />} />
