@@ -322,9 +322,7 @@ const Category = () => {
           topics.map((topic) => (
             <div
               key={topic.id}
-              className={`bg-white rounded-lg shadow p-3 hover:shadow-lg transition relative group ${
-                isAllTopicsCategory ? 'border-2 border-blue-300' : ''
-              }`}
+              className="bg-white rounded-lg shadow p-3 hover:shadow-lg transition relative group"
             >
               <Link to={`/topic/${topic.id}`} className="block pr-10">
                 <div className="flex items-center gap-2 text-sm overflow-hidden">
