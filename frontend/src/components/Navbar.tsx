@@ -28,24 +28,29 @@ const NavbarAvatar = ({ avatarUrl, username }: { avatarUrl?: string | null; user
   );
 };
 
+const TITLES = ['AI Vibe Forum', 'BI Vibe Forum'] as const;
+
 const Navbar = () => {
   const { user, logout } = useAuth();
-  const [isAiTitle, setIsAiTitle] = useState(false);
+  const [titleIndex, setTitleIndex] = useState(() =>
+    Math.floor(Math.random() * TITLES.length)
+  );
+
+  const currentTitle = TITLES[titleIndex];
+  const isAi = currentTitle === 'AI Vibe Forum';
 
   return (
     <nav className="bg-white shadow-md">
       <div className="container mx-auto px-4">
         <div className="flex justify-between items-center h-16">
-          <Link
-            to="/"
-            onClick={() => {
-              setIsAiTitle((prev) => !prev);
-            }}
-            className={`text-xl font-bold cursor-pointer transition-colors ${isAiTitle ? 'text-red-500' : 'text-blue-600'}`}
+          <button
+            type="button"
+            onClick={() => setTitleIndex((i) => (i + 1) % TITLES.length)}
+            className={`text-xl font-bold cursor-pointer transition-colors bg-transparent border-0 p-0 ${isAi ? 'text-red-500' : 'text-blue-600'}`}
           >
-            {isAiTitle ? 'AI Vibe Forum' : 'BI Vibe Forum'}
-          </Link>
-          <div className="flex items-center gap-4">
+            {currentTitle}
+          </button>
+          <div className="flex items-center gap-4 mr-[100px]">
             <Link
               to="/board"
               className="text-gray-700 hover:text-blue-600 transition"
