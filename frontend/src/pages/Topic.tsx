@@ -33,6 +33,7 @@ interface PostComponentProps {
   reactions: Map<number, number | null>; // postId -> reaction_type (1, -1, or null)
   onReact: (postId: number, reactionType: number) => void;
   onReply: (postId: number) => void;
+  onDelete: (postId: number) => void;
   level: number;
   allPosts: Post[];
   getGlobalId: (postId: number) => number;
@@ -96,6 +97,7 @@ const PostComponent = ({
   reactions,
   onReact,
   onReply,
+  onDelete,
   level,
   allPosts,
   getGlobalId,
@@ -262,6 +264,19 @@ const PostComponent = ({
               </div>
               {user && (
                 <div className="flex items-center gap-2 flex-shrink-0">
+                  {user.id === post.author_id && (
+                    <button
+                      onClick={() => {
+                        if (window.confirm('Вы уверены, что хотите удалить это сообщение?')) {
+                          onDelete(post.id);
+                        }
+                      }}
+                      className="px-3 py-1.5 rounded border border-red-300 bg-white text-red-600 hover:bg-red-50 transition text-sm"
+                      title="Удалить сообщение"
+                    >
+                      🗑️ Удалить
+                    </button>
+                  )}
                   <button
                     onClick={() => onReply(post.id)}
                     className="px-3 py-1.5 rounded border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 transition text-sm"
@@ -326,6 +341,7 @@ const PostComponent = ({
               reactions={reactions}
               onReact={onReact}
               onReply={onReply}
+              onDelete={onDelete}
               level={level + 1}
               allPosts={allPosts}
               getGlobalId={getGlobalId}
@@ -747,6 +763,42 @@ const Topic = () => {
     }
   };
 
+  const handleDeletePost = async (postId: number) => {
+    if (!topic) return;
+
+    try {
+      await api.delete(`/posts/${postId}`);
+      
+      // Optimistically remove post from UI
+      setTopic(prevTopic => {
+        if (!prevTopic) return prevTopic;
+        return {
+          ...prevTopic,
+          posts: prevTopic.posts.filter(p => p.id !== postId),
+        };
+      });
+
+      // Remove reaction from reactions map
+      setReactions(prev => {
+        const newMap = new Map(prev);
+        newMap.delete(postId);
+        return newMap;
+      });
+
+      // Refresh topic to get updated data
+      await fetchTopic();
+    } catch (error: any) {
+      console.error('Error deleting post:', error);
+      if (error.response?.status === 403) {
+        alert('У вас нет прав для удаления этого сообщения');
+      } else if (error.response?.status === 404) {
+        alert('Сообщение не найдено');
+      } else {
+        alert('Ошибка при удалении сообщения');
+      }
+    }
+  };
+
   const handleDeleteTopic = async () => {
     if (!topic) return;
 
@@ -870,6 +922,7 @@ const Topic = () => {
               reactions={reactions}
               onReact={handleReact}
               onReply={handleReply}
+              onDelete={handleDeletePost}
               level={0}
               allPosts={topic.posts}
               getGlobalId={(postId: number) => globalIdMap.get(`post-${postId}`) || 0}

@@ -94,6 +94,7 @@ interface PostComponentProps {
   userReaction: number | null;
   onReact: (postId: number, reactionType: number) => void;
   onReply: (topicId: number, postId: number) => void;
+  onDelete: (postId: number) => void;
   topicId: number;
   allPosts: Post[];
   globalIdMap: Map<string, number>;
@@ -105,6 +106,7 @@ const PostComponent = memo(({
   userReaction,
   onReact,
   onReply,
+  onDelete,
   topicId,
   allPosts,
   globalIdMap,
@@ -262,6 +264,19 @@ const PostComponent = memo(({
             </div>
             {user && (
               <div className="flex items-center gap-1.5 flex-shrink-0">
+                {user.id === post.author_id && (
+                  <button
+                    onClick={() => {
+                      if (window.confirm('Вы уверены, что хотите удалить это сообщение?')) {
+                        onDelete(post.id);
+                      }
+                    }}
+                    className="px-2 py-1 rounded border border-red-300 bg-white text-red-600 hover:bg-red-50 transition text-xs"
+                    title="Удалить сообщение"
+                  >
+                    🗑️
+                  </button>
+                )}
                 <button
                   onClick={handleReplyClick}
                   className="px-2 py-1 rounded border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 transition text-xs"
@@ -618,6 +633,37 @@ const Board = () => {
         alert(error.response.data.error + (error.response.data.hint ? '\n\n' + error.response.data.hint : ''));
       } else {
         alert('Ошибка при добавлении реакции');
+      }
+    }
+  };
+
+  const handleDeletePost = async (postId: number) => {
+    try {
+      await api.delete(`/posts/${postId}`);
+      
+      // Optimistically remove post from UI
+      setTopics(prevTopics => prevTopics.map(topic => ({
+        ...topic,
+        posts: topic.posts?.filter(p => p.id !== postId) || [],
+      })));
+
+      // Remove reaction from reactions map
+      setReactions(prev => {
+        const newMap = new Map(prev);
+        newMap.delete(postId);
+        return newMap;
+      });
+
+      // Refresh topics to get updated data
+      await fetchTopics();
+    } catch (error: any) {
+      console.error('Error deleting post:', error);
+      if (error.response?.status === 403) {
+        alert('У вас нет прав для удаления этого сообщения');
+      } else if (error.response?.status === 404) {
+        alert('Сообщение не найдено');
+      } else {
+        alert('Ошибка при удалении сообщения');
       }
     }
   };
@@ -1039,6 +1085,7 @@ const Board = () => {
                             userReaction={reactions.get(post.id) ?? null}
                             onReact={handleReact}
                             onReply={handleReply}
+                            onDelete={handleDeletePost}
                             topicId={topic.id}
                             allPosts={allPosts}
                             globalIdMap={globalIdMap}
