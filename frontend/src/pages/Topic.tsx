@@ -357,6 +357,7 @@ interface Topic {
   id: number;
   title: string;
   content: string;
+  author_id: number;
   author_name: string;
   author_avatar?: string | null;
   category_name: string;
@@ -380,6 +381,10 @@ const Topic = () => {
   const [uploadingImages, setUploadingImages] = useState(false);
   const [globalIdMap, setGlobalIdMap] = useState<Map<string, number>>(new Map());
   const [globalIdMapLoaded, setGlobalIdMapLoaded] = useState(false);
+  const [isEditingTopic, setIsEditingTopic] = useState(false);
+  const [editTitle, setEditTitle] = useState('');
+  const [editContent, setEditContent] = useState('');
+  const [savingTopic, setSavingTopic] = useState(false);
 
   // Load global ID map only once on mount
   useEffect(() => {
@@ -819,7 +824,50 @@ const Topic = () => {
     }
   };
 
+  const handleStartEditTopic = () => {
+    if (!topic) return;
+    setEditTitle(topic.title);
+    setEditContent(topic.content);
+    setIsEditingTopic(true);
+  };
+
+  const handleCancelTopicEdit = () => {
+    setIsEditingTopic(false);
+  };
+
+  const handleSaveTopicEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!topic || savingTopic) return;
+    if (!editTitle.trim() || !editContent.trim()) {
+      alert('Название и содержание не могут быть пустыми');
+      return;
+    }
+    setSavingTopic(true);
+    try {
+      const response = await api.put(`/topics/${topic.id}`, {
+        title: editTitle.trim(),
+        content: editContent.trim(),
+      });
+      setTopic(prev => prev ? { ...prev, title: response.data.title, content: response.data.content } : null);
+      setIsEditingTopic(false);
+    } catch (error: any) {
+      console.error('Error updating topic:', error);
+      if (error.response?.status === 403) {
+        alert('У вас нет прав для редактирования этой темы');
+      } else if (error.response?.data?.errors) {
+        const msg = error.response.data.errors.map((e: { msg: string }) => e.msg).join('\n');
+        alert(msg);
+      } else {
+        alert('Ошибка при сохранении темы');
+      }
+    } finally {
+      setSavingTopic(false);
+    }
+  };
+
   const isAdmin = user?.role === 'admin';
+  const isTopicAuthor = user && topic && user.id === topic.author_id;
+  const canEditTopic = user && topic && (isTopicAuthor || isAdmin);
 
   if (loading) {
     return (
@@ -861,21 +909,41 @@ const Topic = () => {
       <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6 mb-6 relative">
         <div className="flex justify-between items-start mb-2">
           <div className="flex items-center gap-3">
-            <h1 className="text-3xl font-bold">{topic.title}</h1>
-            <span className="text-blue-600 font-mono text-lg cursor-pointer hover:underline"
-                  title="Ссылка на тему">
-              #{globalIdMap.get(`topic-${topic.id}`) || 0}
-            </span>
+            {isEditingTopic ? (
+              <span className="text-blue-600 font-mono text-lg">
+                #{globalIdMap.get(`topic-${topic.id}`) || 0}
+              </span>
+            ) : (
+              <>
+                <h1 className="text-3xl font-bold">{topic.title}</h1>
+                <span className="text-blue-600 font-mono text-lg cursor-pointer hover:underline"
+                      title="Ссылка на тему">
+                  #{globalIdMap.get(`topic-${topic.id}`) || 0}
+                </span>
+              </>
+            )}
           </div>
-          {isAdmin && (
-            <button
-              onClick={handleDeleteTopic}
-              className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition"
-              title="Удалить тему"
-            >
-              🗑️ Удалить тему
-            </button>
-          )}
+          <div className="flex items-center gap-2">
+            {canEditTopic && !isEditingTopic && (
+              <button
+                type="button"
+                onClick={handleStartEditTopic}
+                className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition"
+                title="Редактировать тему"
+              >
+                ✏️ Редактировать
+              </button>
+            )}
+            {isAdmin && (
+              <button
+                onClick={handleDeleteTopic}
+                className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition"
+                title="Удалить тему"
+              >
+                🗑️ Удалить тему
+              </button>
+            )}
+          </div>
         </div>
         <div className="flex items-center gap-3 text-sm text-gray-500 mb-4">
           <Avatar avatarUrl={topic.author_avatar} username={topic.author_name} size="md" />
@@ -884,26 +952,69 @@ const Topic = () => {
             <div>{new Date(topic.created_at).toLocaleString('ru-RU')}</div>
           </div>
         </div>
-        <div className="prose max-w-none">
-          <MarkdownRenderer content={topic.content} />
-          {topic.images && topic.images.length > 0 && (
-            <div className={`mt-4 ${topic.images.length > 1 ? 'grid grid-cols-2 gap-0' : 'flex'}`}>
-              {topic.images.map((imageUrl, imgIndex) => {
-                const fullUrl = imageUrl.startsWith('http') ? imageUrl : (import.meta.env.VITE_API_URL || '') + imageUrl;
-                const imagesArray = topic.images || [];
-                return (
-                  <img
-                    key={imgIndex}
-                    src={fullUrl}
-                    alt={`Image ${imgIndex + 1}`}
-                    className={imagesArray.length > 1 ? 'w-full h-auto rounded border cursor-pointer hover:opacity-90' : 'w-1/4 max-w-[25%] h-auto rounded border cursor-pointer hover:opacity-90'}
-                    onClick={() => window.open(fullUrl, '_blank')}
-                  />
-                );
-              })}
+        {isEditingTopic ? (
+          <form onSubmit={handleSaveTopicEdit} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Название темы</label>
+              <input
+                type="text"
+                value={editTitle}
+                onChange={(e) => setEditTitle(e.target.value)}
+                className="w-full border border-gray-300 rounded px-3 py-2 text-lg"
+                placeholder="Название"
+                maxLength={200}
+                required
+              />
             </div>
-          )}
-        </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Содержание</label>
+              <textarea
+                value={editContent}
+                onChange={(e) => setEditContent(e.target.value)}
+                className="w-full border border-gray-300 rounded px-3 py-2 min-h-[200px]"
+                placeholder="Содержание темы"
+                required
+              />
+            </div>
+            <div className="flex gap-2">
+              <button
+                type="submit"
+                disabled={savingTopic}
+                className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition disabled:opacity-50"
+              >
+                {savingTopic ? 'Сохранение...' : 'Сохранить'}
+              </button>
+              <button
+                type="button"
+                onClick={handleCancelTopicEdit}
+                className="bg-gray-300 text-gray-700 px-4 py-2 rounded hover:bg-gray-400 transition"
+              >
+                Отмена
+              </button>
+            </div>
+          </form>
+        ) : (
+          <div className="prose max-w-none">
+            <MarkdownRenderer content={topic.content} />
+            {topic.images && topic.images.length > 0 && (
+              <div className={`mt-4 ${topic.images.length > 1 ? 'grid grid-cols-2 gap-0' : 'flex'}`}>
+                {topic.images.map((imageUrl, imgIndex) => {
+                  const fullUrl = imageUrl.startsWith('http') ? imageUrl : (import.meta.env.VITE_API_URL || '') + imageUrl;
+                  const imagesArray = topic.images || [];
+                  return (
+                    <img
+                      key={imgIndex}
+                      src={fullUrl}
+                      alt={`Image ${imgIndex + 1}`}
+                      className={imagesArray.length > 1 ? 'w-full h-auto rounded border cursor-pointer hover:opacity-90' : 'w-1/4 max-w-[25%] h-auto rounded border cursor-pointer hover:opacity-90'}
+                      onClick={() => window.open(fullUrl, '_blank')}
+                    />
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       <h2 className="text-2xl font-bold mb-4">Сообщения ({topic.posts.length})</h2>
