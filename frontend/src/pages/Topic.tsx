@@ -896,15 +896,24 @@ const Topic = () => {
     );
   }
 
+  const goBack = () => {
+    if (window.history.length > 1) {
+      navigate(-1);
+    } else {
+      navigate(`/category/${topic.category_id}`);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-100 py-4 px-2 md:px-4">
       <div className="max-w-[84rem] mx-auto">
-      <Link
-        to={`/category/${topic.category_id}`}
-        className="text-blue-600 hover:underline mb-4 inline-block"
+      <button
+        type="button"
+        onClick={goBack}
+        className="text-blue-600 hover:underline mb-4 inline-block text-left bg-transparent border-none cursor-pointer p-0 font-inherit"
       >
-        ← Назад к категории
-      </Link>
+        ← Назад
+      </button>
 
       <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6 mb-6 relative">
         <div className="flex justify-between items-start mb-2">
