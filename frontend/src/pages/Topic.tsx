@@ -34,6 +34,12 @@ interface PostComponentProps {
   onReact: (postId: number, reactionType: number) => void;
   onReply: (postId: number) => void;
   onDelete: (postId: number) => void;
+  onStartEdit: (postId: number) => void;
+  onSaveEdit: (postId: number, content: string) => void;
+  onCancelEdit: () => void;
+  onEditContentChange: (content: string) => void;
+  editingPostId: number | null;
+  editContent: string;
   level: number;
   allPosts: Post[];
   getGlobalId: (postId: number) => number;
@@ -98,6 +104,12 @@ const PostComponent = ({
   onReact,
   onReply,
   onDelete,
+  onStartEdit,
+  onSaveEdit,
+  onCancelEdit,
+  onEditContentChange,
+  editingPostId,
+  editContent,
   level,
   allPosts,
   getGlobalId,
@@ -265,17 +277,26 @@ const PostComponent = ({
               {user && (
                 <div className="flex items-center gap-2 flex-shrink-0">
                   {user.id === post.author_id && (
-                    <button
-                      onClick={() => {
-                        if (window.confirm('Вы уверены, что хотите удалить это сообщение?')) {
-                          onDelete(post.id);
-                        }
-                      }}
-                      className="px-3 py-1.5 rounded border border-red-300 bg-white text-red-600 hover:bg-red-50 transition text-sm"
-                      title="Удалить сообщение"
-                    >
-                      🗑️ Удалить
-                    </button>
+                    <>
+                      <button
+                        onClick={() => onStartEdit(post.id)}
+                        className="px-3 py-1.5 rounded border border-blue-300 bg-blue-50 text-blue-700 hover:bg-blue-100 transition text-sm"
+                        title="Редактировать сообщение"
+                      >
+                        📝 Редактировать
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (window.confirm('Вы уверены, что хотите удалить это сообщение?')) {
+                            onDelete(post.id);
+                          }
+                        }}
+                        className="px-3 py-1.5 rounded border border-red-300 bg-white text-red-600 hover:bg-red-50 transition text-sm"
+                        title="Удалить сообщение"
+                      >
+                        🗑️ Удалить
+                      </button>
+                    </>
                   )}
                   <button
                     onClick={() => onReply(post.id)}
@@ -307,9 +328,37 @@ const PostComponent = ({
               )}
             </div>
             <div className="flex-1 rounded-lg bg-slate-50 border border-slate-200 p-4">
-              <div className="prose prose-slate max-w-none text-gray-800">
-                <MarkdownRenderer content={post.content} />
-              </div>
+              {editingPostId === post.id ? (
+                <div className="space-y-2">
+                  <textarea
+                    value={editContent}
+                    onChange={(e) => onEditContentChange(e.target.value)}
+                    className="w-full min-h-[120px] p-3 rounded border border-slate-300 text-gray-800 text-sm resize-y focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Текст сообщения..."
+                    autoFocus
+                  />
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => onSaveEdit(post.id, editContent)}
+                      className="px-3 py-1.5 rounded border border-blue-300 bg-blue-50 text-blue-700 hover:bg-blue-100 transition text-sm"
+                    >
+                      Сохранить
+                    </button>
+                    <button
+                      type="button"
+                      onClick={onCancelEdit}
+                      className="px-3 py-1.5 rounded border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 transition text-sm"
+                    >
+                      Отмена
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="prose prose-slate max-w-none text-gray-800">
+                  <MarkdownRenderer content={post.content} />
+                </div>
+              )}
               {post.images && post.images.length > 0 && (
                 <div className={`mt-4 ${post.images.length > 1 ? 'grid grid-cols-2 gap-2' : 'flex'}`}>
                   {post.images.map((imageUrl, imgIndex) => {
@@ -342,6 +391,12 @@ const PostComponent = ({
               onReact={onReact}
               onReply={onReply}
               onDelete={onDelete}
+              onStartEdit={onStartEdit}
+              onSaveEdit={onSaveEdit}
+              onCancelEdit={onCancelEdit}
+              onEditContentChange={onEditContentChange}
+              editingPostId={editingPostId}
+              editContent={editContent}
               level={level + 1}
               allPosts={allPosts}
               getGlobalId={getGlobalId}
@@ -385,6 +440,8 @@ const Topic = () => {
   const [editTitle, setEditTitle] = useState('');
   const [editContent, setEditContent] = useState('');
   const [savingTopic, setSavingTopic] = useState(false);
+  const [editingPostId, setEditingPostId] = useState<number | null>(null);
+  const [postEditContent, setPostEditContent] = useState('');
 
   // Load global ID map only once on mount
   useEffect(() => {
@@ -804,6 +861,38 @@ const Topic = () => {
     }
   };
 
+  const handleStartEditPost = (postId: number) => {
+    const post = topic?.posts.find((p) => p.id === postId);
+    if (post) {
+      setEditingPostId(postId);
+      setPostEditContent(post.content);
+    }
+  };
+
+  const handleSaveEditPost = async (postId: number, content: string) => {
+    if (!content.trim()) return;
+    try {
+      await api.put(`/posts/${postId}`, { content: content.trim() });
+      setTopic(prevTopic => {
+        if (!prevTopic) return prevTopic;
+        return {
+          ...prevTopic,
+          posts: prevTopic.posts.map(p => p.id === postId ? { ...p, content: content.trim() } : p),
+        };
+      });
+      setEditingPostId(null);
+      setPostEditContent('');
+    } catch (error: any) {
+      console.error('Error updating post:', error);
+      alert(error.response?.data?.error || 'Ошибка при сохранении сообщения');
+    }
+  };
+
+  const handleCancelEditPost = () => {
+    setEditingPostId(null);
+    setPostEditContent('');
+  };
+
   const handleDeleteTopic = async () => {
     if (!topic) return;
 
@@ -1043,6 +1132,12 @@ const Topic = () => {
               onReact={handleReact}
               onReply={handleReply}
               onDelete={handleDeletePost}
+              onStartEdit={handleStartEditPost}
+              onSaveEdit={handleSaveEditPost}
+              onCancelEdit={handleCancelEditPost}
+              onEditContentChange={setPostEditContent}
+              editingPostId={editingPostId}
+              editContent={postEditContent}
               level={0}
               allPosts={topic.posts}
               getGlobalId={(postId: number) => globalIdMap.get(`post-${postId}`) || 0}
