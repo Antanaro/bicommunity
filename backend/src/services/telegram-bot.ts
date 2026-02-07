@@ -82,6 +82,10 @@ class TelegramBotService {
         await this.handleStatusCommand(msg);
       });
 
+      this.bot.onText(/\/get_invite/, async (msg) => {
+        await this.handleGetInviteCommand(msg);
+      });
+
       // Обработка форвардированных сообщений
       this.bot.on('message', async (msg: TelegramBot.Message) => {
         // Игнорируем команды
@@ -572,6 +576,9 @@ class TelegramBotService {
 **/help**
 Показать эту справку
 
+**/get_invite** _(только для администратора)_
+Получить одну инвайт-ссылку для регистрации на форуме.
+
 📤 **Форвард сообщений:**
 Просто перешлите сообщение из любого канала — бот создаст тему на форуме.
 `;
@@ -610,6 +617,58 @@ class TelegramBotService {
       await this.bot.sendMessage(msg.chat.id, '⏹️ Парсинг остановлен.');
     } else {
       await this.bot.sendMessage(msg.chat.id, 'ℹ️ Парсинг не был запущен.');
+    }
+  }
+
+  private async handleGetInviteCommand(msg: TelegramBot.Message) {
+    if (!this.bot) return;
+
+    const adminId = process.env.TELEGRAM_ADMIN_ID;
+    const chatId = msg.chat.id;
+
+    if (!adminId || String(chatId) !== String(adminId)) {
+      await this.bot.sendMessage(chatId, '⛔ Эта команда доступна только администратору.');
+      return;
+    }
+
+    try {
+      const adminResult = await pool.query(
+        "SELECT id FROM users WHERE role = 'admin' LIMIT 1"
+      );
+
+      if (adminResult.rows.length === 0) {
+        await this.bot.sendMessage(chatId, '❌ В базе не найден пользователь с ролью admin.');
+        return;
+      }
+
+      const ownerId = adminResult.rows[0].id;
+
+      let code: string;
+      let attempts = 0;
+      do {
+        code = randomBytes(4).toString('hex');
+        const exists = await pool.query('SELECT id FROM invitation_codes WHERE code = $1', [code]);
+        if (exists.rows.length === 0) break;
+        attempts++;
+      } while (attempts < 10);
+
+      if (attempts >= 10) {
+        await this.bot.sendMessage(chatId, '❌ Не удалось сгенерировать уникальный код. Попробуйте позже.');
+        return;
+      }
+
+      await pool.query(
+        'INSERT INTO invitation_codes (code, owner_id) VALUES ($1, $2)',
+        [code, ownerId]
+      );
+
+      const baseUrl = (process.env.FRONTEND_URL || 'https://bicommunity.ru').replace(/\/$/, '');
+      const inviteLink = `${baseUrl}/register?invite=${code}`;
+
+      await this.bot.sendMessage(chatId, `✅ Одна инвайт-ссылка:\n\n${inviteLink}`);
+    } catch (error: any) {
+      console.error('❌ get_invite error:', error);
+      await this.bot.sendMessage(chatId, '❌ Ошибка при создании приглашения. Попробуйте позже.');
     }
   }
 
