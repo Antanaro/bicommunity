@@ -280,12 +280,10 @@ const PostComponent = memo(({
                   <>
                     <button
                       onClick={() => onStartEdit(post.id)}
-                      className="px-2 py-1 rounded border border-blue-300 bg-blue-50 text-blue-700 hover:bg-blue-100 transition text-xs inline-flex items-center justify-center"
+                      className="px-2 py-1 rounded border border-blue-300 bg-blue-50 text-blue-700 hover:bg-blue-100 transition text-xs"
                       title="Редактировать сообщение"
                     >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                      </svg>
+                      ✏️
                     </button>
                     <button
                       onClick={() => {
