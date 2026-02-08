@@ -473,6 +473,10 @@ const Topic = () => {
   const [pollVoting, setPollVoting] = useState(false);
   // Poll: show results without voting
   const [pollShowResultsWithoutVote, setPollShowResultsWithoutVote] = useState(false);
+  const [isEditingPollQuestion, setIsEditingPollQuestion] = useState(false);
+  const [pollEditQuestion, setPollEditQuestion] = useState('');
+  const [savingPollEdit, setSavingPollEdit] = useState(false);
+  const [deletingPoll, setDeletingPoll] = useState(false);
 
   // Load global ID map only once on mount
   useEffect(() => {
@@ -989,6 +993,7 @@ const Topic = () => {
   const isTopicAuthor = user && topic && user.id === topic.author_id;
   const canEditTopic = user && topic && (isTopicAuthor || isAdmin);
   const canCreatePoll = user && topic && (isTopicAuthor || isAdmin) && !topic.poll;
+  const canEditPoll = user && topic?.poll && (isTopicAuthor || isAdmin);
 
   const handleCreatePoll = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1069,6 +1074,51 @@ const Topic = () => {
   const userHasVoted = topic?.poll && topic.poll.user_voted_option_ids.length > 0;
   const canSeeResults = topic?.poll && (userHasVoted || topic.poll.allow_view_without_vote || pollShowResultsWithoutVote);
   const showVoteForm = topic?.poll && !userHasVoted && !pollShowResultsWithoutVote;
+
+  const handleStartEditPollQuestion = () => {
+    if (topic?.poll) {
+      setPollEditQuestion(topic.poll.question);
+      setIsEditingPollQuestion(true);
+    }
+  };
+
+  const handleSavePollQuestion = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!topic?.poll || savingPollEdit || !pollEditQuestion.trim()) return;
+    setSavingPollEdit(true);
+    try {
+      await api.put(`/polls/${topic.poll.id}`, { question: pollEditQuestion.trim() });
+      setTopic((prev) =>
+        prev?.poll
+          ? { ...prev, poll: { ...prev.poll, question: pollEditQuestion.trim() } }
+          : prev
+      );
+      setIsEditingPollQuestion(false);
+    } catch (err: any) {
+      alert(err.response?.data?.error || 'Ошибка при сохранении');
+    } finally {
+      setSavingPollEdit(false);
+    }
+  };
+
+  const handleCancelPollEdit = () => {
+    setIsEditingPollQuestion(false);
+    setPollEditQuestion('');
+  };
+
+  const handleDeletePoll = async () => {
+    if (!topic?.poll || deletingPoll) return;
+    if (!window.confirm('Удалить голосование? Голоса будут потеряны.')) return;
+    setDeletingPoll(true);
+    try {
+      await api.delete(`/polls/${topic.poll.id}`);
+      setTopic((prev) => (prev ? { ...prev, poll: null } : prev));
+    } catch (err: any) {
+      alert(err.response?.data?.error || 'Ошибка при удалении');
+    } finally {
+      setDeletingPoll(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -1240,7 +1290,7 @@ const Topic = () => {
       {/* Create poll modal */}
       {showCreatePollModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4" onClick={() => !creatingPoll && setShowCreatePollModal(false)}>
-          <div className="bg-white rounded-lg shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-6" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-xl font-bold mb-4">Создать голосование</h3>
             <form onSubmit={handleCreatePoll} className="space-y-4">
               <div>
@@ -1315,10 +1365,53 @@ const Topic = () => {
         </div>
       )}
 
-      {/* Poll block: vote form or results */}
+      {/* Poll block: vote form or results — full width as topic card */}
       {topic.poll && (
         <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6 mb-6">
-          <h3 className="text-lg font-semibold mb-3">{topic.poll.question}</h3>
+          <div className="flex items-start justify-between gap-3 mb-3">
+            {isEditingPollQuestion ? (
+              <form onSubmit={handleSavePollQuestion} className="flex-1 min-w-0 flex gap-2 items-center">
+                <input
+                  type="text"
+                  value={pollEditQuestion}
+                  onChange={(e) => setPollEditQuestion(e.target.value)}
+                  className="flex-1 border border-gray-300 rounded px-3 py-2 text-lg"
+                  placeholder="Вопрос голосования"
+                  maxLength={500}
+                  autoFocus
+                />
+                <button type="submit" disabled={savingPollEdit} className="bg-blue-500 text-white px-3 py-1.5 rounded hover:bg-blue-600 text-sm whitespace-nowrap">
+                  {savingPollEdit ? '…' : 'Сохранить'}
+                </button>
+                <button type="button" onClick={handleCancelPollEdit} className="bg-gray-200 text-gray-700 px-3 py-1.5 rounded hover:bg-gray-300 text-sm whitespace-nowrap">
+                  Отмена
+                </button>
+              </form>
+            ) : (
+              <>
+                <h3 className="text-lg font-semibold flex-1">{topic.poll.question}</h3>
+                {canEditPoll && (
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <button
+                      type="button"
+                      onClick={handleStartEditPollQuestion}
+                      className="text-blue-600 hover:underline text-sm"
+                    >
+                      ✏️ Редактировать
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleDeletePoll}
+                      disabled={deletingPoll}
+                      className="text-red-600 hover:underline text-sm disabled:opacity-50"
+                    >
+                      {deletingPoll ? '…' : '🗑️ Удалить'}
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
           {topic.poll.multiple_choice && (
             <p className="text-sm text-gray-500 mb-3">Можно выбрать несколько вариантов</p>
           )}
