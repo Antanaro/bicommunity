@@ -1,5 +1,6 @@
 import express, { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
+import jwt from 'jsonwebtoken';
 import { pool } from '../config/database';
 import { authenticate, AuthRequest } from '../middleware/auth';
 import { telegramBotService } from '../services/telegram-bot';
@@ -103,58 +104,61 @@ router.get('/:id', async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'Topic not found' });
     }
 
-    // Load poll for this topic (if any)
-    const topicId = parseInt(req.params.id, 10);
-    const pollResult = await pool.query(
-      'SELECT id, question, multiple_choice, allow_view_without_vote FROM polls WHERE topic_id = $1',
-      [topicId]
-    );
+    // Load poll for this topic (if any). If polls table missing or query fails, topic still loads without poll.
     let poll: any = null;
-    if (pollResult.rows.length > 0) {
-      const p = pollResult.rows[0];
-      const optionsResult = await pool.query(
-        `SELECT po.id, po.text, po.position,
-          COALESCE(v.cnt, 0)::int AS vote_count
-         FROM poll_options po
-         LEFT JOIN (
-           SELECT option_id, COUNT(*) AS cnt FROM poll_votes WHERE poll_id = $1 GROUP BY option_id
-         ) v ON po.id = v.option_id
-         WHERE po.poll_id = $1
-         ORDER BY po.position ASC, po.id ASC`,
-        [p.id]
+    try {
+      const topicId = parseInt(req.params.id, 10);
+      const pollResult = await pool.query(
+        'SELECT id, question, multiple_choice, allow_view_without_vote FROM polls WHERE topic_id = $1',
+        [topicId]
       );
-      const totalVotes = optionsResult.rows.reduce((sum: number, row: any) => sum + (row.vote_count || 0), 0);
-      let userVotedOptionIds: number[] = [];
-      if (req.headers.authorization) {
-        const token = req.headers.authorization.split(' ')[1];
-        if (token) {
-          try {
-            const jwt = await import('jsonwebtoken');
-            const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret') as { userId: number };
-            const uv = await pool.query(
-              'SELECT option_id FROM poll_votes WHERE poll_id = $1 AND user_id = $2',
-              [p.id, decoded.userId]
-            );
-            userVotedOptionIds = uv.rows.map((r: any) => r.option_id);
-          } catch {
-            // not authenticated
+      if (pollResult.rows.length > 0) {
+        const p = pollResult.rows[0];
+        const optionsResult = await pool.query(
+          `SELECT po.id, po.text, po.position,
+            COALESCE(v.cnt, 0)::int AS vote_count
+           FROM poll_options po
+           LEFT JOIN (
+             SELECT option_id, COUNT(*) AS cnt FROM poll_votes WHERE poll_id = $1 GROUP BY option_id
+           ) v ON po.id = v.option_id
+           WHERE po.poll_id = $1
+           ORDER BY po.position ASC, po.id ASC`,
+          [p.id]
+        );
+        const totalVotes = optionsResult.rows.reduce((sum: number, row: any) => sum + (row.vote_count || 0), 0);
+        let userVotedOptionIds: number[] = [];
+        if (req.headers.authorization) {
+          const token = req.headers.authorization.split(' ')[1];
+          if (token) {
+            try {
+              const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret') as { userId: number };
+              const uv = await pool.query(
+                'SELECT option_id FROM poll_votes WHERE poll_id = $1 AND user_id = $2',
+                [p.id, decoded.userId]
+              );
+              userVotedOptionIds = uv.rows.map((r: any) => r.option_id);
+            } catch {
+              // not authenticated
+            }
           }
         }
+        poll = {
+          id: p.id,
+          question: p.question,
+          multiple_choice: p.multiple_choice,
+          allow_view_without_vote: p.allow_view_without_vote,
+          total_votes: totalVotes,
+          options: optionsResult.rows.map((o: any) => ({
+            id: o.id,
+            text: o.text,
+            position: o.position,
+            vote_count: parseInt(o.vote_count, 10) || 0,
+          })),
+          user_voted_option_ids: userVotedOptionIds,
+        };
       }
-      poll = {
-        id: p.id,
-        question: p.question,
-        multiple_choice: p.multiple_choice,
-        allow_view_without_vote: p.allow_view_without_vote,
-        total_votes: totalVotes,
-        options: optionsResult.rows.map((o: any) => ({
-          id: o.id,
-          text: o.text,
-          position: o.position,
-          vote_count: parseInt(o.vote_count, 10) || 0,
-        })),
-        user_voted_option_ids: userVotedOptionIds,
-      };
+    } catch (pollErr) {
+      console.warn('Poll load skipped for topic', req.params.id, (pollErr as Error).message);
     }
 
     // Get posts with parent information and reaction counts
