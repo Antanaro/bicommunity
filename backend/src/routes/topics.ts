@@ -103,6 +103,60 @@ router.get('/:id', async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'Topic not found' });
     }
 
+    // Load poll for this topic (if any)
+    const topicId = parseInt(req.params.id, 10);
+    const pollResult = await pool.query(
+      'SELECT id, question, multiple_choice, allow_view_without_vote FROM polls WHERE topic_id = $1',
+      [topicId]
+    );
+    let poll: any = null;
+    if (pollResult.rows.length > 0) {
+      const p = pollResult.rows[0];
+      const optionsResult = await pool.query(
+        `SELECT po.id, po.text, po.position,
+          COALESCE(v.cnt, 0)::int AS vote_count
+         FROM poll_options po
+         LEFT JOIN (
+           SELECT option_id, COUNT(*) AS cnt FROM poll_votes WHERE poll_id = $1 GROUP BY option_id
+         ) v ON po.id = v.option_id
+         WHERE po.poll_id = $1
+         ORDER BY po.position ASC, po.id ASC`,
+        [p.id]
+      );
+      const totalVotes = optionsResult.rows.reduce((sum: number, row: any) => sum + (row.vote_count || 0), 0);
+      let userVotedOptionIds: number[] = [];
+      if (req.headers.authorization) {
+        const token = req.headers.authorization.split(' ')[1];
+        if (token) {
+          try {
+            const jwt = await import('jsonwebtoken');
+            const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret') as { userId: number };
+            const uv = await pool.query(
+              'SELECT option_id FROM poll_votes WHERE poll_id = $1 AND user_id = $2',
+              [p.id, decoded.userId]
+            );
+            userVotedOptionIds = uv.rows.map((r: any) => r.option_id);
+          } catch {
+            // not authenticated
+          }
+        }
+      }
+      poll = {
+        id: p.id,
+        question: p.question,
+        multiple_choice: p.multiple_choice,
+        allow_view_without_vote: p.allow_view_without_vote,
+        total_votes: totalVotes,
+        options: optionsResult.rows.map((o: any) => ({
+          id: o.id,
+          text: o.text,
+          position: o.position,
+          vote_count: parseInt(o.vote_count, 10) || 0,
+        })),
+        user_voted_option_ids: userVotedOptionIds,
+      };
+    }
+
     // Get posts with parent information and reaction counts
     // Check if reaction_type column exists
     const columnCheck = await pool.query(`
@@ -157,6 +211,7 @@ router.get('/:id', async (req: Request, res: Response) => {
     res.json({
       ...topicResult.rows[0],
       posts: postsResult.rows,
+      poll,
     });
   } catch (error) {
     console.error('Get topic error:', error);
@@ -230,6 +285,75 @@ router.post(
       res.status(201).json(result.rows[0]);
     } catch (error) {
       console.error('Create topic error:', error);
+      res.status(500).json({ error: 'Server error' });
+    }
+  }
+);
+
+// Create poll in topic (author or admin only, one poll per topic)
+router.post(
+  '/:id/polls',
+  authenticate,
+  [
+    body('question').trim().isLength({ min: 1, max: 500 }).withMessage('Question is required'),
+    body('options').isArray({ min: 2, max: 10 }).withMessage('From 2 to 10 options required'),
+    body('options.*').trim().isLength({ min: 1, max: 200 }).withMessage('Option text required'),
+    body('multiple_choice').optional().isBoolean(),
+    body('allow_view_without_vote').optional().isBoolean(),
+  ],
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+      }
+
+      const topicId = parseInt(req.params.id, 10);
+      if (isNaN(topicId)) {
+        return res.status(400).json({ error: 'Invalid topic ID' });
+      }
+
+      const topicCheck = await pool.query('SELECT id, author_id FROM topics WHERE id = $1', [
+        topicId,
+      ]);
+      if (topicCheck.rows.length === 0) {
+        return res.status(404).json({ error: 'Topic not found' });
+      }
+      const topic = topicCheck.rows[0];
+      if (topic.author_id !== req.userId && req.userRole !== 'admin') {
+        return res.status(403).json({ error: 'Only author or admin can create a poll' });
+      }
+
+      const existingPoll = await pool.query('SELECT id FROM polls WHERE topic_id = $1', [
+        topicId,
+      ]);
+      if (existingPoll.rows.length > 0) {
+        return res.status(400).json({ error: 'This topic already has a poll' });
+      }
+
+      const { question, options, multiple_choice, allow_view_without_vote } = req.body;
+      const pollResult = await pool.query(
+        `INSERT INTO polls (topic_id, question, multiple_choice, allow_view_without_vote)
+         VALUES ($1, $2, $3, $4) RETURNING *`,
+        [
+          topicId,
+          question.trim(),
+          !!multiple_choice,
+          allow_view_without_vote !== false,
+        ]
+      );
+      const poll = pollResult.rows[0];
+
+      for (let i = 0; i < options.length; i++) {
+        await pool.query(
+          'INSERT INTO poll_options (poll_id, text, position) VALUES ($1, $2, $3)',
+          [poll.id, String(options[i]).trim(), i]
+        );
+      }
+
+      res.status(201).json(poll);
+    } catch (error) {
+      console.error('Create poll error:', error);
       res.status(500).json({ error: 'Server error' });
     }
   }

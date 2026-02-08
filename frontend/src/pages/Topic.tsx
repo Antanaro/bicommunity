@@ -408,6 +408,23 @@ const PostComponent = ({
   );
 };
 
+interface PollOption {
+  id: number;
+  text: string;
+  position: number;
+  vote_count: number;
+}
+
+interface Poll {
+  id: number;
+  question: string;
+  multiple_choice: boolean;
+  allow_view_without_vote: boolean;
+  total_votes: number;
+  options: PollOption[];
+  user_voted_option_ids: number[];
+}
+
 interface Topic {
   id: number;
   title: string;
@@ -420,6 +437,7 @@ interface Topic {
   created_at: string;
   posts: Post[];
   images?: string[];
+  poll?: Poll | null;
 }
 
 const Topic = () => {
@@ -442,6 +460,19 @@ const Topic = () => {
   const [savingTopic, setSavingTopic] = useState(false);
   const [editingPostId, setEditingPostId] = useState<number | null>(null);
   const [postEditContent, setPostEditContent] = useState('');
+  // Poll: create modal
+  const [showCreatePollModal, setShowCreatePollModal] = useState(false);
+  const [pollQuestion, setPollQuestion] = useState('');
+  const [pollOptions, setPollOptions] = useState<string[]>(['', '']);
+  const [pollMultipleChoice, setPollMultipleChoice] = useState(false);
+  const [pollAllowViewWithoutVote, setPollAllowViewWithoutVote] = useState(true);
+  const [creatingPoll, setCreatingPoll] = useState(false);
+  // Poll: vote
+  const [pollVoteSingle, setPollVoteSingle] = useState<number | null>(null);
+  const [pollVoteMultiple, setPollVoteMultiple] = useState<number[]>([]);
+  const [pollVoting, setPollVoting] = useState(false);
+  // Poll: show results without voting
+  const [pollShowResultsWithoutVote, setPollShowResultsWithoutVote] = useState(false);
 
   // Load global ID map only once on mount
   useEffect(() => {
@@ -957,6 +988,87 @@ const Topic = () => {
   const isAdmin = user?.role === 'admin';
   const isTopicAuthor = user && topic && user.id === topic.author_id;
   const canEditTopic = user && topic && (isTopicAuthor || isAdmin);
+  const canCreatePoll = user && topic && (isTopicAuthor || isAdmin) && !topic.poll;
+
+  const handleCreatePoll = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!topic || creatingPoll) return;
+    const opts = pollOptions.map((o) => o.trim()).filter(Boolean);
+    if (opts.length < 2) {
+      alert('Добавьте минимум 2 варианта ответа');
+      return;
+    }
+    if (!pollQuestion.trim()) {
+      alert('Введите вопрос голосования');
+      return;
+    }
+    setCreatingPoll(true);
+    try {
+      await api.post(`/topics/${topic.id}/polls`, {
+        question: pollQuestion.trim(),
+        options: opts,
+        multiple_choice: pollMultipleChoice,
+        allow_view_without_vote: pollAllowViewWithoutVote,
+      });
+      setShowCreatePollModal(false);
+      setPollQuestion('');
+      setPollOptions(['', '']);
+      setPollMultipleChoice(false);
+      setPollAllowViewWithoutVote(true);
+      await fetchTopic();
+    } catch (err: any) {
+      console.error(err);
+      alert(err.response?.data?.error || err.response?.data?.errors?.[0]?.msg || 'Ошибка создания голосования');
+    } finally {
+      setCreatingPoll(false);
+    }
+  };
+
+  const addPollOption = () => {
+    if (pollOptions.length >= 10) return;
+    setPollOptions((prev) => [...prev, '']);
+  };
+
+  const removePollOption = (index: number) => {
+    if (pollOptions.length <= 2) return;
+    setPollOptions((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handlePollVote = async () => {
+    if (!topic?.poll || pollVoting) return;
+    const poll = topic.poll;
+    if (poll.multiple_choice) {
+      if (pollVoteMultiple.length === 0) {
+        alert('Выберите хотя бы один вариант');
+        return;
+      }
+    } else {
+      if (pollVoteSingle == null) {
+        alert('Выберите вариант');
+        return;
+      }
+    }
+    setPollVoting(true);
+    try {
+      if (poll.multiple_choice) {
+        await api.post(`/polls/${poll.id}/vote`, { option_ids: pollVoteMultiple });
+      } else {
+        await api.post(`/polls/${poll.id}/vote`, { option_id: pollVoteSingle });
+      }
+      await fetchTopic();
+      setPollVoteSingle(null);
+      setPollVoteMultiple([]);
+    } catch (err: any) {
+      console.error(err);
+      alert(err.response?.data?.error || 'Ошибка при голосовании');
+    } finally {
+      setPollVoting(false);
+    }
+  };
+
+  const userHasVoted = topic?.poll && topic.poll.user_voted_option_ids.length > 0;
+  const canSeeResults = topic?.poll && (userHasVoted || topic.poll.allow_view_without_vote || pollShowResultsWithoutVote);
+  const showVoteForm = topic?.poll && !userHasVoted && !pollShowResultsWithoutVote;
 
   if (loading) {
     return (
@@ -1022,6 +1134,16 @@ const Topic = () => {
             )}
           </div>
           <div className="flex items-center gap-2">
+            {canCreatePoll && (
+              <button
+                type="button"
+                onClick={() => setShowCreatePollModal(true)}
+                className="bg-blue-500 text-white px-3 py-1.5 text-sm rounded hover:bg-blue-600 transition"
+                title="Создать голосование"
+              >
+                📊 Создать голосование
+              </button>
+            )}
             {canEditTopic && !isEditingTopic && (
               <button
                 type="button"
@@ -1114,6 +1236,185 @@ const Topic = () => {
           </div>
         )}
       </div>
+
+      {/* Create poll modal */}
+      {showCreatePollModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4" onClick={() => !creatingPoll && setShowCreatePollModal(false)}>
+          <div className="bg-white rounded-lg shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-6" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-xl font-bold mb-4">Создать голосование</h3>
+            <form onSubmit={handleCreatePoll} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Вопрос</label>
+                <input
+                  type="text"
+                  value={pollQuestion}
+                  onChange={(e) => setPollQuestion(e.target.value)}
+                  className="w-full border border-gray-300 rounded px-3 py-2"
+                  placeholder="Текст вопроса"
+                  maxLength={500}
+                  required
+                />
+              </div>
+              <div>
+                <div className="flex justify-between items-center mb-1">
+                  <label className="block text-sm font-medium text-gray-700">Варианты (от 2 до 10)</label>
+                  {pollOptions.length < 10 && (
+                    <button type="button" onClick={addPollOption} className="text-blue-600 hover:underline text-sm">
+                      + Добавить вариант
+                    </button>
+                  )}
+                </div>
+                {pollOptions.map((opt, idx) => (
+                  <div key={idx} className="flex gap-2 mb-2">
+                    <input
+                      type="text"
+                      value={opt}
+                      onChange={(e) => setPollOptions((prev) => prev.map((o, i) => (i === idx ? e.target.value : o)))}
+                      className="flex-1 border border-gray-300 rounded px-3 py-2"
+                      placeholder={`Вариант ${idx + 1}`}
+                      maxLength={200}
+                    />
+                    {pollOptions.length > 2 && (
+                      <button type="button" onClick={() => removePollOption(idx)} className="text-red-600 hover:bg-red-50 px-2 rounded">
+                        ✕
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="poll-multiple"
+                  checked={pollMultipleChoice}
+                  onChange={(e) => setPollMultipleChoice(e.target.checked)}
+                  className="rounded border-gray-300"
+                />
+                <label htmlFor="poll-multiple" className="text-sm text-gray-700">Множественный выбор (несколько вариантов)</label>
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="poll-view-without-vote"
+                  checked={pollAllowViewWithoutVote}
+                  onChange={(e) => setPollAllowViewWithoutVote(e.target.checked)}
+                  className="rounded border-gray-300"
+                />
+                <label htmlFor="poll-view-without-vote" className="text-sm text-gray-700">Разрешить просмотр результатов без голосования</label>
+              </div>
+              <div className="flex gap-2 pt-2">
+                <button type="submit" disabled={creatingPoll} className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition disabled:opacity-50">
+                  {creatingPoll ? 'Создание...' : 'Создать голосование'}
+                </button>
+                <button type="button" onClick={() => !creatingPoll && setShowCreatePollModal(false)} className="bg-gray-300 text-gray-700 px-4 py-2 rounded hover:bg-gray-400 transition">
+                  Отмена
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Poll block: vote form or results */}
+      {topic.poll && (
+        <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6 mb-6">
+          <h3 className="text-lg font-semibold mb-3">{topic.poll.question}</h3>
+          {topic.poll.multiple_choice && (
+            <p className="text-sm text-gray-500 mb-3">Можно выбрать несколько вариантов</p>
+          )}
+
+          {showVoteForm && (
+            <>
+              <div className="space-y-2 mb-4">
+                {topic.poll.options.map((opt) =>
+                  topic.poll!.multiple_choice ? (
+                    <label key={opt.id} className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={pollVoteMultiple.includes(opt.id)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setPollVoteMultiple((prev) => prev.length >= 10 ? prev : [...prev, opt.id]);
+                          } else {
+                            setPollVoteMultiple((prev) => prev.filter((id) => id !== opt.id));
+                          }
+                        }}
+                        className="rounded border-gray-300 text-blue-600"
+                      />
+                      <span>{opt.text}</span>
+                    </label>
+                  ) : (
+                    <label key={opt.id} className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="poll-vote"
+                        checked={pollVoteSingle === opt.id}
+                        onChange={() => setPollVoteSingle(opt.id)}
+                        className="border-gray-300 text-blue-600"
+                      />
+                      <span>{opt.text}</span>
+                    </label>
+                  )
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handlePollVote}
+                  disabled={pollVoting || (topic.poll!.multiple_choice ? pollVoteMultiple.length === 0 : pollVoteSingle == null)}
+                  className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition disabled:opacity-50"
+                >
+                  {pollVoting ? 'Отправка...' : 'Проголосовать'}
+                </button>
+                {topic.poll.allow_view_without_vote && (
+                  <button
+                    type="button"
+                    onClick={() => setPollShowResultsWithoutVote(true)}
+                    className="text-blue-600 hover:underline"
+                  >
+                    Посмотреть результаты
+                  </button>
+                )}
+              </div>
+            </>
+          )}
+
+          {canSeeResults && (
+            <>
+              <div className="space-y-3 mb-2">
+                {topic.poll.options.map((opt) => {
+                  const total = topic.poll!.total_votes || 1;
+                  const pct = total > 0 ? Math.round((opt.vote_count / total) * 100) : 0;
+                  return (
+                    <div key={opt.id}>
+                      <div className="flex justify-between text-sm mb-1">
+                        <span className="text-gray-800">{opt.text}</span>
+                        <span className="text-gray-600">{opt.vote_count} ({pct}%)</span>
+                      </div>
+                      <div className="h-6 bg-gray-200 rounded overflow-hidden">
+                        <div
+                          className="h-full bg-blue-500 rounded transition-all duration-300"
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              <p className="text-sm text-gray-500">Всего голосов: {topic.poll.total_votes}</p>
+              {topic.poll.allow_view_without_vote && !userHasVoted && pollShowResultsWithoutVote && (
+                <button
+                  type="button"
+                  onClick={() => setPollShowResultsWithoutVote(false)}
+                  className="mt-2 text-blue-600 hover:underline text-sm"
+                >
+                  ← Вернуться к голосованию
+                </button>
+              )}
+            </>
+          )}
+        </div>
+      )}
 
       <h2 className="text-2xl font-bold mb-4">Сообщения ({topic.posts.length})</h2>
 
