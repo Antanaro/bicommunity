@@ -353,7 +353,8 @@ const Profile = () => {
             placeholder="Например: 123456789"
           />
           <p className="text-xs text-gray-500 mt-1">
-            Получите ваш chat_id, отправив команду <code>/myid</code> нашему Telegram‑боту, и
+            Получите ваш chat_id, отправив команду <code>/myid</code>{' '}
+            <a href="https://t.me/bicommunity_bot" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">нашему Telegram‑боту</a>, и
             вставьте значение сюда.
           </p>
         </div>
