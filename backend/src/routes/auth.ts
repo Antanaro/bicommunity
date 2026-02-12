@@ -830,7 +830,7 @@ router.put(
   }
 );
 
-// Get public user profile by ID
+// Get public user profile by ID (with stats)
 router.get('/users/:id', async (req: Request, res: Response) => {
   try {
     const result = await pool.query(
@@ -843,12 +843,27 @@ router.get('/users/:id', async (req: Request, res: Response) => {
     }
 
     const user = result.rows[0];
+    const userId = parseInt(req.params.id, 10);
+
+    // Get topics_count, posts_count, likes_received
+    const statsResult = await pool.query(
+      `SELECT
+        (SELECT COUNT(*)::INTEGER FROM topics WHERE author_id = $1) as topics_count,
+        (SELECT COUNT(*)::INTEGER FROM posts WHERE author_id = $1) as posts_count,
+        (SELECT COUNT(*)::INTEGER FROM likes l JOIN posts p ON l.post_id = p.id WHERE p.author_id = $1) as likes_received`,
+      [userId]
+    );
+    const stats = statsResult.rows[0] || { topics_count: 0, posts_count: 0, likes_received: 0 };
+
     res.json({
       id: user.id,
       username: user.username,
       avatar_url: user.avatar_url || null,
       bio: user.bio || null,
       created_at: user.created_at,
+      topics_count: stats.topics_count ?? 0,
+      posts_count: stats.posts_count ?? 0,
+      likes_received: stats.likes_received ?? 0,
     });
   } catch (error: any) {
     console.error('Get user error:', error);
@@ -856,6 +871,71 @@ router.get('/users/:id', async (req: Request, res: Response) => {
       error: 'Ошибка сервера',
       message: error.message || 'Неизвестная ошибка'
     });
+  }
+});
+
+// Get user's topics (created by user)
+router.get('/users/:id/topics', async (req: Request, res: Response) => {
+  try {
+    const userId = parseInt(req.params.id, 10);
+    if (isNaN(userId)) {
+      return res.status(400).json({ error: 'Invalid user ID' });
+    }
+
+    const result = await pool.query(
+      `SELECT 
+        t.id, t.title, t.created_at,
+        c.name as category_name,
+        COUNT(p.id)::INTEGER as post_count,
+        MAX(p.created_at) as last_post_at
+      FROM topics t
+      JOIN categories c ON t.category_id = c.id
+      LEFT JOIN posts p ON t.id = p.topic_id
+      WHERE t.author_id = $1
+      GROUP BY t.id, t.title, t.created_at, c.name
+      ORDER BY COALESCE(MAX(p.created_at), t.created_at) DESC
+      LIMIT 20`,
+      [userId]
+    );
+
+    res.json(result.rows);
+  } catch (error: any) {
+    console.error('Get user topics error:', error);
+    res.status(500).json({ error: 'Ошибка сервера', message: (error as Error).message });
+  }
+});
+
+// Get topics where user participated (posted in, excluding own topics)
+router.get('/users/:id/participated-topics', async (req: Request, res: Response) => {
+  try {
+    const userId = parseInt(req.params.id, 10);
+    if (isNaN(userId)) {
+      return res.status(400).json({ error: 'Invalid user ID' });
+    }
+
+    const result = await pool.query(
+      `SELECT 
+        t.id, t.title, t.created_at,
+        u.username as author_name,
+        c.name as category_name,
+        (SELECT COUNT(*)::INTEGER FROM posts WHERE topic_id = t.id) as post_count,
+        (SELECT MAX(created_at) FROM posts WHERE topic_id = t.id) as last_post_at
+      FROM topics t
+      JOIN users u ON t.author_id = u.id
+      JOIN categories c ON t.category_id = c.id
+      WHERE t.id IN (
+        SELECT DISTINCT topic_id FROM posts WHERE author_id = $1
+      )
+      AND t.author_id != $1
+      ORDER BY (SELECT MAX(created_at) FROM posts WHERE topic_id = t.id) DESC NULLS LAST, t.created_at DESC
+      LIMIT 20`,
+      [userId, userId]
+    );
+
+    res.json(result.rows);
+  } catch (error: any) {
+    console.error('Get participated topics error:', error);
+    res.status(500).json({ error: 'Ошибка сервера', message: (error as Error).message });
   }
 });
 

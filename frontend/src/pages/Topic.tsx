@@ -5,6 +5,7 @@ import { api, uploadImages } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import LinkifyText from '../components/LinkifyText';
 import MarkdownRenderer from '../components/MarkdownRenderer';
+import CopyPostLinkIcon from '../components/CopyPostLinkIcon';
 
 const POPUP_Z_INDEX = 99999;
 
@@ -43,6 +44,7 @@ interface PostComponentProps {
   level: number;
   allPosts: Post[];
   getGlobalId: (postId: number) => number;
+  topicId: number;
 }
 
 // Avatar component
@@ -113,6 +115,7 @@ const PostComponent = ({
   level,
   allPosts,
   getGlobalId,
+  topicId,
 }: PostComponentProps) => {
   const [showTooltip, setShowTooltip] = useState(false);
   const [tooltipPost, setTooltipPost] = useState<Post | null>(null);
@@ -178,8 +181,12 @@ const PostComponent = ({
                 {post.author_name}
               </span>
             </Link>
-            <span className="text-xs text-gray-500 flex-shrink-0 ml-auto">
-              {formatPostDate(post.created_at)} #{getGlobalId(post.id)}
+            <span className="text-xs text-gray-500 flex-shrink-0 ml-auto inline-flex items-center gap-1">
+              {formatPostDate(post.created_at)}{' '}
+              <span className="text-blue-600 font-mono cursor-pointer hover:underline inline-flex items-center gap-0.5">
+                #{getGlobalId(post.id)}
+                <CopyPostLinkIcon topicId={topicId} postId={post.id} />
+              </span>
             </span>
           </div>
           {/* Десктоп: левая колонка */}
@@ -208,7 +215,7 @@ const PostComponent = ({
                   <>
                     <span
                       id={`post-${post.id}`}
-                      className="text-blue-600 font-mono text-sm cursor-pointer hover:underline flex-shrink-0"
+                      className="text-blue-600 font-mono text-sm cursor-pointer hover:underline flex-shrink-0 inline-flex items-center gap-0.5"
                       onClick={(e) => {
                         e.preventDefault();
                         document.getElementById(`post-${post.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -216,6 +223,7 @@ const PostComponent = ({
                       title="Ссылка на сообщение"
                     >
                       #{getGlobalId(post.id)}
+                      <CopyPostLinkIcon topicId={topicId} postId={post.id} />
                     </span>
                     <span>Ответ на{' '}</span>
                     <span className="relative inline-block">
@@ -286,7 +294,7 @@ const PostComponent = ({
                 {!post.parent_id && (
                   <span
                     id={`post-${post.id}`}
-                    className="text-blue-600 font-mono text-sm cursor-pointer hover:underline flex-shrink-0"
+                    className="text-blue-600 font-mono text-sm cursor-pointer hover:underline flex-shrink-0 inline-flex items-center gap-0.5"
                     onClick={(e) => {
                       e.preventDefault();
                       document.getElementById(`post-${post.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -294,6 +302,7 @@ const PostComponent = ({
                     title="Ссылка на сообщение"
                   >
                     #{getGlobalId(post.id)}
+                    <CopyPostLinkIcon topicId={topicId} postId={post.id} />
                   </span>
                 )}
               </div>
@@ -434,6 +443,7 @@ const PostComponent = ({
               level={level + 1}
               allPosts={allPosts}
               getGlobalId={getGlobalId}
+              topicId={topicId}
             />
           ))}
         </div>
@@ -1573,6 +1583,7 @@ const Topic = () => {
               level={0}
               allPosts={topic.posts}
               getGlobalId={(postId: number) => globalIdMap.get(`post-${postId}`) || 0}
+              topicId={topic.id}
             />
           ))
         )}

@@ -1,6 +1,17 @@
 import { useState, useEffect, useRef } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { invitationApi, api, uploadImage } from '../services/api';
+
+interface TopicItem {
+  id: number;
+  title: string;
+  created_at: string;
+  category_name: string;
+  post_count: number;
+  last_post_at: string | null;
+  author_name?: string;
+}
 
 interface Invitation {
   id: number;
@@ -57,10 +68,29 @@ const Profile = () => {
     user?.notify_new_topic_telegram ?? false
   );
   const [savingNotifications, setSavingNotifications] = useState(false);
+  const [myTopics, setMyTopics] = useState<TopicItem[]>([]);
+  const [participatedTopics, setParticipatedTopics] = useState<TopicItem[]>([]);
 
   useEffect(() => {
     loadInvitations();
   }, []);
+
+  useEffect(() => {
+    const loadTopics = async () => {
+      if (!user?.id) return;
+      try {
+        const [myRes, participatedRes] = await Promise.all([
+          api.get(`/auth/users/${user.id}/topics`),
+          api.get(`/auth/users/${user.id}/participated-topics`),
+        ]);
+        setMyTopics(myRes.data);
+        setParticipatedTopics(participatedRes.data);
+      } catch (err) {
+        console.error('Error loading topics:', err);
+      }
+    };
+    loadTopics();
+  }, [user?.id]);
 
   useEffect(() => {
     if (user?.bio) {
@@ -333,6 +363,65 @@ const Profile = () => {
                 <p className="text-gray-400 italic">Информация о себе не указана</p>
               )}
             </div>
+          )}
+        </div>
+      </div>
+
+      {/* Мои темы / Темы, где участвовал */}
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="bg-white rounded-lg shadow p-4 sm:p-6">
+          <h2 className="text-lg font-bold mb-4">Мои темы</h2>
+          {myTopics.length === 0 ? (
+            <p className="text-gray-500 text-sm">Нет созданных тем</p>
+          ) : (
+            <ul className="space-y-2">
+              {myTopics.slice(0, 5).map((topic) => (
+                <li key={topic.id}>
+                  <Link
+                    to={`/topic/${topic.id}`}
+                    className="text-blue-600 hover:text-blue-800 text-sm font-medium hover:underline block truncate"
+                  >
+                    {topic.title}
+                  </Link>
+                  <div className="text-xs text-gray-500">
+                    {topic.category_name} • {topic.post_count} сообщ.
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+          {myTopics.length > 5 && (
+            <Link to={`/users/${user.id}`} className="text-blue-600 hover:underline text-sm mt-2 inline-block">
+              Все мои темы →
+            </Link>
+          )}
+        </div>
+        <div className="bg-white rounded-lg shadow p-4 sm:p-6">
+          <h2 className="text-lg font-bold mb-4">Темы, где участвовал</h2>
+          {participatedTopics.length === 0 ? (
+            <p className="text-gray-500 text-sm">Пока не участвовал в чужих темах</p>
+          ) : (
+            <ul className="space-y-2">
+              {participatedTopics.slice(0, 5).map((topic) => (
+                <li key={topic.id}>
+                  <Link
+                    to={`/topic/${topic.id}`}
+                    className="text-blue-600 hover:text-blue-800 text-sm font-medium hover:underline block truncate"
+                  >
+                    {topic.title}
+                  </Link>
+                  <div className="text-xs text-gray-500">
+                    {topic.category_name}
+                    {topic.author_name && ` • ${topic.author_name}`}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+          {participatedTopics.length > 5 && (
+            <Link to={`/users/${user.id}`} className="text-blue-600 hover:underline text-sm mt-2 inline-block">
+              Все темы →
+            </Link>
           )}
         </div>
       </div>

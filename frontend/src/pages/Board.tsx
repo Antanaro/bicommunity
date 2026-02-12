@@ -6,6 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 import LinkifyText from '../components/LinkifyText';
 import MarkdownRenderer from '../components/MarkdownRenderer';
 import PieChart from '../components/PieChart';
+import CopyPostLinkIcon from '../components/CopyPostLinkIcon';
 
 const POPUP_Z_INDEX = 99999;
 
@@ -190,13 +191,14 @@ const PostComponent = memo(({
           <div className="flex items-center gap-1.5 flex-shrink-0 ml-auto">
             <span
               id={`post-${post.id}`}
-              className="text-blue-600 font-mono text-xs cursor-pointer hover:underline"
+              className="text-blue-600 font-mono text-xs cursor-pointer hover:underline inline-flex items-center gap-0.5"
               onClick={(e) => {
                 e.preventDefault();
                 document.getElementById(`post-${post.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
               }}
             >
               #{globalId}
+              <CopyPostLinkIcon topicId={topicId} postId={post.id} />
             </span>
             <span className="text-xs text-gray-500">{formatPostDate(post.created_at)}</span>
           </div>
@@ -227,7 +229,7 @@ const PostComponent = memo(({
                 <>
                   <span
                     id={`post-${post.id}`}
-                    className="text-blue-600 font-mono text-xs cursor-pointer hover:underline flex-shrink-0"
+                    className="text-blue-600 font-mono text-xs cursor-pointer hover:underline flex-shrink-0 inline-flex items-center gap-0.5"
                     onClick={(e) => {
                       e.preventDefault();
                       document.getElementById(`post-${post.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -235,6 +237,7 @@ const PostComponent = memo(({
                     title="Ссылка на сообщение"
                   >
                     #{globalId}
+                    <CopyPostLinkIcon topicId={topicId} postId={post.id} />
                   </span>
                   <span>Ответ на{' '}</span>
                   <span className="relative inline-block">
@@ -290,7 +293,7 @@ const PostComponent = memo(({
               {!post.parent_id && (
                 <span
                   id={`post-${post.id}`}
-                  className="text-blue-600 font-mono text-xs cursor-pointer hover:underline"
+                  className="text-blue-600 font-mono text-xs cursor-pointer hover:underline inline-flex items-center gap-0.5"
                   onClick={(e) => {
                     e.preventDefault();
                     document.getElementById(`post-${post.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -298,6 +301,7 @@ const PostComponent = memo(({
                   title="Ссылка на сообщение"
                 >
                   #{globalId}
+                  <CopyPostLinkIcon topicId={topicId} postId={post.id} />
                 </span>
               )}
             </div>
