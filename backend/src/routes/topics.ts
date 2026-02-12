@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken';
 import { pool } from '../config/database';
 import { authenticate, AuthRequest } from '../middleware/auth';
 import { telegramBotService } from '../services/telegram-bot';
+import { sendNewTopicEmail } from '../services/email';
 
 const router = express.Router();
 
@@ -284,6 +285,63 @@ router.post(
         // Игнорируем ошибки уведомлений, чтобы не нарушать создание темы
         console.error('❌ Failed to send topic creation notification:', notificationError);
         console.error('❌ Error stack:', notificationError.stack);
+      }
+
+      // Уведомляем пользователей, подписанных на уведомления о новых темах
+      try {
+        const backendUrl = process.env.BACKEND_URL || 'http://localhost:5000';
+        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+        const topicId = result.rows[0].id;
+
+        // Ссылка для перехода к теме (используем frontend URL, если указан)
+        const topicUrl = `${(frontendUrl || backendUrl).replace(/\/$/, '')}/topic/${topicId}`;
+
+        // Получаем автора темы
+        const authorResult = await pool.query(
+          'SELECT username FROM users WHERE id = $1',
+          [req.userId]
+        );
+        const authorUsername = authorResult.rows[0]?.username || 'Неизвестно';
+
+        // Email-уведомления
+        const usersForEmail = await pool.query(
+          `SELECT email
+           FROM users
+           WHERE notify_new_topic_email = TRUE
+             AND email_verified = TRUE`
+        );
+
+        for (const row of usersForEmail.rows) {
+          if (!row.email) continue;
+          await sendNewTopicEmail(row.email, {
+            authorUsername,
+            topicTitle: title,
+            topicUrl,
+          });
+        }
+
+        // Telegram-уведомления
+        const usersForTelegram = await pool.query(
+          `SELECT telegram_chat_id
+           FROM users
+           WHERE notify_new_topic_telegram = TRUE
+             AND telegram_chat_id IS NOT NULL`
+        );
+
+        for (const row of usersForTelegram.rows) {
+          const chatId = row.telegram_chat_id ? parseInt(String(row.telegram_chat_id), 10) : NaN;
+          if (!chatId || Number.isNaN(chatId)) continue;
+
+          const message =
+            `🆕 <b>Новая тема на форуме</b>\n\n` +
+            `📌 <b>${title}</b>\n` +
+            `👤 Автор: <code>${authorUsername}</code>\n` +
+            `🔗 Открыть: ${topicUrl}`;
+
+          await telegramBotService.sendUserNotification(chatId, message);
+        }
+      } catch (notificationError) {
+        console.error('❌ Failed to send user notifications about new topic:', notificationError);
       }
 
       res.status(201).json(result.rows[0]);

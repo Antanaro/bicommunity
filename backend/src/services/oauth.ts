@@ -100,7 +100,14 @@ export const handleGoogleUser = async (profile: any) => {
     result = await pool.query(
       `INSERT INTO users (username, email, google_id, oauth_provider, email_verified, avatar_url, password_hash)
        VALUES ($1, $2, $3, $4, $5, $6, NULL)
-       RETURNING id, username, email, role, avatar_url, bio`,
+       RETURNING id, username, email, role, avatar_url, bio,
+         telegram_chat_id,
+         notify_reply_to_my_post_email,
+         notify_reply_to_my_post_telegram,
+         notify_reply_in_my_topic_email,
+         notify_reply_in_my_topic_telegram,
+         notify_new_topic_email,
+         notify_new_topic_telegram`,
       [username, email, id, 'google', true, avatarUrl]
     );
   } catch (error: any) {
@@ -202,7 +209,14 @@ export const handleYandexUser = async (yandexUser: any) => {
     result = await pool.query(
       `INSERT INTO users (username, email, yandex_id, oauth_provider, email_verified, avatar_url, password_hash)
        VALUES ($1, $2, $3, $4, $5, $6, NULL)
-       RETURNING id, username, email, role, avatar_url, bio`,
+       RETURNING id, username, email, role, avatar_url, bio,
+         telegram_chat_id,
+         notify_reply_to_my_post_email,
+         notify_reply_to_my_post_telegram,
+         notify_reply_in_my_topic_email,
+         notify_reply_in_my_topic_telegram,
+         notify_new_topic_email,
+         notify_new_topic_telegram`,
       [username, email, id, 'yandex', true, avatarUrl]
     );
   } catch (error: any) {

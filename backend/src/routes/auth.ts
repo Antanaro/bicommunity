@@ -76,7 +76,18 @@ router.post(
 
       // Create user with verified email (приглашение заменяет верификацию)
       const result = await pool.query(
-        'INSERT INTO users (username, email, password_hash, email_verified, invited_by) VALUES ($1, $2, $3, $4, $5) RETURNING id, username, email, role',
+        `INSERT INTO users (username, email, password_hash, email_verified, invited_by)
+         VALUES ($1, $2, $3, $4, $5)
+         RETURNING id, username, email, role,
+           avatar_url,
+           bio,
+           telegram_chat_id,
+           notify_reply_to_my_post_email,
+           notify_reply_to_my_post_telegram,
+           notify_reply_in_my_topic_email,
+           notify_reply_in_my_topic_telegram,
+           notify_new_topic_email,
+           notify_new_topic_telegram`,
         [username, email, passwordHash, true, invitation.owner_id]
       );
 
@@ -117,8 +128,15 @@ router.post(
           username: user.username,
           email: user.email,
           role: user.role || 'user',
-          avatar_url: null,
-          bio: null,
+          avatar_url: user.avatar_url || null,
+          bio: user.bio || null,
+          telegram_chat_id: user.telegram_chat_id || null,
+          notify_reply_to_my_post_email: user.notify_reply_to_my_post_email,
+          notify_reply_to_my_post_telegram: user.notify_reply_to_my_post_telegram,
+          notify_reply_in_my_topic_email: user.notify_reply_in_my_topic_email,
+          notify_reply_in_my_topic_telegram: user.notify_reply_in_my_topic_telegram,
+          notify_new_topic_email: user.notify_new_topic_email,
+          notify_new_topic_telegram: user.notify_new_topic_telegram,
         },
       });
     } catch (error: any) {
@@ -229,6 +247,13 @@ router.post(
           role: user.role,
           avatar_url: user.avatar_url || null,
           bio: user.bio || null,
+          telegram_chat_id: user.telegram_chat_id || null,
+          notify_reply_to_my_post_email: user.notify_reply_to_my_post_email,
+          notify_reply_to_my_post_telegram: user.notify_reply_to_my_post_telegram,
+          notify_reply_in_my_topic_email: user.notify_reply_in_my_topic_email,
+          notify_reply_in_my_topic_telegram: user.notify_reply_in_my_topic_telegram,
+          notify_new_topic_email: user.notify_new_topic_email,
+          notify_new_topic_telegram: user.notify_new_topic_telegram,
         },
       });
     } catch (error: any) {
@@ -595,7 +620,22 @@ router.post(
 router.get('/profile', authenticate, async (req: AuthRequest, res: Response) => {
   try {
     const result = await pool.query(
-      'SELECT id, username, email, role, avatar_url, bio, created_at FROM users WHERE id = $1',
+      `SELECT 
+        id,
+        username,
+        email,
+        role,
+        avatar_url,
+        bio,
+        created_at,
+        telegram_chat_id,
+        notify_reply_to_my_post_email,
+        notify_reply_to_my_post_telegram,
+        notify_reply_in_my_topic_email,
+        notify_reply_in_my_topic_telegram,
+        notify_new_topic_email,
+        notify_new_topic_telegram
+      FROM users WHERE id = $1`,
       [req.userId]
     );
 
@@ -612,6 +652,13 @@ router.get('/profile', authenticate, async (req: AuthRequest, res: Response) => 
       avatar_url: user.avatar_url || null,
       bio: user.bio || null,
       created_at: user.created_at,
+      telegram_chat_id: user.telegram_chat_id || null,
+      notify_reply_to_my_post_email: user.notify_reply_to_my_post_email,
+      notify_reply_to_my_post_telegram: user.notify_reply_to_my_post_telegram,
+      notify_reply_in_my_topic_email: user.notify_reply_in_my_topic_email,
+      notify_reply_in_my_topic_telegram: user.notify_reply_in_my_topic_telegram,
+      notify_new_topic_email: user.notify_new_topic_email,
+      notify_new_topic_telegram: user.notify_new_topic_telegram,
     });
   } catch (error: any) {
     console.error('Get profile error:', error);
@@ -629,6 +676,13 @@ router.put(
   [
     body('bio').optional().isLength({ max: 500 }).withMessage('Описание не должно превышать 500 символов'),
     body('avatar_url').optional().isLength({ max: 500 }).withMessage('URL аватара слишком длинный'),
+    body('telegram_chat_id').optional().isLength({ max: 50 }).withMessage('Telegram chat_id слишком длинный'),
+    body('notify_reply_to_my_post_email').optional().isBoolean(),
+    body('notify_reply_to_my_post_telegram').optional().isBoolean(),
+    body('notify_reply_in_my_topic_email').optional().isBoolean(),
+    body('notify_reply_in_my_topic_telegram').optional().isBoolean(),
+    body('notify_new_topic_email').optional().isBoolean(),
+    body('notify_new_topic_telegram').optional().isBoolean(),
   ],
   async (req: AuthRequest, res: Response) => {
     try {
@@ -637,7 +691,17 @@ router.put(
         return res.status(400).json({ errors: errors.array() });
       }
 
-      const { bio, avatar_url } = req.body;
+      const {
+        bio,
+        avatar_url,
+        telegram_chat_id,
+        notify_reply_to_my_post_email,
+        notify_reply_to_my_post_telegram,
+        notify_reply_in_my_topic_email,
+        notify_reply_in_my_topic_telegram,
+        notify_new_topic_email,
+        notify_new_topic_telegram,
+      } = req.body;
       const updates: string[] = [];
       const values: any[] = [];
       let paramCount = 1;
@@ -650,6 +714,34 @@ router.put(
         updates.push(`avatar_url = $${paramCount++}`);
         values.push(avatar_url);
       }
+      if (telegram_chat_id !== undefined) {
+        updates.push(`telegram_chat_id = $${paramCount++}`);
+        values.push(telegram_chat_id);
+      }
+      if (notify_reply_to_my_post_email !== undefined) {
+        updates.push(`notify_reply_to_my_post_email = $${paramCount++}`);
+        values.push(!!notify_reply_to_my_post_email);
+      }
+      if (notify_reply_to_my_post_telegram !== undefined) {
+        updates.push(`notify_reply_to_my_post_telegram = $${paramCount++}`);
+        values.push(!!notify_reply_to_my_post_telegram);
+      }
+      if (notify_reply_in_my_topic_email !== undefined) {
+        updates.push(`notify_reply_in_my_topic_email = $${paramCount++}`);
+        values.push(!!notify_reply_in_my_topic_email);
+      }
+      if (notify_reply_in_my_topic_telegram !== undefined) {
+        updates.push(`notify_reply_in_my_topic_telegram = $${paramCount++}`);
+        values.push(!!notify_reply_in_my_topic_telegram);
+      }
+      if (notify_new_topic_email !== undefined) {
+        updates.push(`notify_new_topic_email = $${paramCount++}`);
+        values.push(!!notify_new_topic_email);
+      }
+      if (notify_new_topic_telegram !== undefined) {
+        updates.push(`notify_new_topic_telegram = $${paramCount++}`);
+        values.push(!!notify_new_topic_telegram);
+      }
 
       if (updates.length === 0) {
         return res.status(400).json({ error: 'Нет полей для обновления' });
@@ -659,7 +751,14 @@ router.put(
 
       const result = await pool.query(
         `UPDATE users SET ${updates.join(', ')} WHERE id = $${paramCount} 
-         RETURNING id, username, email, role, avatar_url, bio`,
+         RETURNING id, username, email, role, avatar_url, bio,
+           telegram_chat_id,
+           notify_reply_to_my_post_email,
+           notify_reply_to_my_post_telegram,
+           notify_reply_in_my_topic_email,
+           notify_reply_in_my_topic_telegram,
+           notify_new_topic_email,
+           notify_new_topic_telegram`,
         values
       );
 
@@ -675,6 +774,13 @@ router.put(
         role: user.role,
         avatar_url: user.avatar_url || null,
         bio: user.bio || null,
+        telegram_chat_id: user.telegram_chat_id || null,
+        notify_reply_to_my_post_email: user.notify_reply_to_my_post_email,
+        notify_reply_to_my_post_telegram: user.notify_reply_to_my_post_telegram,
+        notify_reply_in_my_topic_email: user.notify_reply_in_my_topic_email,
+        notify_reply_in_my_topic_telegram: user.notify_reply_in_my_topic_telegram,
+        notify_new_topic_email: user.notify_new_topic_email,
+        notify_new_topic_telegram: user.notify_new_topic_telegram,
       });
     } catch (error: any) {
       console.error('Update profile error:', error);

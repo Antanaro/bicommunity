@@ -36,6 +36,28 @@ const Profile = () => {
   const [success, setSuccess] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Notification settings state
+  const [telegramChatId, setTelegramChatId] = useState<string>(user?.telegram_chat_id || '');
+  const [notifyReplyToMyPostEmail, setNotifyReplyToMyPostEmail] = useState<boolean>(
+    user?.notify_reply_to_my_post_email ?? true
+  );
+  const [notifyReplyToMyPostTelegram, setNotifyReplyToMyPostTelegram] = useState<boolean>(
+    user?.notify_reply_to_my_post_telegram ?? false
+  );
+  const [notifyReplyInMyTopicEmail, setNotifyReplyInMyTopicEmail] = useState<boolean>(
+    user?.notify_reply_in_my_topic_email ?? true
+  );
+  const [notifyReplyInMyTopicTelegram, setNotifyReplyInMyTopicTelegram] = useState<boolean>(
+    user?.notify_reply_in_my_topic_telegram ?? false
+  );
+  const [notifyNewTopicEmail, setNotifyNewTopicEmail] = useState<boolean>(
+    user?.notify_new_topic_email ?? true
+  );
+  const [notifyNewTopicTelegram, setNotifyNewTopicTelegram] = useState<boolean>(
+    user?.notify_new_topic_telegram ?? false
+  );
+  const [savingNotifications, setSavingNotifications] = useState(false);
+
   useEffect(() => {
     loadInvitations();
   }, []);
@@ -45,6 +67,24 @@ const Profile = () => {
       setBio(user.bio);
     }
   }, [user?.bio]);
+
+  useEffect(() => {
+    setTelegramChatId(user?.telegram_chat_id || '');
+    setNotifyReplyToMyPostEmail(user?.notify_reply_to_my_post_email ?? true);
+    setNotifyReplyToMyPostTelegram(user?.notify_reply_to_my_post_telegram ?? false);
+    setNotifyReplyInMyTopicEmail(user?.notify_reply_in_my_topic_email ?? true);
+    setNotifyReplyInMyTopicTelegram(user?.notify_reply_in_my_topic_telegram ?? false);
+    setNotifyNewTopicEmail(user?.notify_new_topic_email ?? true);
+    setNotifyNewTopicTelegram(user?.notify_new_topic_telegram ?? false);
+  }, [
+    user?.telegram_chat_id,
+    user?.notify_reply_to_my_post_email,
+    user?.notify_reply_to_my_post_telegram,
+    user?.notify_reply_in_my_topic_email,
+    user?.notify_reply_in_my_topic_telegram,
+    user?.notify_new_topic_email,
+    user?.notify_new_topic_telegram,
+  ]);
 
   const loadInvitations = async () => {
     try {
@@ -140,6 +180,34 @@ const Profile = () => {
   if (!user) {
     return null;
   }
+
+  const handleSaveNotifications = async () => {
+    setError(null);
+    setSuccess(null);
+    setSavingNotifications(true);
+
+    try {
+      const payload = {
+        telegram_chat_id: telegramChatId.trim() || null,
+        notify_reply_to_my_post_email: notifyReplyToMyPostEmail,
+        notify_reply_to_my_post_telegram: notifyReplyToMyPostTelegram,
+        notify_reply_in_my_topic_email: notifyReplyInMyTopicEmail,
+        notify_reply_in_my_topic_telegram: notifyReplyInMyTopicTelegram,
+        notify_new_topic_email: notifyNewTopicEmail,
+        notify_new_topic_telegram: notifyNewTopicTelegram,
+      };
+
+      const response = await api.put('/auth/profile', payload);
+      updateUser(response.data);
+      setSuccess('Настройки уведомлений сохранены');
+      setTimeout(() => setSuccess(null), 3000);
+    } catch (err: any) {
+      console.error('Error saving notification settings:', err);
+      setError(err.response?.data?.error || 'Ошибка при сохранении настроек уведомлений');
+    } finally {
+      setSavingNotifications(false);
+    }
+  };
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
@@ -255,6 +323,118 @@ const Profile = () => {
               )}
             </div>
           )}
+        </div>
+      </div>
+
+      {/* Настройки уведомлений */}
+      <div className="bg-white rounded-lg shadow p-6">
+        <h2 className="text-xl font-bold mb-4">Уведомления</h2>
+
+        <div className="mb-4">
+          <label className="block text-gray-700 text-sm font-bold mb-1">
+            Telegram chat_id
+          </label>
+          <input
+            type="text"
+            value={telegramChatId}
+            onChange={(e) => setTelegramChatId(e.target.value)}
+            className="w-full border rounded px-3 py-2 focus:outline-none focus:border-blue-500"
+            placeholder="Например: 123456789"
+          />
+          <p className="text-xs text-gray-500 mt-1">
+            Получите ваш chat_id, отправив команду <code>/myid</code> нашему Telegram‑боту, и
+            вставьте значение сюда.
+          </p>
+        </div>
+
+        <div className="space-y-3">
+          <div>
+            <div className="text-sm font-semibold text-gray-800 mb-1">
+              Ответ на моё сообщение
+            </div>
+            <div className="flex gap-4 text-sm">
+              <label className="inline-flex items-center gap-1">
+                <input
+                  type="checkbox"
+                  checked={notifyReplyToMyPostEmail}
+                  onChange={(e) => setNotifyReplyToMyPostEmail(e.target.checked)}
+                  className="rounded"
+                />
+                <span>Email</span>
+              </label>
+              <label className="inline-flex items-center gap-1">
+                <input
+                  type="checkbox"
+                  checked={notifyReplyToMyPostTelegram}
+                  onChange={(e) => setNotifyReplyToMyPostTelegram(e.target.checked)}
+                  className="rounded"
+                />
+                <span>Telegram</span>
+              </label>
+            </div>
+          </div>
+
+          <div>
+            <div className="text-sm font-semibold text-gray-800 mb-1">
+              Ответ в теме, которую я создал
+            </div>
+            <div className="flex gap-4 text-sm">
+              <label className="inline-flex items-center gap-1">
+                <input
+                  type="checkbox"
+                  checked={notifyReplyInMyTopicEmail}
+                  onChange={(e) => setNotifyReplyInMyTopicEmail(e.target.checked)}
+                  className="rounded"
+                />
+                <span>Email</span>
+              </label>
+              <label className="inline-flex items-center gap-1">
+                <input
+                  type="checkbox"
+                  checked={notifyReplyInMyTopicTelegram}
+                  onChange={(e) => setNotifyReplyInMyTopicTelegram(e.target.checked)}
+                  className="rounded"
+                />
+                <span>Telegram</span>
+              </label>
+            </div>
+          </div>
+
+          <div>
+            <div className="text-sm font-semibold text-gray-800 mb-1">
+              Новые темы на форуме
+            </div>
+            <div className="flex gap-4 text-sm">
+              <label className="inline-flex items-center gap-1">
+                <input
+                  type="checkbox"
+                  checked={notifyNewTopicEmail}
+                  onChange={(e) => setNotifyNewTopicEmail(e.target.checked)}
+                  className="rounded"
+                />
+                <span>Email</span>
+              </label>
+              <label className="inline-flex items-center gap-1">
+                <input
+                  type="checkbox"
+                  checked={notifyNewTopicTelegram}
+                  onChange={(e) => setNotifyNewTopicTelegram(e.target.checked)}
+                  className="rounded"
+                />
+                <span>Telegram</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-4">
+          <button
+            onClick={handleSaveNotifications}
+            className="px-4 py-2 text-sm bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
+            disabled={savingNotifications}
+          >
+            {savingNotifications ? 'Сохранение...' : 'Сохранить настройки уведомлений'}
+          </button>
         </div>
       </div>
 

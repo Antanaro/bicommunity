@@ -943,6 +943,29 @@ class TelegramBotService {
     }
   }
 
+  /**
+   * Отправляет личное уведомление пользователю по его chat_id
+   * @param chatId chat_id пользователя (из Telegram)
+   * @param message Текст сообщения
+   */
+  async sendUserNotification(chatId: number, message: string): Promise<void> {
+    if (!this.bot) {
+      console.warn('⚠️  Telegram bot not initialized. Cannot send user notification.');
+      return;
+    }
+
+    if (!chatId || Number.isNaN(chatId)) {
+      console.warn('⚠️  Invalid chatId passed to sendUserNotification:', chatId);
+      return;
+    }
+
+    try {
+      await this.bot.sendMessage(chatId, message, { parse_mode: 'HTML' });
+    } catch (error: any) {
+      console.error('❌ Error sending user notification:', error);
+    }
+  }
+
   // ==================== Завершение работы ====================
 
   async stop() {

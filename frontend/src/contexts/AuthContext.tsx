@@ -9,6 +9,13 @@ interface User {
   role: string;
   avatar_url?: string | null;
   bio?: string | null;
+  telegram_chat_id?: string | null;
+  notify_reply_to_my_post_email?: boolean;
+  notify_reply_to_my_post_telegram?: boolean;
+  notify_reply_in_my_topic_email?: boolean;
+  notify_reply_in_my_topic_telegram?: boolean;
+  notify_new_topic_email?: boolean;
+  notify_new_topic_telegram?: boolean;
 }
 
 interface RegisterResponse {

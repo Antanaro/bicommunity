@@ -263,3 +263,159 @@ ${resetUrl}
     throw new Error('Не удалось отправить email. Проверьте настройки SMTP.');
   }
 };
+
+// ============ Форумные уведомления ============
+
+export const sendReplyToPostEmail = async (
+  email: string,
+  data: { replierUsername: string; topicTitle: string; postExcerpt: string; topicUrl: string }
+) => {
+  try {
+    const transporter = createTransporter();
+
+    const subject = 'Новый ответ на ваше сообщение — Форум';
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+      </head>
+      <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+        <div style="max-width:600px;margin:0 auto;padding:20px;">
+          <h2>Новый ответ на ваше сообщение</h2>
+          <p>Пользователь <strong>${data.replierUsername}</strong> ответил на ваше сообщение в теме <strong>"${data.topicTitle}"</strong>.</p>
+          <p><em>${data.postExcerpt}</em></p>
+          <p>
+            <a href="${data.topicUrl}" style="display:inline-block;padding:10px 20px;background:#2196F3;color:#fff;text-decoration:none;border-radius:4px;">
+              Перейти к обсуждению
+            </a>
+          </p>
+          <p style="font-size:12px;color:#777;">Это автоматическое письмо, пожалуйста, не отвечайте на него.</p>
+        </div>
+      </body>
+      </html>
+    `;
+
+    const text = `
+Новый ответ на ваше сообщение — Форум
+
+Пользователь ${data.replierUsername} ответил на ваше сообщение в теме "${data.topicTitle}".
+
+${data.postExcerpt}
+
+Перейти к обсуждению: ${data.topicUrl}
+    `;
+
+    await transporter.sendMail({
+      from: process.env.SMTP_FROM || process.env.SMTP_USER || 'noreply@forum.com',
+      to: email,
+      subject,
+      html,
+      text,
+    });
+  } catch (error: any) {
+    console.error('Error sending reply-to-post email:', error);
+  }
+};
+
+export const sendReplyInTopicEmail = async (
+  email: string,
+  data: { replierUsername: string; topicTitle: string; postExcerpt: string; topicUrl: string }
+) => {
+  try {
+    const transporter = createTransporter();
+
+    const subject = 'Новый ответ в вашей теме — Форум';
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+      </head>
+      <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+        <div style="max-width:600px;margin:0 auto;padding:20px;">
+          <h2>Новый ответ в вашей теме</h2>
+          <p>В вашей теме <strong>"${data.topicTitle}"</strong> оставлен новый ответ от пользователя <strong>${data.replierUsername}</strong>.</p>
+          <p><em>${data.postExcerpt}</em></p>
+          <p>
+            <a href="${data.topicUrl}" style="display:inline-block;padding:10px 20px;background:#2196F3;color:#fff;text-decoration:none;border-radius:4px;">
+              Перейти к теме
+            </a>
+          </p>
+          <p style="font-size:12px;color:#777;">Это автоматическое письмо, пожалуйста, не отвечайте на него.</p>
+        </div>
+      </body>
+      </html>
+    `;
+
+    const text = `
+Новый ответ в вашей теме — Форум
+
+В вашей теме "${data.topicTitle}" оставлен новый ответ от пользователя ${data.replierUsername}.
+
+${data.postExcerpt}
+
+Перейти к теме: ${data.topicUrl}
+    `;
+
+    await transporter.sendMail({
+      from: process.env.SMTP_FROM || process.env.SMTP_USER || 'noreply@forum.com',
+      to: email,
+      subject,
+      html,
+      text,
+    });
+  } catch (error: any) {
+    console.error('Error sending reply-in-topic email:', error);
+  }
+};
+
+export const sendNewTopicEmail = async (
+  email: string,
+  data: { authorUsername: string; topicTitle: string; topicUrl: string }
+) => {
+  try {
+    const transporter = createTransporter();
+
+    const subject = 'Новая тема на форуме';
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+      </head>
+      <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+        <div style="max-width:600px;margin:0 auto;padding:20px;">
+          <h2>Новая тема на форуме</h2>
+          <p>Пользователь <strong>${data.authorUsername}</strong> создал новую тему <strong>"${data.topicTitle}"</strong>.</p>
+          <p>
+            <a href="${data.topicUrl}" style="display:inline-block;padding:10px 20px;background:#2196F3;color:#fff;text-decoration:none;border-radius:4px;">
+              Открыть тему
+            </a>
+          </p>
+          <p style="font-size:12px;color:#777;">Это автоматическое письмо, пожалуйста, не отвечайте на него.</p>
+        </div>
+      </body>
+      </html>
+    `;
+
+    const text = `
+Новая тема на форуме
+
+Пользователь ${data.authorUsername} создал новую тему "${data.topicTitle}".
+
+Открыть тему: ${data.topicUrl}
+    `;
+
+    await transporter.sendMail({
+      from: process.env.SMTP_FROM || process.env.SMTP_USER || 'noreply@forum.com',
+      to: email,
+      subject,
+      html,
+      text,
+    });
+  } catch (error: any) {
+    console.error('Error sending new-topic email:', error);
+  }
+};
+

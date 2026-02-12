@@ -2,6 +2,8 @@ import express, { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
 import { pool } from '../config/database';
 import { authenticate, AuthRequest } from '../middleware/auth';
+import { sendReplyInTopicEmail, sendReplyToPostEmail } from '../services/email';
+import { telegramBotService } from '../services/telegram-bot';
 
 const router = express.Router();
 
@@ -103,7 +105,122 @@ router.post(
         [content, req.userId, topic_id, parent_id || null, imagesArray]
       );
 
-      res.status(201).json(result.rows[0]);
+      const createdPost = result.rows[0];
+
+      // Уведомления
+      try {
+        // Данные о теме и авторе поста
+        const topicResult = await pool.query(
+          `SELECT t.title, t.author_id, u.username as topic_author_username, u.email as topic_author_email,
+                  u.telegram_chat_id as topic_author_telegram_chat_id,
+                  u.notify_reply_in_my_topic_email,
+                  u.notify_reply_in_my_topic_telegram
+           FROM topics t
+           JOIN users u ON t.author_id = u.id
+           WHERE t.id = $1`,
+          [topic_id]
+        );
+
+        const topicRow = topicResult.rows[0];
+
+        const authorResult = await pool.query(
+          'SELECT username FROM users WHERE id = $1',
+          [req.userId]
+        );
+        const replierUsername = authorResult.rows[0]?.username || 'Неизвестно';
+
+        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+        const topicUrl = `${frontendUrl.replace(/\/$/, '')}/topic/${topic_id}`;
+
+        // 1) Ответ на конкретное сообщение (уведомление автору этого сообщения)
+        if (parent_id) {
+          const parentPostResult = await pool.query(
+            `SELECT p.author_id,
+                    u.email,
+                    u.username,
+                    u.telegram_chat_id,
+                    u.notify_reply_to_my_post_email,
+                    u.notify_reply_to_my_post_telegram
+             FROM posts p
+             JOIN users u ON p.author_id = u.id
+             WHERE p.id = $1`,
+            [parent_id]
+          );
+
+          if (parentPostResult.rows.length > 0) {
+            const parent = parentPostResult.rows[0];
+
+            // Не уведомляем самого себя
+            if (parent.author_id !== req.userId) {
+              const excerpt =
+                typeof content === 'string' && content.length > 200
+                  ? `${content.substring(0, 200)}...`
+                  : content;
+
+              // Email-уведомление
+              if (parent.notify_reply_to_my_post_email && parent.email) {
+                await sendReplyToPostEmail(parent.email, {
+                  replierUsername,
+                  topicTitle: topicRow?.title || '',
+                  postExcerpt: excerpt,
+                  topicUrl,
+                });
+              }
+
+              // Telegram-уведомление
+              if (parent.notify_reply_to_my_post_telegram && parent.telegram_chat_id) {
+                const chatId = parseInt(String(parent.telegram_chat_id), 10);
+                if (!Number.isNaN(chatId)) {
+                  const message =
+                    `💬 <b>Новый ответ на ваше сообщение</b>\n\n` +
+                    `👤 От: <code>${replierUsername}</code>\n` +
+                    (topicRow?.title ? `📌 Тема: <b>${topicRow.title}</b>\n` : '') +
+                    `🔗 Открыть: ${topicUrl}`;
+                  await telegramBotService.sendUserNotification(chatId, message);
+                }
+              }
+            }
+          }
+        }
+
+        // 2) Ответ в теме, если автор темы другой пользователь
+        if (topicRow && topicRow.author_id !== req.userId) {
+          const excerpt =
+            typeof content === 'string' && content.length > 200
+              ? `${content.substring(0, 200)}...`
+              : content;
+
+          // Email-уведомление
+          if (topicRow.notify_reply_in_my_topic_email && topicRow.topic_author_email) {
+            await sendReplyInTopicEmail(topicRow.topic_author_email, {
+              replierUsername,
+              topicTitle: topicRow.title,
+              postExcerpt: excerpt,
+              topicUrl,
+            });
+          }
+
+          // Telegram-уведомление
+          if (
+            topicRow.notify_reply_in_my_topic_telegram &&
+            topicRow.topic_author_telegram_chat_id
+          ) {
+            const chatId = parseInt(String(topicRow.topic_author_telegram_chat_id), 10);
+            if (!Number.isNaN(chatId)) {
+              const message =
+                `💬 <b>Новый ответ в вашей теме</b>\n\n` +
+                `📌 Тема: <b>${topicRow.title}</b>\n` +
+                `👤 От: <code>${replierUsername}</code>\n` +
+                `🔗 Открыть: ${topicUrl}`;
+              await telegramBotService.sendUserNotification(chatId, message);
+            }
+          }
+        }
+      } catch (notificationError) {
+        console.error('❌ Failed to send post notifications:', notificationError);
+      }
+
+      res.status(201).json(createdPost);
     } catch (error) {
       console.error('Create post error:', error);
       res.status(500).json({ error: 'Server error' });
