@@ -2,6 +2,7 @@ import express, { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
 import jwt from 'jsonwebtoken';
 import { pool } from '../config/database';
+import { getJwtSecret } from '../config/env';
 import { getHasReactionType } from '../config/schema-cache';
 import { authenticate, AuthRequest } from '../middleware/auth';
 import { telegramBotService } from '../services/telegram-bot';
@@ -235,7 +236,7 @@ router.get('/:id', async (req: Request, res: Response) => {
           const token = req.headers.authorization.split(' ')[1];
           if (token) {
             try {
-              const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret') as { userId: number };
+              const decoded = jwt.verify(token, getJwtSecret()) as { userId: number };
               const uv = await pool.query(
                 'SELECT option_id FROM poll_votes WHERE poll_id = $1 AND user_id = $2',
                 [p.id, decoded.userId]

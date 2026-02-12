@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken';
 import { body, validationResult } from 'express-validator';
 import crypto from 'crypto';
 import { pool } from '../config/database';
+import { getJwtSecret } from '../config/env';
 import { sendPasswordResetEmail, sendVerificationEmail } from '../services/email';
 import { createInitialInvitations } from './invitations';
 import { authenticate, AuthRequest } from '../middleware/auth';
@@ -117,7 +118,7 @@ router.post(
       // Сразу выдаём JWT токен - верификация email не нужна при регистрации по приглашению
       const token = jwt.sign(
         { userId: user.id, role: user.role || 'user' },
-        process.env.JWT_SECRET || 'secret',
+        getJwtSecret(),
         { expiresIn: '7d' }
       );
 
@@ -153,20 +154,9 @@ router.post(
         return res.status(500).json({ error: 'Ошибка подключения к базе данных. Проверьте настройки в .env' });
       }
       
-      // Проверка на отсутствие JWT_SECRET
-      if (error.message && error.message.includes('secret')) {
-        return res.status(500).json({ error: 'Ошибка конфигурации: JWT_SECRET не установлен в .env' });
-      }
-      
       res.status(500).json({ 
         error: 'Ошибка сервера',
-        message: error.message || 'Неизвестная ошибка',
-        code: error.code,
-        details: process.env.NODE_ENV !== 'production' ? {
-          message: error.message,
-          code: error.code,
-          stack: error.stack
-        } : undefined
+        ...(process.env.NODE_ENV !== 'production' && { message: error.message })
       });
     }
   }
@@ -234,7 +224,7 @@ router.post(
       // Generate JWT
       const token = jwt.sign(
         { userId: user.id, role: user.role },
-        process.env.JWT_SECRET || 'secret',
+        getJwtSecret(),
         { expiresIn: '7d' }
       );
 
@@ -266,8 +256,7 @@ router.post(
       
       res.status(500).json({ 
         error: 'Ошибка сервера',
-        message: error.message || 'Неизвестная ошибка',
-        details: process.env.NODE_ENV !== 'production' ? error.message : undefined
+        ...(process.env.NODE_ENV !== 'production' && { message: error.message })
       });
     }
   }
@@ -335,7 +324,7 @@ router.post(
       console.error('Forgot password error:', error);
       res.status(500).json({ 
         error: 'Ошибка сервера',
-        message: error.message || 'Неизвестная ошибка'
+        ...(process.env.NODE_ENV !== 'production' && { message: error.message })
       });
     }
   }
@@ -373,7 +362,7 @@ router.get(
         // Если email уже подтвержден, все равно выдаем токен и перенаправляем
         const jwtToken = jwt.sign(
           { userId: user.id, role: user.role || 'user' },
-          process.env.JWT_SECRET || 'secret',
+          getJwtSecret(),
           { expiresIn: '7d' }
         );
         
@@ -410,7 +399,7 @@ router.get(
       // Генерируем JWT токен для автоматического входа
       const jwtToken = jwt.sign(
         { userId: user.id, role: user.role || 'user' },
-        process.env.JWT_SECRET || 'secret',
+        getJwtSecret(),
         { expiresIn: '7d' }
       );
 
@@ -445,14 +434,12 @@ router.get(
       const isApiRequest = acceptHeader.includes('application/json') || req.headers['x-requested-with'] === 'XMLHttpRequest';
       
       if (isApiRequest) {
-        res.status(error.message?.includes('Недействительный') ? 400 : 500).json({ 
-          error: error.message || 'Ошибка сервера',
-          message: error.message || 'Неизвестная ошибка'
-        });
+        const status = error.message?.includes('Недействительный') ? 400 : 500;
+        const msg = process.env.NODE_ENV === 'production' ? 'Ошибка сервера' : (error.message || 'Ошибка сервера');
+        res.status(status).json({ error: msg, ...(process.env.NODE_ENV !== 'production' && { message: error.message }) });
       } else {
-        // Для прямых переходов редиректим на frontend с ошибкой
         const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
-        const errorMessage = encodeURIComponent(error.message || 'Ошибка подтверждения email');
+        const errorMessage = encodeURIComponent(process.env.NODE_ENV === 'production' ? 'Ошибка подтверждения email' : (error.message || 'Ошибка подтверждения email'));
         res.redirect(`${frontendUrl}/verify-email?error=${errorMessage}`);
       }
     }
@@ -525,7 +512,7 @@ router.post(
       console.error('Resend verification error:', error);
       res.status(500).json({ 
         error: 'Ошибка сервера',
-        message: error.message || 'Неизвестная ошибка'
+        ...(process.env.NODE_ENV !== 'production' && { message: error.message })
       });
     }
   }
@@ -610,7 +597,7 @@ router.post(
       console.error('Reset password error:', error);
       res.status(500).json({ 
         error: 'Ошибка сервера',
-        message: error.message || 'Неизвестная ошибка'
+        ...(process.env.NODE_ENV !== 'production' && { message: error.message })
       });
     }
   }
@@ -696,7 +683,7 @@ router.get('/profile', authenticate, async (req: AuthRequest, res: Response) => 
     console.error('Get profile error:', error);
     res.status(500).json({ 
       error: 'Ошибка сервера',
-      message: error.message || 'Неизвестная ошибка'
+      ...(process.env.NODE_ENV !== 'production' && { message: error.message })
     });
   }
 });
@@ -823,8 +810,8 @@ router.put(
         });
       }
       res.status(500).json({ 
-        error: error.message || 'Ошибка сервера',
-        message: error.message || 'Неизвестная ошибка'
+        error: 'Ошибка сервера',
+        ...(process.env.NODE_ENV !== 'production' && { message: error.message })
       });
     }
   }
@@ -869,7 +856,7 @@ router.get('/users/:id', async (req: Request, res: Response) => {
     console.error('Get user error:', error);
     res.status(500).json({ 
       error: 'Ошибка сервера',
-      message: error.message || 'Неизвестная ошибка'
+      ...(process.env.NODE_ENV !== 'production' && { message: error.message })
     });
   }
 });
@@ -901,7 +888,10 @@ router.get('/users/:id/topics', async (req: Request, res: Response) => {
     res.json(result.rows);
   } catch (error: any) {
     console.error('Get user topics error:', error);
-    res.status(500).json({ error: 'Ошибка сервера', message: (error as Error).message });
+    res.status(500).json({ 
+      error: 'Ошибка сервера',
+      ...(process.env.NODE_ENV !== 'production' && { message: (error as Error).message })
+    });
   }
 });
 
@@ -935,7 +925,10 @@ router.get('/users/:id/participated-topics', async (req: Request, res: Response)
     res.json(result.rows);
   } catch (error: any) {
     console.error('Get participated topics error:', error);
-    res.status(500).json({ error: 'Ошибка сервера', message: (error as Error).message });
+    res.status(500).json({ 
+      error: 'Ошибка сервера',
+      ...(process.env.NODE_ENV !== 'production' && { message: (error as Error).message })
+    });
   }
 });
 

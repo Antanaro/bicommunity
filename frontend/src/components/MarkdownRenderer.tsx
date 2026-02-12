@@ -44,14 +44,20 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = memo(({ content, class
             );
           },
           pre: ({ node, ...props }) => <pre className="bg-gray-100 p-3 rounded overflow-x-auto my-2" {...props} />,
-          a: ({ node, ...props }) => (
-            <a
-              className="text-blue-600 underline hover:text-blue-800"
-              target="_blank"
-              rel="noopener noreferrer"
-              {...props}
-            />
-          ),
+          a: ({ node, href, children, ...rest }) => {
+            const safeHref = (href && (href.startsWith('http://') || href.startsWith('https://'))) ? href : '#';
+            return (
+              <a
+                className="text-blue-600 underline hover:text-blue-800"
+                href={safeHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                {...rest}
+              >
+                {children}
+              </a>
+            );
+          },
           img: ({ node, ...props }) => (
             <img className="max-w-full h-auto rounded border my-2" {...props} />
           ),

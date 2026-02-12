@@ -30,13 +30,13 @@ const LinkifyText: React.FC<LinkifyTextProps> = ({ text, className = '' }) => {
       // Убираем знаки препинания в конце URL (кроме /)
       url = url.replace(/[.,;:!?]+$/, '');
       
-      // Добавляем протокол, если его нет
+      // Добавляем протокол, если его нет. Блокируем javascript: и data:
+      const lower = url.toLowerCase().trim();
+      if (lower.startsWith('javascript:') || lower.startsWith('data:')) {
+        continue; // Пропускаем опасные протоколы
+      }
       if (!url.match(/^https?:\/\//i)) {
-        if (url.toLowerCase().startsWith('www.')) {
-          fullUrl = 'https://' + url;
-        } else {
-          fullUrl = 'https://' + url;
-        }
+        fullUrl = url.toLowerCase().startsWith('www.') ? 'https://' + url : 'https://' + url;
       } else {
         fullUrl = url;
       }

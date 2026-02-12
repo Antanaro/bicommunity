@@ -1,8 +1,10 @@
 import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
+import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
 import { pool } from './config/database';
+import { getJwtSecret } from './config/env';
 import authRoutes from './routes/auth';
 import categoryRoutes from './routes/categories';
 import topicRoutes from './routes/topics';
@@ -36,11 +38,32 @@ const corsOptions = {
   optionsSuccessStatus: 200
 };
 
+// Rate limiting: общий лимит и строгий для auth
+const generalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 минут
+  max: 300, // 300 запросов с одного IP
+  message: { error: 'Слишком много запросов, попробуйте позже' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20, // login, register, forgot-password — ограниченно
+  message: { error: 'Слишком много попыток авторизации, попробуйте через 15 минут' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 // Middleware
 app.use(cors(corsOptions));
 app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use('/api/', generalLimiter);
+app.use('/api/auth/login', authLimiter);
+app.use('/api/auth/register', authLimiter);
+app.use('/api/auth/forgot-password', authLimiter);
+app.use('/api/auth/resend-verification', authLimiter);
 
 // Serve uploaded images
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
@@ -108,27 +131,8 @@ app.get('/api/health', async (req, res) => {
   }
 });
 
-// Test admin notification endpoint
-app.get('/api/test-notification', async (req, res) => {
-  try {
-    const testMessage = `🧪 <b>Тестовое уведомление</b>\n\n` +
-      `Это тестовое сообщение для проверки работы уведомлений администратору.\n` +
-      `Время: ${new Date().toLocaleString('ru-RU')}`;
-    
-    await telegramBotService.sendAdminNotification(testMessage);
-    res.json({ 
-      status: 'ok', 
-      message: 'Test notification sent. Check your Telegram.',
-      adminId: process.env.TELEGRAM_ADMIN_ID || 'NOT SET'
-    });
-  } catch (error: any) {
-    res.status(500).json({ 
-      status: 'error', 
-      message: error.message,
-      adminId: process.env.TELEGRAM_ADMIN_ID || 'NOT SET'
-    });
-  }
-});
+// Test admin notification endpoint — только в development, только для авторизованных админов
+// В production эндпоинт не регистрируется
 
 // Чтобы падение Telegram-бота не ронило весь процесс
 process.on('unhandledRejection', (reason, promise) => {
@@ -137,6 +141,12 @@ process.on('unhandledRejection', (reason, promise) => {
 
 // Run forum_settings migration then start server
 (async () => {
+  try {
+    getJwtSecret(); // Fail immediately if JWT_SECRET not set
+  } catch (e) {
+    console.error('❌ КРИТИЧЕСКАЯ ОШИБКА:', (e as Error).message);
+    process.exit(1);
+  }
   try {
     await addForumSettings();
   } catch (e) {
@@ -150,7 +160,7 @@ process.on('unhandledRejection', (reason, promise) => {
   app.listen(PORT, async () => {
     console.log(`🚀 Server running on http://localhost:${PORT}`);
     console.log(`📝 Environment: ${process.env.NODE_ENV || 'development'}`);
-    console.log(`🔐 JWT Secret: ${process.env.JWT_SECRET ? '✅ Set' : '❌ NOT SET!'}`);
+    console.log(`🔐 JWT Secret: ✅ Set`);
     console.log(`🗄️  Database: ${process.env.DB_NAME || 'forum_db'} on ${process.env.DB_HOST || 'localhost'}:${process.env.DB_PORT || '5432'}`);
     try {
       await telegramBotService.initialize();

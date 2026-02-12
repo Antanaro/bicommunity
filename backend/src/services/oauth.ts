@@ -2,12 +2,13 @@ import { pool } from '../config/database';
 import { createInitialInvitations } from '../routes/invitations';
 import jwt from 'jsonwebtoken';
 import { telegramBotService } from './telegram-bot';
+import { getJwtSecret } from '../config/env';
 
 // Generate JWT token for user
 export const generateToken = (user: any) => {
   return jwt.sign(
     { userId: user.id, role: user.role || 'user' },
-    process.env.JWT_SECRET || 'secret',
+    getJwtSecret(),
     { expiresIn: '7d' }
   );
 };
