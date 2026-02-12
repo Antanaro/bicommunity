@@ -70,26 +70,34 @@ const Profile = () => {
   const [savingNotifications, setSavingNotifications] = useState(false);
   const [myTopics, setMyTopics] = useState<TopicItem[]>([]);
   const [participatedTopics, setParticipatedTopics] = useState<TopicItem[]>([]);
+  const [userStats, setUserStats] = useState<{ topics_count: number; posts_count: number; likes_received: number } | null>(null);
 
   useEffect(() => {
     loadInvitations();
   }, []);
 
   useEffect(() => {
-    const loadTopics = async () => {
+    const loadTopicsAndStats = async () => {
       if (!user?.id) return;
       try {
-        const [myRes, participatedRes] = await Promise.all([
+        const [myRes, participatedRes, userProfileRes] = await Promise.all([
           api.get(`/auth/users/${user.id}/topics`),
           api.get(`/auth/users/${user.id}/participated-topics`),
+          api.get(`/auth/users/${user.id}`),
         ]);
         setMyTopics(myRes.data);
         setParticipatedTopics(participatedRes.data);
+        const profile = userProfileRes.data;
+        setUserStats({
+          topics_count: profile.topics_count ?? 0,
+          posts_count: profile.posts_count ?? 0,
+          likes_received: profile.likes_received ?? 0,
+        });
       } catch (err) {
-        console.error('Error loading topics:', err);
+        console.error('Error loading topics and stats:', err);
       }
     };
-    loadTopics();
+    loadTopicsAndStats();
   }, [user?.id]);
 
   useEffect(() => {
@@ -307,6 +315,22 @@ const Profile = () => {
             <div className="text-gray-500 text-sm">
               {user.role === 'admin' ? 'Администратор' : 'Пользователь'}
             </div>
+            {/* Статистика */}
+            {userStats && (
+              <div className="flex flex-wrap gap-4 mt-3 text-sm">
+                <span className="text-gray-600">
+                  <span className="font-semibold text-gray-800">{userStats.topics_count}</span> тем
+                </span>
+                <span className="text-gray-600">
+                  <span className="font-semibold text-gray-800">{userStats.posts_count}</span> сообщений
+                </span>
+                {userStats.likes_received > 0 && (
+                  <span className="text-gray-600">
+                    <span className="font-semibold text-gray-800">{userStats.likes_received}</span> 👍
+                  </span>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
