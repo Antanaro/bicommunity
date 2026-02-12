@@ -12,6 +12,7 @@ import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import VerifyEmail from './pages/VerifyEmail';
 import Profile from './pages/Profile';
+import UserProfile from './pages/UserProfile';
 import About from './pages/About';
 import OAuthCallback from './pages/OAuthCallback';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -36,6 +37,7 @@ function App() {
               <Route path="/verify-email" element={<VerifyEmail />} />
               <Route path="/auth/callback" element={<OAuthCallback />} />
               <Route path="/about" element={<About />} />
+              <Route path="/users/:id" element={<UserProfile />} />
               <Route
                 path="/profile"
                 element={

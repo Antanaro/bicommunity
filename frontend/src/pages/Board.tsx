@@ -181,12 +181,17 @@ const PostComponent = memo(({
       <div className="flex gap-3 p-3">
         {/* Левая колонка: аватар, логин */}
         <div className="flex-shrink-0 w-24 flex flex-col items-center text-center">
-          <Avatar avatarUrl={post.author_avatar} username={post.author_name} size="xl" />
-          <div className="mt-1.5 w-full">
-            <span className="font-semibold text-gray-800 text-sm block truncate" title={post.author_name}>
-              {post.author_name}
-            </span>
-          </div>
+          <Link to={`/users/${post.author_id}`} className="flex flex-col items-center w-full">
+            <Avatar avatarUrl={post.author_avatar} username={post.author_name} size="xl" />
+            <div className="mt-1.5 w-full">
+              <span
+                className="font-semibold text-gray-800 text-sm block truncate hover:text-blue-600 transition"
+                title={post.author_name}
+              >
+                {post.author_name}
+              </span>
+            </div>
+          </Link>
         </div>
 
         {/* Центр: верхняя строка (дата, #id, ответ на #X) + кнопки справа; ниже — окошко с сообщением */}

@@ -172,12 +172,17 @@ const PostComponent = ({
         <div className="flex gap-4 p-4">
           {/* Левая колонка: аватар, логин */}
           <div className="flex-shrink-0 w-28 flex flex-col items-center text-center">
-            <Avatar avatarUrl={post.author_avatar} username={post.author_name} size="xl" />
-            <div className="mt-2 w-full">
-              <span className="font-semibold text-gray-800 text-lg block truncate" title={post.author_name}>
-                {post.author_name}
-              </span>
-            </div>
+            <Link to={`/users/${post.author_id}`} className="flex flex-col items-center w-full">
+              <Avatar avatarUrl={post.author_avatar} username={post.author_name} size="xl" />
+              <div className="mt-2 w-full">
+                <span
+                  className="font-semibold text-gray-800 text-lg block truncate hover:text-blue-600 transition"
+                  title={post.author_name}
+                >
+                  {post.author_name}
+                </span>
+              </div>
+            </Link>
           </div>
 
           {/* Центр: верхняя строка (#id, ответ на #X) + кнопки справа; ниже — окошко с сообщением */}
@@ -228,13 +233,19 @@ const PostComponent = ({
                             onMouseLeave={closeTooltip}
                           >
                             <div className="flex items-center gap-2 mb-2">
-                              <Avatar avatarUrl={tooltipPost.author_avatar} username={tooltipPost.author_name} size="sm" />
-                              <div>
-                                <span className="font-semibold text-sm">{tooltipPost.author_name}</span>
-                                <div className="text-xs text-gray-500">
-                                  {formatPostDate(tooltipPost.created_at)} #{getGlobalId(tooltipPost.id)}
+                              <Link
+                                to={`/users/${tooltipPost.author_id}`}
+                                className="flex items-center gap-2 hover:text-blue-600 transition"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <Avatar avatarUrl={tooltipPost.author_avatar} username={tooltipPost.author_name} size="sm" />
+                                <div>
+                                  <span className="font-semibold text-sm">{tooltipPost.author_name}</span>
+                                  <div className="text-xs text-gray-500">
+                                    {formatPostDate(tooltipPost.created_at)} #{getGlobalId(tooltipPost.id)}
+                                  </div>
                                 </div>
-                              </div>
+                              </Link>
                             </div>
                             <p className="text-sm whitespace-pre-wrap max-h-[60vh] overflow-y-auto">
                               <LinkifyText text={tooltipPost.content} />
@@ -1216,11 +1227,15 @@ const Topic = () => {
           </div>
         </div>
         <div className="flex items-center gap-3 text-sm text-gray-500 mb-4">
-          <Avatar avatarUrl={topic.author_avatar} username={topic.author_name} size="md" />
-          <div>
-            <span className="font-medium text-gray-700">{topic.author_name}</span>
-            <div>{new Date(topic.created_at).toLocaleString('ru-RU')}</div>
-          </div>
+          <Link to={`/users/${topic.author_id}`} className="flex items-center gap-3 hover:text-blue-600 transition">
+            <Avatar avatarUrl={topic.author_avatar} username={topic.author_name} size="md" />
+            <div>
+              <span className="font-medium text-gray-700 hover:text-blue-600">
+                {topic.author_name}
+              </span>
+              <div>{new Date(topic.created_at).toLocaleString('ru-RU')}</div>
+            </div>
+          </Link>
         </div>
         {isEditingTopic ? (
           <form onSubmit={handleSaveTopicEdit} className="space-y-4">
