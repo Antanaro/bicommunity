@@ -619,25 +619,57 @@ router.post(
 // Get current user profile
 router.get('/profile', authenticate, async (req: AuthRequest, res: Response) => {
   try {
-    const result = await pool.query(
-      `SELECT 
-        id,
-        username,
-        email,
-        role,
-        avatar_url,
-        bio,
-        created_at,
-        telegram_chat_id,
-        notify_reply_to_my_post_email,
-        notify_reply_to_my_post_telegram,
-        notify_reply_in_my_topic_email,
-        notify_reply_in_my_topic_telegram,
-        notify_new_topic_email,
-        notify_new_topic_telegram
-      FROM users WHERE id = $1`,
-      [req.userId]
-    );
+    // Сначала пробуем запрос с колонками уведомлений (после миграции)
+    let result;
+    try {
+      result = await pool.query(
+        `SELECT 
+          id,
+          username,
+          email,
+          role,
+          avatar_url,
+          bio,
+          created_at,
+          telegram_chat_id,
+          notify_reply_to_my_post_email,
+          notify_reply_to_my_post_telegram,
+          notify_reply_in_my_topic_email,
+          notify_reply_in_my_topic_telegram,
+          notify_new_topic_email,
+          notify_new_topic_telegram
+        FROM users WHERE id = $1`,
+        [req.userId]
+      );
+    } catch (colError: any) {
+      // Колонки уведомлений ещё не созданы — отдаём профиль без них
+      if (colError.code === '42703') {
+        result = await pool.query(
+          `SELECT id, username, email, role, avatar_url, bio, created_at FROM users WHERE id = $1`,
+          [req.userId]
+        );
+        if (result.rows.length > 0) {
+          const user = result.rows[0];
+          return res.json({
+            id: user.id,
+            username: user.username,
+            email: user.email,
+            role: user.role,
+            avatar_url: user.avatar_url || null,
+            bio: user.bio || null,
+            created_at: user.created_at,
+            telegram_chat_id: null,
+            notify_reply_to_my_post_email: true,
+            notify_reply_to_my_post_telegram: false,
+            notify_reply_in_my_topic_email: true,
+            notify_reply_in_my_topic_telegram: false,
+            notify_new_topic_email: true,
+            notify_new_topic_telegram: false,
+          });
+        }
+      }
+      throw colError;
+    }
 
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Пользователь не найден' });
@@ -784,8 +816,14 @@ router.put(
       });
     } catch (error: any) {
       console.error('Update profile error:', error);
+      // Колонки уведомлений отсутствуют — миграция не применена
+      if (error.code === '42703') {
+        return res.status(503).json({
+          error: 'Настройки уведомлений недоступны: в БД не применена миграция. Запустите на сервере: docker compose exec backend node src/migrations/add-notification-preferences.js'
+        });
+      }
       res.status(500).json({ 
-        error: 'Ошибка сервера',
+        error: error.message || 'Ошибка сервера',
         message: error.message || 'Неизвестная ошибка'
       });
     }
