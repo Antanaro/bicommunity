@@ -60,8 +60,8 @@ const About = () => {
   }
 
   return (
-    <div className="max-w-3xl mx-auto">
-      <h1 className="text-2xl font-bold text-gray-800 mb-6">О форуме</h1>
+    <div className="max-w-3xl mx-auto px-1 sm:px-0">
+      <h1 className="text-xl sm:text-2xl font-bold text-gray-800 mb-4 sm:mb-6">О форуме</h1>
 
       {editing ? (
         <div className="space-y-4">
@@ -90,7 +90,7 @@ const About = () => {
         </div>
       ) : (
         <>
-          <div className="bg-white rounded-lg shadow p-6">
+          <div className="bg-white rounded-lg shadow p-4 sm:p-6">
             {content ? (
               <MarkdownRenderer content={content} />
             ) : (

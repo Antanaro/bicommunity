@@ -192,42 +192,28 @@ const CategoriesList = () => {
 
   return (
     <div style={{ overflow: 'visible' }}>
-      <div className="flex justify-between items-center mb-6" style={{ overflow: 'visible', position: 'relative' }}>
-        <div className="flex items-center gap-3" style={{ position: 'relative' }}>
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-4 sm:mb-6">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
           <div
-            className="pie-chart-button"
+            className="pie-chart-button hidden sm:block flex-shrink-0"
             title="Интерактивная статистика форума"
-            style={{
-              position: 'absolute',
-              left: '-70px',
-              top: '50%',
-              transform: 'translateY(-50%)',
-              userSelect: 'none',
-              WebkitUserSelect: 'none',
-              MozUserSelect: 'none',
-              msUserSelect: 'none',
-            }}
+            style={{ userSelect: 'none', WebkitUserSelect: 'none', MozUserSelect: 'none', msUserSelect: 'none' }}
           >
-            <PieChart
-              size={50}
-              data={pieChartData}
-              colors={['#3b82f6', '#10b981', '#ef4444']}
-              className="pie-chart"
-            />
+            <PieChart size={40} data={pieChartData} colors={['#3b82f6', '#10b981', '#ef4444']} className="pie-chart" />
           </div>
-          <h1 className="text-3xl font-bold">По категориям</h1>
+          <h1 className="text-xl sm:text-3xl font-bold truncate">По категориям</h1>
         </div>
         {isAdmin && (
           <button
             onClick={() => setShowForm(!showForm)}
-            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition"
+            className="bg-blue-500 text-white px-4 py-2.5 rounded hover:bg-blue-600 transition text-sm w-full sm:w-auto min-h-[44px] sm:min-h-0"
           >
             {showForm ? '✕ Отмена' : '+ Создать категорию'}
           </button>
         )}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4 mb-4 sm:mb-6">
         <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg shadow p-4 border-l-4 border-green-500">
           <h3 className="text-lg font-semibold mb-2 text-green-800 flex items-center gap-2">
             <span>👍</span> Самое залайканное
@@ -369,7 +355,7 @@ const CategoriesList = () => {
           )}
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
           {categories.map((category) => (
             <div
               key={category.id}

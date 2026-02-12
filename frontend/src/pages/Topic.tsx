@@ -169,9 +169,21 @@ const PostComponent = ({
           level > 0 ? 'border-l-4 border-l-blue-400' : ''
         }`}
       >
-        <div className="flex gap-4 p-4">
-          {/* Левая колонка: аватар, логин */}
-          <div className="flex-shrink-0 w-28 flex flex-col items-center text-center">
+        <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 p-3 sm:p-4">
+          {/* Мобильный: верхняя строка — аватар + имя */}
+          <div className="flex sm:hidden items-center gap-2 pb-2 border-b border-gray-100">
+            <Link to={`/users/${post.author_id}`} className="flex items-center gap-2 min-w-0">
+              <Avatar avatarUrl={post.author_avatar} username={post.author_name} size="sm" />
+              <span className="font-semibold text-gray-800 text-sm truncate hover:text-blue-600">
+                {post.author_name}
+              </span>
+            </Link>
+            <span className="text-xs text-gray-500 flex-shrink-0 ml-auto">
+              {formatPostDate(post.created_at)} #{getGlobalId(post.id)}
+            </span>
+          </div>
+          {/* Десктоп: левая колонка */}
+          <div className="hidden sm:flex flex-shrink-0 w-28 flex-col items-center text-center">
             <Link to={`/users/${post.author_id}`} className="flex flex-col items-center w-full">
               <Avatar avatarUrl={post.author_avatar} username={post.author_name} size="xl" />
               <div className="mt-2 w-full">
@@ -185,9 +197,9 @@ const PostComponent = ({
             </Link>
           </div>
 
-          {/* Центр: верхняя строка (#id, ответ на #X) + кнопки справа; ниже — окошко с сообщением */}
+          {/* Центр: мета + кнопки; ниже — сообщение */}
           <div className="flex-1 min-w-0 flex flex-col">
-            <div className="flex items-center justify-between gap-2 mb-2">
+            <div className="hidden sm:flex items-center justify-between gap-2 mb-2">
               <div className="text-sm text-gray-600 flex items-center gap-2 min-w-0">
                 <span className="text-gray-500 flex-shrink-0" title={new Date(post.created_at).toLocaleString('ru-RU')}>
                   {formatPostDate(post.created_at)}
@@ -286,15 +298,15 @@ const PostComponent = ({
                 )}
               </div>
               {user && (
-                <div className="flex items-center gap-2 flex-shrink-0">
+                <div className="flex items-center gap-1.5 flex-wrap flex-shrink-0">
                   {user.id === post.author_id && (
                     <>
                       <button
                         onClick={() => onStartEdit(post.id)}
-                        className="px-3 py-1.5 rounded border border-blue-300 bg-blue-50 text-blue-700 hover:bg-blue-100 transition text-sm"
-                        title="Редактировать сообщение"
+                        className="px-2 py-1.5 rounded border border-blue-300 bg-blue-50 text-blue-700 text-xs sm:text-sm"
+                        title="Редактировать"
                       >
-                        ✏️ Редактировать
+                        ✏️
                       </button>
                       <button
                         onClick={() => {
@@ -302,35 +314,28 @@ const PostComponent = ({
                             onDelete(post.id);
                           }
                         }}
-                        className="px-3 py-1.5 rounded border border-red-300 bg-white text-red-600 hover:bg-red-50 transition text-sm"
-                        title="Удалить сообщение"
+                        className="px-2 py-1.5 rounded border border-red-300 text-red-600 text-xs sm:text-sm"
+                        title="Удалить"
                       >
-                        🗑️ Удалить
+                        🗑️
                       </button>
                     </>
                   )}
-                  <button
-                    onClick={() => onReply(post.id)}
-                    className="px-3 py-1.5 rounded border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 transition text-sm"
-                  >
+                  <button onClick={() => onReply(post.id)} className="px-2 py-1.5 rounded border border-gray-300 text-xs sm:text-sm">
                     Ответить
                   </button>
                   <button
                     onClick={() => onReact(post.id, 1)}
-                    className={`px-3 py-1.5 rounded border transition flex items-center gap-1 text-sm ${
-                      userReaction === 1
-                        ? 'bg-green-500 border-green-500 text-white'
-                        : 'border-gray-300 bg-white text-gray-700 hover:bg-green-50'
+                    className={`px-2 py-1.5 rounded border flex items-center gap-1 text-xs sm:text-sm min-h-[36px] sm:min-h-0 ${
+                      userReaction === 1 ? 'bg-green-500 border-green-500 text-white' : 'border-gray-300'
                     }`}
                   >
                     👍 {post.upvote_count || 0}
                   </button>
                   <button
                     onClick={() => onReact(post.id, -1)}
-                    className={`px-3 py-1.5 rounded border transition flex items-center gap-1 text-sm ${
-                      userReaction === -1
-                        ? 'bg-red-500 border-red-500 text-white'
-                        : 'border-gray-300 bg-white text-gray-700 hover:bg-red-50'
+                    className={`px-2 py-1.5 rounded border flex items-center gap-1 text-xs sm:text-sm min-h-[36px] sm:min-h-0 ${
+                      userReaction === -1 ? 'bg-red-500 border-red-500 text-white' : 'border-gray-300'
                     }`}
                   >
                     👎 {post.downvote_count || 0}
@@ -338,7 +343,7 @@ const PostComponent = ({
                 </div>
               )}
             </div>
-            <div className="flex-1 rounded-lg bg-slate-50 border border-slate-200 p-4">
+            <div className="flex-1 rounded-lg bg-slate-50 border border-slate-200 p-3 sm:p-4">
               {editingPostId === post.id ? (
                 <div className="space-y-2">
                   <textarea
@@ -388,6 +393,24 @@ const PostComponent = ({
                 </div>
               )}
             </div>
+            {user && (
+              <div className="flex sm:hidden flex-wrap gap-2 mt-2 pt-2 border-t border-gray-100">
+                {user.id === post.author_id && (
+                  <>
+                    <button onClick={() => onStartEdit(post.id)} className="px-2 py-1.5 rounded border border-blue-300 bg-blue-50 text-blue-700 text-xs min-h-[36px]">✏️</button>
+                    <button
+                      onClick={() => { if (window.confirm('Удалить сообщение?')) onDelete(post.id); }}
+                      className="px-2 py-1.5 rounded border border-red-300 text-red-600 text-xs min-h-[36px]"
+                    >
+                      🗑️
+                    </button>
+                  </>
+                )}
+                <button onClick={() => onReply(post.id)} className="px-2 py-1.5 rounded border border-gray-300 text-xs min-h-[36px]">Ответить</button>
+                <button onClick={() => onReact(post.id, 1)} className={`px-2 py-1.5 rounded border text-xs min-h-[36px] ${userReaction === 1 ? 'bg-green-500 text-white border-green-500' : 'border-gray-300'}`}>👍 {post.upvote_count || 0}</button>
+                <button onClick={() => onReact(post.id, -1)} className={`px-2 py-1.5 rounded border text-xs min-h-[36px] ${userReaction === -1 ? 'bg-red-500 text-white border-red-500' : 'border-gray-300'}`}>👎 {post.downvote_count || 0}</button>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -1167,61 +1190,61 @@ const Topic = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 py-4 px-2 md:px-4">
+    <div className="min-h-screen bg-gray-100 py-4 px-3 sm:px-4">
       <div className="max-w-[84rem] mx-auto">
       <button
         type="button"
         onClick={goBack}
-        className="text-blue-600 hover:underline mb-4 inline-block text-left bg-transparent border-none cursor-pointer p-0 font-inherit"
+        className="text-blue-600 hover:underline mb-4 inline-block text-left bg-transparent border-none cursor-pointer p-2 -ml-2 min-h-[44px] flex items-center"
       >
         ← Назад
       </button>
 
-      <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6 mb-6 relative">
-        <div className="flex justify-between items-start mb-2">
-          <div className="flex items-center gap-3">
+      <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-4 sm:p-6 mb-4 sm:mb-6 relative">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3 min-w-0">
             {isEditingTopic ? (
-              <span className="text-blue-600 font-mono text-lg">
+              <span className="text-blue-600 font-mono text-sm sm:text-lg">
                 #{globalIdMap.get(`topic-${topic.id}`) || 0}
               </span>
             ) : (
               <>
-                <h1 className="text-3xl font-bold">{topic.title}</h1>
-                <span className="text-blue-600 font-mono text-lg cursor-pointer hover:underline"
+                <h1 className="text-xl sm:text-3xl font-bold break-words">{topic.title}</h1>
+                <span className="text-blue-600 font-mono text-sm sm:text-lg cursor-pointer hover:underline flex-shrink-0"
                       title="Ссылка на тему">
                   #{globalIdMap.get(`topic-${topic.id}`) || 0}
                 </span>
               </>
             )}
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2 self-start">
             {canCreatePoll && (
               <button
                 type="button"
                 onClick={() => setShowCreatePollModal(true)}
-                className="bg-blue-500 text-white px-3 py-1.5 text-sm rounded hover:bg-blue-600 transition"
+                className="bg-blue-500 text-white px-3 py-2 text-xs sm:text-sm rounded hover:bg-blue-600 transition min-h-[40px]"
                 title="Создать голосование"
               >
-                📊 Создать голосование
+                📊 Голосование
               </button>
             )}
             {canEditTopic && !isEditingTopic && (
               <button
                 type="button"
                 onClick={handleStartEditTopic}
-                className="bg-blue-500 text-white px-3 py-1.5 text-sm rounded hover:bg-blue-600 transition"
+                className="bg-blue-500 text-white px-3 py-2 text-xs sm:text-sm rounded hover:bg-blue-600 transition min-h-[40px]"
                 title="Редактировать тему"
               >
-                ✏️ Редактировать
+                ✏️ Редакт.
               </button>
             )}
             {isAdmin && (
               <button
                 onClick={handleDeleteTopic}
-                className="bg-red-500 text-white px-3 py-1.5 text-sm rounded hover:bg-red-600 transition"
+                className="bg-red-500 text-white px-3 py-2 text-xs sm:text-sm rounded hover:bg-red-600 transition min-h-[40px]"
                 title="Удалить тему"
               >
-                🗑️ Удалить тему
+                🗑️ Удалить
               </button>
             )}
           </div>
@@ -1304,8 +1327,8 @@ const Topic = () => {
 
       {/* Create poll modal */}
       {showCreatePollModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4" onClick={() => !creatingPoll && setShowCreatePollModal(false)}>
-          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-3 sm:p-4" onClick={() => !creatingPoll && setShowCreatePollModal(false)}>
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-4 sm:p-6" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-xl font-bold mb-4">Создать голосование</h3>
             <form onSubmit={handleCreatePoll} className="space-y-4">
               <div>
@@ -1524,7 +1547,7 @@ const Topic = () => {
         </div>
       )}
 
-      <h2 className="text-2xl font-bold mb-4">Сообщения ({topic.posts.length})</h2>
+      <h2 className="text-xl sm:text-2xl font-bold mb-4">Сообщения ({topic.posts.length})</h2>
 
       <div className="space-y-4 mb-6">
         {topic.posts.length === 0 ? (
@@ -1559,7 +1582,7 @@ const Topic = () => {
         <form
           id="reply-form"
           onSubmit={handleSubmitPost}
-          className="bg-white rounded-lg border border-gray-200 shadow-sm p-6"
+          className="bg-white rounded-lg border border-gray-200 shadow-sm p-4 sm:p-6"
         >
           {replyingTo && (() => {
             const replyingToPost = getReplyingToPost();

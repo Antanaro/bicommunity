@@ -178,9 +178,31 @@ const PostComponent = memo(({
 
   return (
     <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden mb-2">
-      <div className="flex gap-3 p-3">
-        {/* Левая колонка: аватар, логин */}
-        <div className="flex-shrink-0 w-24 flex flex-col items-center text-center">
+      <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 p-2 sm:p-3">
+        {/* Верхняя строка на мобильном: аватар + имя + дата + #id */}
+        <div className="flex sm:hidden items-center gap-2 pb-2 border-b border-gray-100">
+          <Link to={`/users/${post.author_id}`} className="flex items-center gap-2 flex-shrink-0 min-w-0">
+            <Avatar avatarUrl={post.author_avatar} username={post.author_name} size="sm" />
+            <span className="font-semibold text-gray-800 text-sm truncate hover:text-blue-600">
+              {post.author_name}
+            </span>
+          </Link>
+          <div className="flex items-center gap-1.5 flex-shrink-0 ml-auto">
+            <span
+              id={`post-${post.id}`}
+              className="text-blue-600 font-mono text-xs cursor-pointer hover:underline"
+              onClick={(e) => {
+                e.preventDefault();
+                document.getElementById(`post-${post.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              }}
+            >
+              #{globalId}
+            </span>
+            <span className="text-xs text-gray-500">{formatPostDate(post.created_at)}</span>
+          </div>
+        </div>
+        {/* Десктоп: левая колонка */}
+        <div className="hidden sm:flex flex-shrink-0 w-24 flex-col items-center text-center">
           <Link to={`/users/${post.author_id}`} className="flex flex-col items-center w-full">
             <Avatar avatarUrl={post.author_avatar} username={post.author_name} size="xl" />
             <div className="mt-1.5 w-full">
@@ -194,9 +216,9 @@ const PostComponent = memo(({
           </Link>
         </div>
 
-        {/* Центр: верхняя строка (дата, #id, ответ на #X) + кнопки справа; ниже — окошко с сообщением */}
+        {/* Центр: верхняя строка (десктоп) + кнопки (мобильные — под контентом); ниже — сообщение */}
         <div className="flex-1 min-w-0 flex flex-col">
-          <div className="flex items-center justify-between gap-2 mb-1.5">
+          <div className="hidden sm:flex items-center justify-between gap-2 mb-1.5">
             <div className="text-xs text-gray-600 flex items-center gap-2 min-w-0">
               <span className="text-gray-500 flex-shrink-0" title={new Date(post.created_at).toLocaleString('ru-RU')}>
                 {formatPostDate(post.created_at)}
@@ -280,12 +302,12 @@ const PostComponent = memo(({
               )}
             </div>
             {user && (
-              <div className="flex items-center gap-1.5 flex-shrink-0">
+              <div className="flex items-center gap-1.5 flex-shrink-0 flex-wrap justify-end">
                 {user.id === post.author_id && (
                   <>
                     <button
                       onClick={() => onStartEdit(post.id)}
-                      className="px-2 py-1 rounded border border-blue-300 bg-blue-50 text-blue-700 hover:bg-blue-100 transition text-xs"
+                      className="px-2 py-1.5 sm:py-1 rounded border border-blue-300 bg-blue-50 text-blue-700 hover:bg-blue-100 transition text-xs min-h-[36px] sm:min-h-0"
                       title="Редактировать сообщение"
                     >
                       ✏️
@@ -296,7 +318,7 @@ const PostComponent = memo(({
                           onDelete(post.id);
                         }
                       }}
-                      className="px-2 py-1 rounded border border-red-300 bg-white text-red-600 hover:bg-red-50 transition text-xs"
+                      className="px-2 py-1.5 sm:py-1 rounded border border-red-300 bg-white text-red-600 hover:bg-red-50 transition text-xs min-h-[36px] sm:min-h-0"
                       title="Удалить сообщение"
                     >
                       🗑️
@@ -305,13 +327,13 @@ const PostComponent = memo(({
                 )}
                 <button
                   onClick={handleReplyClick}
-                  className="px-2 py-1 rounded border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 transition text-xs"
+                  className="px-2 py-1.5 sm:py-1 rounded border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 transition text-xs min-h-[36px] sm:min-h-0"
                 >
                   Ответить
                 </button>
                 <button
                   onClick={() => onReact(post.id, 1)}
-                  className={`px-2 py-1 rounded border transition flex items-center gap-1 text-xs ${
+                  className={`px-2 py-1.5 sm:py-1 rounded border transition flex items-center gap-1 text-xs min-h-[36px] sm:min-h-0 ${
                     userReaction === 1
                       ? 'bg-green-500 border-green-500 text-white'
                       : 'border-gray-300 bg-white text-gray-700 hover:bg-green-50'
@@ -321,7 +343,7 @@ const PostComponent = memo(({
                 </button>
                 <button
                   onClick={() => onReact(post.id, -1)}
-                  className={`px-2 py-1 rounded border transition flex items-center gap-1 text-xs ${
+                  className={`px-2 py-1.5 sm:py-1 rounded border transition flex items-center gap-1 text-xs min-h-[36px] sm:min-h-0 ${
                     userReaction === -1
                       ? 'bg-red-500 border-red-500 text-white'
                       : 'border-gray-300 bg-white text-gray-700 hover:bg-red-50'
@@ -332,7 +354,7 @@ const PostComponent = memo(({
               </div>
             )}
           </div>
-          <div className="flex-1 rounded-lg bg-slate-50 border border-slate-200 p-3">
+          <div className="flex-1 rounded-lg bg-slate-50 border border-slate-200 p-2 sm:p-3">
             {editingPostId === post.id ? (
               <div className="space-y-2">
                 <textarea
@@ -382,6 +404,46 @@ const PostComponent = memo(({
               </div>
             )}
           </div>
+          {/* Кнопки действий на мобильном — под контентом */}
+          {user && (
+            <div className="flex sm:hidden flex-wrap gap-2 mt-2 pt-2 border-t border-gray-100">
+              {user.id === post.author_id && (
+                <>
+                  <button
+                    onClick={() => onStartEdit(post.id)}
+                    className="px-2 py-1.5 rounded border border-blue-300 bg-blue-50 text-blue-700 text-xs min-h-[36px]"
+                  >
+                    ✏️ Редакт.
+                  </button>
+                  <button
+                    onClick={() => {
+                    if (window.confirm('Вы уверены, что хотите удалить это сообщение?')) {
+                      onDelete(post.id);
+                    }
+                  }}
+                    className="px-2 py-1.5 rounded border border-red-300 text-red-600 text-xs min-h-[36px]"
+                  >
+                    🗑️
+                  </button>
+                </>
+              )}
+              <button onClick={handleReplyClick} className="px-2 py-1.5 rounded border border-gray-300 text-xs min-h-[36px]">
+                Ответить
+              </button>
+              <button
+                onClick={() => onReact(post.id, 1)}
+                className={`px-2 py-1.5 rounded border text-xs min-h-[36px] ${userReaction === 1 ? 'bg-green-500 text-white border-green-500' : 'border-gray-300'}`}
+              >
+                👍 {post.upvote_count || 0}
+              </button>
+              <button
+                onClick={() => onReact(post.id, -1)}
+                className={`px-2 py-1.5 rounded border text-xs min-h-[36px] ${userReaction === -1 ? 'bg-red-500 text-white border-red-500' : 'border-gray-300'}`}
+              >
+                👎 {post.downvote_count || 0}
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -954,36 +1016,34 @@ const Board = () => {
 
   return (
     <div>
-      <div className="mb-6 flex justify-between items-center" style={{ overflow: 'visible', position: 'relative' }}>
-        <div className="flex items-center gap-3" style={{ position: 'relative' }}>
-          <div 
-            className="pie-chart-button" 
+      <div className="mb-4 sm:mb-6 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+          <div
+            className="pie-chart-button hidden sm:block flex-shrink-0"
             title="Интерактивная статистика форума"
             style={{
-              position: 'absolute',
-              left: '-70px',
-              top: '50%',
-              transform: 'translateY(-50%)',
+              position: 'relative',
+              left: 0,
               userSelect: 'none',
               WebkitUserSelect: 'none',
               MozUserSelect: 'none',
               msUserSelect: 'none',
             }}
           >
-            <PieChart 
-              size={50} 
-              data={pieChartData} // Случайные пропорции от 10 до 50 процентов
-              colors={['#3b82f6', '#10b981', '#ef4444']} // Синий, зеленый, красный - цвета форума
+            <PieChart
+              size={40}
+              data={pieChartData}
+              colors={['#3b82f6', '#10b981', '#ef4444']}
               className="pie-chart"
               initialChartType={initialChartType}
             />
           </div>
-          <h1 className="text-3xl font-bold">Всё подряд</h1>
+          <h1 className="text-xl sm:text-3xl font-bold truncate">Всё подряд</h1>
         </div>
         {user && (
           <button
             onClick={() => setShowTopicForm(!showTopicForm)}
-            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition"
+            className="bg-blue-500 text-white px-4 py-2.5 rounded hover:bg-blue-600 transition text-sm sm:text-base w-full sm:w-auto min-h-[44px] sm:min-h-0"
           >
             {showTopicForm ? '✕ Отмена' : '+ Создать тему'}
           </button>
@@ -991,7 +1051,7 @@ const Board = () => {
       </div>
 
       {user && showTopicForm && (
-        <form onSubmit={handleCreateTopic} className="bg-white rounded-lg shadow p-6 mb-6">
+        <form onSubmit={handleCreateTopic} className="bg-white rounded-lg shadow p-4 sm:p-6 mb-6">
           <h3 className="text-lg font-semibold mb-4">Новая тема</h3>
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -1096,32 +1156,34 @@ const Board = () => {
               const topicGlobalId = getGlobalId(topic.id, null, true);
               
               return (
-                <div key={topic.id} className="bg-white rounded-lg shadow p-6">
+                <div key={topic.id} className="bg-white rounded-lg shadow p-3 sm:p-6">
                   {/* Topic Header */}
                   <div className="mb-4 pb-4 border-b">
-                    <div className="flex justify-between items-start mb-2">
-                      <div className="flex items-center gap-3">
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
+                      <div className="flex items-start gap-2 sm:gap-3 min-w-0">
                         <Avatar avatarUrl={topic.author_avatar} username={topic.author_name} size="md" />
-                        <div>
-                          <h2 className="text-xl font-bold">
+                        <div className="min-w-0 flex-1">
+                          <h2 className="text-base sm:text-xl font-bold break-words">
                             <Link to={`/topic/${topic.id}`} className="hover:text-blue-600">
                               {topic.title}
                             </Link>
                           </h2>
-                          <div className="text-sm text-gray-500">
+                          <div className="text-xs sm:text-sm text-gray-500 flex flex-wrap gap-x-1 gap-y-0.5 mt-0.5">
                             <span className="font-medium">{topic.author_name}</span>
-                            {' • '}
+                            <span className="hidden sm:inline">•</span>
                             <span>{topic.category_name}</span>
-                            {' • '}
+                            <span className="hidden sm:inline">•</span>
                             <span>{new Date(topic.created_at).toLocaleString('ru-RU')}</span>
                           </div>
                         </div>
-                        <span className="text-blue-600 font-mono text-sm cursor-pointer hover:underline"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                navigate(`/topic/${topic.id}`);
-                              }}
-                              title="Ссылка на тему">
+                        <span
+                          className="text-blue-600 font-mono text-xs sm:text-sm cursor-pointer hover:underline flex-shrink-0"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            navigate(`/topic/${topic.id}`);
+                          }}
+                          title="Ссылка на тему"
+                        >
                           #{topicGlobalId}
                         </span>
                       </div>
@@ -1193,7 +1255,7 @@ const Board = () => {
                     <form
                       data-topic-id={topic.id}
                       onSubmit={handleSubmitPost}
-                      className="mt-4 bg-gray-50 rounded-lg p-4 border"
+                      className="mt-4 bg-gray-50 rounded-lg p-3 sm:p-4 border"
                     >
                       <div className="flex justify-between items-center mb-2">
                         <h3 className="text-sm font-semibold">
@@ -1277,11 +1339,11 @@ const Board = () => {
 
           {/* Pagination */}
           {totalPages > 1 && (
-            <div className="flex justify-center items-center gap-2 mt-6">
+            <div className="flex flex-wrap justify-center items-center gap-2 mt-6 py-4">
               <button
                 onClick={() => setCurrentPage(1)}
                 disabled={currentPage === 1}
-                className="px-3 py-2 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-3 py-2.5 min-h-[44px] sm:min-h-0 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
                 title="Первая страница"
               >
                 ««
@@ -1289,24 +1351,24 @@ const Board = () => {
               <button
                 onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                 disabled={currentPage === 1}
-                className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-4 py-2.5 min-h-[44px] sm:min-h-0 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
               >
                 Назад
               </button>
-              <span className="text-gray-600">
-                Страница {currentPage} из {totalPages}
+              <span className="text-gray-600 text-sm px-2">
+                {currentPage} / {totalPages}
               </span>
               <button
                 onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                 disabled={currentPage === totalPages}
-                className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-4 py-2.5 min-h-[44px] sm:min-h-0 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
               >
                 Вперед
               </button>
               <button
                 onClick={() => setCurrentPage(totalPages)}
                 disabled={currentPage === totalPages}
-                className="px-3 py-2 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-3 py-2.5 min-h-[44px] sm:min-h-0 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
                 title="Последняя страница"
               >
                 »»

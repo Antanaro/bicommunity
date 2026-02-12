@@ -221,7 +221,7 @@ const Profile = () => {
   };
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
+    <div className="max-w-2xl mx-auto space-y-4 sm:space-y-6 px-1 sm:px-0">
       {/* Уведомления */}
       {error && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
@@ -235,11 +235,11 @@ const Profile = () => {
       )}
 
       {/* Информация о профиле */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h1 className="text-2xl font-bold mb-6">Профиль</h1>
+      <div className="bg-white rounded-lg shadow p-4 sm:p-6">
+        <h1 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">Профиль</h1>
         
         {/* Аватар */}
-        <div className="flex items-start gap-6 mb-6">
+        <div className="flex flex-col sm:flex-row items-start gap-4 sm:gap-6 mb-4 sm:mb-6">
           <div className="relative">
             <input
               type="file"
@@ -338,8 +338,8 @@ const Profile = () => {
       </div>
 
       {/* Настройки уведомлений */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-xl font-bold mb-4">Уведомления</h2>
+      <div className="bg-white rounded-lg shadow p-4 sm:p-6">
+        <h2 className="text-lg sm:text-xl font-bold mb-4">Уведомления</h2>
 
         <div className="mb-4">
           <label className="block text-gray-700 text-sm font-bold mb-1">
@@ -451,8 +451,8 @@ const Profile = () => {
       </div>
 
       {/* Приглашения */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-xl font-bold mb-4">Мои приглашения</h2>
+      <div className="bg-white rounded-lg shadow p-4 sm:p-6">
+        <h2 className="text-lg sm:text-xl font-bold mb-4">Мои приглашения</h2>
         
         {loading ? (
           <p className="text-gray-500">Загрузка...</p>

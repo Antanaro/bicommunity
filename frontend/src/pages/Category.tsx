@@ -194,12 +194,12 @@ const Category = () => {
 
   return (
     <div>
-      <Link to="/categories" className="text-blue-600 hover:underline mb-4 inline-block">
+      <Link to="/categories" className="text-blue-600 hover:underline mb-4 inline-block py-2 min-h-[44px] flex items-center">
         ← Назад к категориям
       </Link>
       {category && (
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold mb-2">{category.name}</h1>
+        <div className="mb-4 sm:mb-6">
+          <h1 className="text-xl sm:text-3xl font-bold mb-2">{category.name}</h1>
           {category.description && (
             <p className="text-gray-600">{category.description}</p>
           )}
@@ -319,78 +319,45 @@ const Category = () => {
           topics.map((topic) => (
             <div
               key={topic.id}
-              className="bg-white rounded-lg shadow p-3 hover:shadow-lg transition relative group"
+              className="bg-white rounded-lg shadow p-3 sm:p-4 hover:shadow-lg transition relative group"
             >
               <Link to={`/topic/${topic.id}`} className="block pr-10">
-                <div className="flex items-center gap-2 text-sm overflow-hidden">
-                  {/* Название темы */}
-                  <span className="font-semibold text-gray-800 hover:text-blue-600 transition flex-shrink-0">
-                    {topic.title}
-                  </span>
-                  {category?.name === 'Все темы' && topic.category_name && (
-                    <>
-                      <span className="text-gray-300 flex-shrink-0">•</span>
-                      <span className="text-blue-600 text-xs flex-shrink-0">
-                        [{topic.category_name}]
-                      </span>
-                    </>
-                  )}
-                  <span className="text-gray-300 flex-shrink-0">•</span>
-                  
-                  {/* Начало содержания */}
-                  <span className="text-gray-600 truncate flex-1 min-w-0">
-                    <LinkifyText text={topic.content.substring(0, 80) + (topic.content.length > 80 ? '...' : '')} />
-                  </span>
-                  <span className="text-gray-300 flex-shrink-0">•</span>
-                  
-                  {/* Количество сообщений */}
-                  <span className="bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded font-medium flex-shrink-0 text-xs">
-                    {topic.post_count || 0}
-                  </span>
-                  <span className="text-gray-300 flex-shrink-0">•</span>
-                  
-                  {/* Автор */}
-                  <span className="text-gray-700 flex-shrink-0">
-                    {topic.author_name}
-                  </span>
-                  <span className="text-gray-300 flex-shrink-0">•</span>
-                  
-                  {/* Дата и время создания */}
-                  <span className="text-gray-500 flex-shrink-0 text-xs">
-                    {new Date(topic.created_at).toLocaleString('ru-RU', {
-                      day: '2-digit',
-                      month: '2-digit',
-                      year: '2-digit',
-                      hour: '2-digit',
-                      minute: '2-digit'
-                    })}
-                  </span>
-                  <span className="text-gray-300 flex-shrink-0">•</span>
-                  
-                  {/* Логин последнего комментатора */}
-                  {topic.last_post_author ? (
-                    <span className="text-gray-700 flex-shrink-0">
-                      {topic.last_post_author}
+                <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 text-sm">
+                  {/* Название — всегда первое */}
+                  <div className="flex items-center gap-2 min-w-0 flex-wrap">
+                    <span className="font-semibold text-gray-800 hover:text-blue-600 transition break-words">
+                      {topic.title}
                     </span>
-                  ) : (
-                    <span className="text-gray-400 flex-shrink-0 text-xs">—</span>
-                  )}
-                  <span className="text-gray-300 flex-shrink-0">•</span>
-                  
-                  {/* Дата и время последнего комментария */}
-                  {topic.last_post_at ? (
-                    <span className="text-gray-500 flex-shrink-0 text-xs">
-                      {new Date(topic.last_post_at).toLocaleString('ru-RU', {
+                    {category?.name === 'Все темы' && topic.category_name && (
+                      <span className="text-blue-600 text-xs">[{topic.category_name}]</span>
+                    )}
+                    <span className="bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded font-medium text-xs">
+                      💬 {topic.post_count || 0}
+                    </span>
+                  </div>
+                  {/* Содержание — только на десктопе или укороченно */}
+                  <span className="text-gray-600 truncate sm:max-w-[200px] lg:max-w-xs text-xs sm:text-sm hidden sm:block">
+                    <LinkifyText text={topic.content.substring(0, 60) + (topic.content.length > 60 ? '...' : '')} />
+                  </span>
+                  {/* Мета: автор, даты — в одну строку на мобильном */}
+                  <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-gray-500">
+                    <span>{topic.author_name}</span>
+                    <span>•</span>
+                    <span>
+                      {new Date(topic.created_at).toLocaleString('ru-RU', {
                         day: '2-digit',
                         month: '2-digit',
-                        year: '2-digit',
                         hour: '2-digit',
                         minute: '2-digit'
                       })}
                     </span>
-                  ) : (
-                    <span className="text-gray-400 flex-shrink-0 text-xs">—</span>
-                  )}
+                    {topic.last_post_author && (
+                      <>
+                        <span>•</span>
+                        <span>последний: {topic.last_post_author}</span>
+                      </>
+                    )}
+                  </div>
                 </div>
               </Link>
               
@@ -401,7 +368,7 @@ const Category = () => {
                     e.stopPropagation();
                     handleDeleteTopic(topic.id, topic.title);
                   }}
-                  className="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600 transition opacity-0 group-hover:opacity-100 text-xs"
+                  className="absolute top-2 right-2 bg-red-500 text-white px-2 py-1.5 rounded hover:bg-red-600 transition opacity-80 sm:opacity-0 sm:group-hover:opacity-100 text-xs min-h-[36px] min-w-[36px]"
                   title="Удалить тему"
                 >
                   🗑️
