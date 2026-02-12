@@ -87,6 +87,11 @@ app.get('/api/test-notification', async (req, res) => {
   }
 });
 
+// Чтобы падение Telegram-бота не ронило весь процесс
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason instanceof Error ? reason.message : reason);
+});
+
 // Run forum_settings migration then start server
 (async () => {
   try {
@@ -99,6 +104,10 @@ app.get('/api/test-notification', async (req, res) => {
     console.log(`📝 Environment: ${process.env.NODE_ENV || 'development'}`);
     console.log(`🔐 JWT Secret: ${process.env.JWT_SECRET ? '✅ Set' : '❌ NOT SET!'}`);
     console.log(`🗄️  Database: ${process.env.DB_NAME || 'forum_db'} on ${process.env.DB_HOST || 'localhost'}:${process.env.DB_PORT || '5432'}`);
-    await telegramBotService.initialize();
+    try {
+      await telegramBotService.initialize();
+    } catch (e) {
+      console.error('Telegram bot failed to start:', (e as Error).message);
+    }
   });
 })();

@@ -203,7 +203,18 @@ const Profile = () => {
       setTimeout(() => setSuccess(null), 3000);
     } catch (err: any) {
       console.error('Error saving notification settings:', err);
-      setError(err.response?.data?.error || 'Ошибка при сохранении настроек уведомлений');
+      const data = err.response?.data;
+      let msg = data?.error || data?.message;
+      if (data?.errors?.length) {
+        msg = data.errors.map((e: { msg?: string }) => e.msg).filter(Boolean).join('. ') || msg;
+      }
+      if (!msg && err.response?.status === 503) {
+        msg = 'Сервис временно недоступен. Возможно, не применена миграция БД.';
+      }
+      if (!msg && !err.response) {
+        msg = 'Нет ответа от сервера. Проверьте, что backend запущен.';
+      }
+      setError(msg || 'Ошибка при сохранении настроек уведомлений');
     } finally {
       setSavingNotifications(false);
     }
