@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { api, uploadImages } from '../services/api';
+import SeoHead from '../components/SeoHead';
 import { useAuth } from '../contexts/AuthContext';
 import LinkifyText from '../components/LinkifyText';
 import MarkdownRenderer from '../components/MarkdownRenderer';
@@ -1195,8 +1196,28 @@ const Topic = () => {
     }
   };
 
+  const siteUrl = import.meta.env.VITE_SITE_URL || 'https://bicommunity.ru';
+  const topicDesc = topic.content
+    ? topic.content.replace(/[#*_`]/g, '').replace(/\s+/g, ' ').slice(0, 155) + (topic.content.length > 155 ? '…' : '')
+    : `Обсуждение на форуме BI Community: ${topic.title}`;
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'DiscussionForumPosting',
+    headline: topic.title,
+    text: topic.content?.slice(0, 500) || '',
+    author: { '@type': 'Person', name: topic.author_name },
+    datePublished: topic.created_at,
+    mainEntityOfPage: { '@type': 'WebPage', '@id': `${siteUrl}/topic/${id}` },
+  };
+
   return (
     <div className="min-h-screen bg-gray-100 py-4 px-3 sm:px-4">
+      <SeoHead
+        title={topic.title}
+        description={topicDesc}
+        canonical={`/topic/${id}`}
+        jsonLd={jsonLd}
+      />
       <div className="max-w-[84rem] mx-auto">
       <button
         type="button"

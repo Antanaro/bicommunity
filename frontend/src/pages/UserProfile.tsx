@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { api } from '../services/api';
+import SeoHead from '../components/SeoHead';
 
 interface PublicUser {
   id: number;
@@ -123,6 +124,11 @@ const UserProfile = () => {
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
+      <SeoHead
+        title={`Профиль: ${user.username}`}
+        description={user.bio || `Профиль участника форума BI Community: ${user.username}. Темы и сообщения.`}
+        canonical={`/users/${id}`}
+      />
       <div className="bg-white rounded-lg shadow p-6">
         <h1 className="text-2xl font-bold mb-6">Профиль пользователя</h1>
 

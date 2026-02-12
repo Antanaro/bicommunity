@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { api, uploadImages } from '../services/api';
+import SeoHead from '../components/SeoHead';
 import { useAuth } from '../contexts/AuthContext';
 import LinkifyText from '../components/LinkifyText';
 
@@ -194,6 +195,13 @@ const Category = () => {
 
   return (
     <div>
+      {category && (
+        <SeoHead
+          title={category.name}
+          description={category.description || `Темы в категории «${category.name}» на форуме BI Community`}
+          canonical={`/category/${id}`}
+        />
+      )}
       <Link to="/categories" className="text-blue-600 hover:underline mb-4 inline-block py-2 min-h-[44px] flex items-center">
         ← Назад к категориям
       </Link>

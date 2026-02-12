@@ -56,6 +56,48 @@ app.use('/api/upload', uploadRoutes);
 app.use('/api/invitations', invitationsRoutes);
 app.use('/api/settings', settingsRoutes);
 
+// Sitemap для SEO
+app.get('/api/sitemap.xml', async (req, res) => {
+  try {
+    const baseUrl = (process.env.FRONTEND_URL || 'https://bicommunity.ru').replace(/\/$/, '');
+    const formatDate = (d: Date) => d.toISOString().split('T')[0];
+
+    const urls: string[] = [];
+    urls.push(`  <url><loc>${baseUrl}/</loc><changefreq>daily</changefreq><priority>1.0</priority></url>`);
+    urls.push(`  <url><loc>${baseUrl}/board</loc><changefreq>hourly</changefreq><priority>0.9</priority></url>`);
+    urls.push(`  <url><loc>${baseUrl}/categories</loc><changefreq>daily</changefreq><priority>0.9</priority></url>`);
+    urls.push(`  <url><loc>${baseUrl}/about</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>`);
+
+    urls.push(`  <url><loc>${baseUrl}/category/all-topics</loc><changefreq>daily</changefreq><priority>0.8</priority></url>`);
+    const catResult = await pool.query('SELECT id, name FROM categories WHERE name != \'Все темы\' ORDER BY id');
+    for (const row of catResult.rows) {
+      urls.push(`  <url><loc>${baseUrl}/category/${row.id}</loc><changefreq>daily</changefreq><priority>0.8</priority></url>`);
+    }
+
+    const topicsResult = await pool.query(
+      'SELECT id, created_at FROM topics ORDER BY created_at DESC LIMIT 5000'
+    );
+    const weekAgo = new Date();
+    weekAgo.setDate(weekAgo.getDate() - 7);
+    for (const row of topicsResult.rows) {
+      const lastmod = row.created_at ? formatDate(new Date(row.created_at)) : formatDate(new Date());
+      const changefreq = new Date(row.created_at) > weekAgo ? 'daily' : 'weekly';
+      urls.push(`  <url><loc>${baseUrl}/topic/${row.id}</loc><lastmod>${lastmod}</lastmod><changefreq>${changefreq}</changefreq><priority>0.7</priority></url>`);
+    }
+
+    const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+${urls.join('\n')}
+</urlset>`;
+    res.set('Content-Type', 'application/xml');
+    res.set('Cache-Control', 'public, max-age=3600');
+    res.send(xml);
+  } catch (error) {
+    console.error('Sitemap error:', error);
+    res.status(500).send('<?xml version="1.0"?><error>Sitemap generation failed</error>');
+  }
+});
+
 // Health check
 app.get('/api/health', async (req, res) => {
   try {

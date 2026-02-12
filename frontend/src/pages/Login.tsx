@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { api } from '../services/api';
+import SeoHead from '../components/SeoHead';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -93,6 +94,7 @@ const Login = () => {
 
   return (
     <div className="max-w-md mx-auto bg-white rounded-lg shadow p-4 sm:p-6">
+      <SeoHead title="Вход" noIndex />
       <h1 className="text-xl sm:text-2xl font-bold mb-6">Вход</h1>
       {error && (
         <div className="bg-red-50 border-l-4 border-red-500 text-red-700 px-4 py-3 rounded mb-4">

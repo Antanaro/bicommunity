@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../services/api';
+import SeoHead from '../components/SeoHead';
 import { useAuth } from '../contexts/AuthContext';
 import PieChart from '../components/PieChart';
 import LinkifyText from '../components/LinkifyText';
@@ -192,6 +193,11 @@ const CategoriesList = () => {
 
   return (
     <div style={{ overflow: 'visible' }}>
+      <SeoHead
+        title="Категории"
+        description="Категории форума BI Community: DWH, ETL, визуализация, BI-инструменты и другие разделы."
+        canonical="/categories"
+      />
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-4 sm:mb-6">
         <div className="flex items-center gap-2 sm:gap-3 min-w-0">
           <div

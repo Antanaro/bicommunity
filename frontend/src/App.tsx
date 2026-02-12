@@ -1,4 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { HelmetProvider } from 'react-helmet-async';
 import { AuthProvider } from './contexts/AuthContext';
 import Navbar from './components/Navbar';
 import Home from './pages/Home';
@@ -19,8 +20,9 @@ import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {
   return (
-    <AuthProvider>
-      <Router>
+    <HelmetProvider>
+      <AuthProvider>
+        <Router>
         <div className="min-h-screen bg-gray-50 overflow-x-hidden">
           <Navbar />
           <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-8 max-w-7xl">
@@ -50,8 +52,9 @@ function App() {
             </Routes>
           </main>
         </div>
-      </Router>
-    </AuthProvider>
+        </Router>
+      </AuthProvider>
+    </HelmetProvider>
   );
 }
 

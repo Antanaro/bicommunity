@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { invitationApi, api, uploadImage } from '../services/api';
+import SeoHead from '../components/SeoHead';
 
 interface TopicItem {
   id: number;
@@ -260,6 +261,7 @@ const Profile = () => {
 
   return (
     <div className="max-w-2xl mx-auto space-y-4 sm:space-y-6 px-1 sm:px-0">
+      <SeoHead title="Мой профиль" noIndex />
       {/* Уведомления */}
       {error && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">

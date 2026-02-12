@@ -1,0 +1,13 @@
+User-agent: *
+Allow: /
+
+# Закрыть от индексации служебные страницы
+Disallow: /profile
+Disallow: /login
+Disallow: /register
+Disallow: /forgot-password
+Disallow: /reset-password
+Disallow: /verify-email
+Disallow: /auth/
+
+Sitemap: https://bicommunity.ru/api/sitemap.xml

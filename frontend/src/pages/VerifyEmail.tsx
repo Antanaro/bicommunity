@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { api } from '../services/api';
+import SeoHead from '../components/SeoHead';
 
 const VerifyEmail = () => {
   const [searchParams] = useSearchParams();
@@ -113,6 +114,7 @@ const VerifyEmail = () => {
 
   return (
     <div className="max-w-md mx-auto bg-white rounded-lg shadow p-6">
+      <SeoHead title="Подтверждение email" noIndex />
       <h1 className="text-2xl font-bold mb-6">Подтверждение email</h1>
       
       {status === 'loading' && (

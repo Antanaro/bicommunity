@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { api } from '../services/api';
+import SeoHead from '../components/SeoHead';
 
 const ResetPassword = () => {
   const [searchParams] = useSearchParams();
@@ -64,6 +65,7 @@ const ResetPassword = () => {
   if (!token) {
     return (
       <div className="max-w-md mx-auto bg-white rounded-lg shadow p-6">
+        <SeoHead title="Сброс пароля" noIndex />
         <h1 className="text-2xl font-bold mb-6">Сброс пароля</h1>
         <div className="bg-red-50 border-l-4 border-red-500 text-red-700 px-4 py-3 rounded mb-4">
           <p className="text-sm font-medium">
@@ -81,6 +83,7 @@ const ResetPassword = () => {
 
   return (
     <div className="max-w-md mx-auto bg-white rounded-lg shadow p-6">
+      <SeoHead title="Сброс пароля" noIndex />
       <h1 className="text-2xl font-bold mb-6">Сброс пароля</h1>
       
       {success ? (

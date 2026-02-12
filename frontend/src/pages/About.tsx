@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { api } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import MarkdownRenderer from '../components/MarkdownRenderer';
+import SeoHead from '../components/SeoHead';
 
 const About = () => {
   const { user } = useAuth();
@@ -61,6 +62,11 @@ const About = () => {
 
   return (
     <div className="max-w-3xl mx-auto px-1 sm:px-0">
+      <SeoHead
+        title="О форуме"
+        description="О форуме BI Community — площадка для обсуждения Business Intelligence, DWH, ETL и аналитики данных."
+        canonical="/about"
+      />
       <h1 className="text-xl sm:text-2xl font-bold text-gray-800 mb-4 sm:mb-6">О форуме</h1>
 
       {editing ? (

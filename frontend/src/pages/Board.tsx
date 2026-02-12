@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo, useCallback, memo, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, useNavigate } from 'react-router-dom';
 import { api, uploadImages } from '../services/api';
+import SeoHead from '../components/SeoHead';
 import { useAuth } from '../contexts/AuthContext';
 import LinkifyText from '../components/LinkifyText';
 import MarkdownRenderer from '../components/MarkdownRenderer';
@@ -992,6 +993,11 @@ const Board = () => {
 
   return (
     <div>
+      <SeoHead
+        title="Всё подряд — все темы форума"
+        description="Все темы форума BI Community. Обсуждения по DWH, ETL, Power BI, Tableau, визуализации и аналитике данных."
+        canonical="/board"
+      />
       <div className="mb-4 sm:mb-6 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
         <div className="flex items-center gap-2 sm:gap-3 min-w-0">
           <div

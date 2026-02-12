@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../services/api';
+import SeoHead from '../components/SeoHead';
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState('');
@@ -34,6 +35,7 @@ const ForgotPassword = () => {
 
   return (
     <div className="max-w-md mx-auto bg-white rounded-lg shadow p-6">
+      <SeoHead title="Восстановление пароля" noIndex />
       <h1 className="text-2xl font-bold mb-6">Восстановление пароля</h1>
       
       {success ? (

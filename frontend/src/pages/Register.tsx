@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { invitationApi } from '../services/api';
+import SeoHead from '../components/SeoHead';
 
 const Register = () => {
   const [username, setUsername] = useState('');
@@ -98,6 +99,7 @@ const Register = () => {
 
   return (
     <div className="max-w-md mx-auto bg-white rounded-lg shadow p-4 sm:p-6">
+      <SeoHead title="Регистрация" noIndex />
       <h1 className="text-xl sm:text-2xl font-bold mb-6">Регистрация</h1>
       
       {error && (
