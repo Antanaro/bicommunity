@@ -14,6 +14,7 @@ import invitationsRoutes from './routes/invitations';
 import settingsRoutes from './routes/settings';
 import { telegramBotService } from './services/telegram-bot';
 import { addForumSettings } from './migrations/add-forum-settings';
+import { initSchemaCache } from './config/schema-cache';
 import path from 'path';
 
 // Load .env from project root
@@ -98,6 +99,11 @@ process.on('unhandledRejection', (reason, promise) => {
     await addForumSettings();
   } catch (e) {
     console.warn('Forum settings migration:', (e as Error).message);
+  }
+  try {
+    await initSchemaCache();
+  } catch (e) {
+    console.warn('Schema cache init:', (e as Error).message);
   }
   app.listen(PORT, async () => {
     console.log(`🚀 Server running on http://localhost:${PORT}`);

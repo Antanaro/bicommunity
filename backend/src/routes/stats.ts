@@ -1,19 +1,13 @@
 import express, { Request, Response } from 'express';
 import { pool } from '../config/database';
+import { getHasReactionType } from '../config/schema-cache';
 
 const router = express.Router();
 
 // Get most upvoted post
 router.get('/most-upvoted', async (req: Request, res: Response) => {
   try {
-    // Check if reaction_type column exists
-    const columnCheck = await pool.query(`
-      SELECT column_name 
-      FROM information_schema.columns 
-      WHERE table_name='likes' AND column_name='reaction_type'
-    `);
-    const hasReactionType = columnCheck.rows.length > 0;
-
+    const hasReactionType = getHasReactionType();
     const result = await pool.query(
       hasReactionType
         ? `
@@ -62,15 +56,7 @@ router.get('/most-upvoted', async (req: Request, res: Response) => {
 // Get most downvoted post
 router.get('/most-downvoted', async (req: Request, res: Response) => {
   try {
-    // Check if reaction_type column exists
-    const columnCheck = await pool.query(`
-      SELECT column_name 
-      FROM information_schema.columns 
-      WHERE table_name='likes' AND column_name='reaction_type'
-    `);
-    const hasReactionType = columnCheck.rows.length > 0;
-
-    if (!hasReactionType) {
+    if (!getHasReactionType()) {
       return res.json(null);
     }
 

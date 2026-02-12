@@ -591,36 +591,12 @@ const Board = () => {
   const fetchTopics = async () => {
     try {
       setLoading(true);
-      const response = await api.get('/topics');
-      const allTopics = response.data;
-      
-      // Sort by last post date or creation date
-      const sortedTopics = allTopics.sort((a: Topic, b: Topic) => {
-        const aDate = a.last_post_at || a.created_at;
-        const bDate = b.last_post_at || b.created_at;
-        return new Date(bDate).getTime() - new Date(aDate).getTime();
-      });
-
-      // Pagination
-      const startIndex = (currentPage - 1) * topicsPerPage;
-      const endIndex = startIndex + topicsPerPage;
-      const paginatedTopics = sortedTopics.slice(startIndex, endIndex);
-      
-      setTotalPages(Math.ceil(sortedTopics.length / topicsPerPage));
-
-      // Fetch posts for each topic
-      const topicsWithPosts = await Promise.all(
-        paginatedTopics.map(async (topic: any) => {
-          try {
-            const topicResponse = await api.get(`/topics/${topic.id}`);
-            return topicResponse.data;
-          } catch (error) {
-            console.error(`Error fetching topic ${topic.id}:`, error);
-            return { ...topic, posts: [] };
-          }
-        })
+      const offset = (currentPage - 1) * topicsPerPage;
+      const response = await api.get<{ topics: Topic[]; total: number }>(
+        `/topics?limit=${topicsPerPage}&offset=${offset}&with_posts=1`
       );
-
+      const { topics: topicsWithPosts, total } = response.data;
+      setTotalPages(Math.max(1, Math.ceil(total / topicsPerPage)));
       setTopics(topicsWithPosts);
 
       // One batch request for reactions (was N requests)

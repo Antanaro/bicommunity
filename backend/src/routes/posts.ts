@@ -1,6 +1,7 @@
 import express, { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
 import { pool } from '../config/database';
+import { getHasReactionType } from '../config/schema-cache';
 import { authenticate, AuthRequest } from '../middleware/auth';
 import { sendReplyInTopicEmail, sendReplyToPostEmail } from '../services/email';
 import { telegramBotService } from '../services/telegram-bot';
@@ -10,15 +11,7 @@ const router = express.Router();
 // Get posts for a topic (usually called via topics/:id)
 router.get('/topic/:topicId', async (req: Request, res: Response) => {
   try {
-    // Check if reaction_type column exists
-    const columnCheck = await pool.query(`
-      SELECT column_name 
-      FROM information_schema.columns 
-      WHERE table_name='likes' AND column_name='reaction_type'
-    `);
-    
-    const hasReactionType = columnCheck.rows.length > 0;
-    
+    const hasReactionType = getHasReactionType();
     const result = await pool.query(
       hasReactionType
         ? `
@@ -317,15 +310,7 @@ router.post(
         return res.status(404).json({ error: 'Post not found' });
       }
 
-      // Check if reaction_type column exists
-      const columnCheck = await pool.query(`
-        SELECT column_name 
-        FROM information_schema.columns 
-        WHERE table_name='likes' AND column_name='reaction_type'
-      `);
-      const hasReactionType = columnCheck.rows.length > 0;
-
-      if (!hasReactionType) {
+      if (!getHasReactionType()) {
         return res.status(503).json({ 
           error: 'Система реакций недоступна',
           hint: 'Необходимо выполнить миграцию: npm run migrate-reaction-type в папке backend'
@@ -386,11 +371,7 @@ router.get('/reactions', authenticate, async (req: AuthRequest, res: Response) =
       return res.status(400).json({ error: 'Max 500 post_ids per request' });
     }
 
-    const columnCheck = await pool.query(`
-      SELECT column_name FROM information_schema.columns
-      WHERE table_name='likes' AND column_name='reaction_type'
-    `);
-    if (columnCheck.rows.length === 0) {
+    if (!getHasReactionType()) {
       const empty: Record<string, number | null> = {};
       postIds.forEach((id) => { empty[String(id)] = null; });
       return res.json(empty);
@@ -418,15 +399,7 @@ router.get('/:id/reaction', authenticate, async (req: AuthRequest, res: Response
   try {
     const postId = req.params.id;
 
-    // Check if reaction_type column exists
-    const columnCheck = await pool.query(`
-      SELECT column_name 
-      FROM information_schema.columns 
-      WHERE table_name='likes' AND column_name='reaction_type'
-    `);
-    const hasReactionType = columnCheck.rows.length > 0;
-
-    if (!hasReactionType) {
+    if (!getHasReactionType()) {
       return res.json({ reaction_type: null });
     }
 

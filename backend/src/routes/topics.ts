@@ -2,16 +2,22 @@ import express, { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
 import jwt from 'jsonwebtoken';
 import { pool } from '../config/database';
+import { getHasReactionType } from '../config/schema-cache';
 import { authenticate, AuthRequest } from '../middleware/auth';
 import { telegramBotService } from '../services/telegram-bot';
 import { sendNewTopicEmail } from '../services/email';
 
 const router = express.Router();
 
-// Get all topics (with optional category filter)
+// Get all topics (with optional category filter, limit, offset, with_posts)
 router.get('/', async (req: Request, res: Response) => {
   try {
     const categoryId = req.query.category_id;
+    const limit = parseInt(String(req.query.limit || 0), 10) || 0;
+    const offset = parseInt(String(req.query.offset || 0), 10) || 0;
+    const withPosts = req.query.with_posts === '1' || req.query.with_posts === 'true';
+
+    // Use LEFT JOIN LATERAL instead of correlated subquery (faster on large datasets)
     let query = `
       SELECT 
         t.*,
@@ -19,18 +25,19 @@ router.get('/', async (req: Request, res: Response) => {
         c.name as category_name,
         COUNT(p.id) as post_count,
         MAX(p.created_at) as last_post_at,
-        (
-          SELECT u2.username 
-          FROM posts p2
-          JOIN users u2 ON p2.author_id = u2.id
-          WHERE p2.topic_id = t.id
-          ORDER BY p2.created_at DESC
-          LIMIT 1
-        ) as last_post_author
+        last_post.username as last_post_author
       FROM topics t
       JOIN users u ON t.author_id = u.id
       JOIN categories c ON t.category_id = c.id
       LEFT JOIN posts p ON t.id = p.topic_id
+      LEFT JOIN LATERAL (
+        SELECT u2.username
+        FROM posts p2
+        JOIN users u2 ON p2.author_id = u2.id
+        WHERE p2.topic_id = t.id
+        ORDER BY p2.created_at DESC
+        LIMIT 1
+      ) last_post ON true
     `;
 
     const params: any[] = [];
@@ -39,12 +46,108 @@ router.get('/', async (req: Request, res: Response) => {
       params.push(categoryId);
     }
 
-    query += ' GROUP BY t.id, u.username, c.name ORDER BY COALESCE(MAX(p.created_at), t.created_at) DESC';
+    query += ' GROUP BY t.id, u.username, c.name, last_post.username ORDER BY COALESCE(MAX(p.created_at), t.created_at) DESC';
+
+    if (limit > 0) {
+      query += ` LIMIT $${params.length + 1}`;
+      params.push(Math.min(limit, 100)); // cap at 100
+    }
+    if (offset > 0) {
+      query += ` OFFSET $${params.length + 1}`;
+      params.push(offset);
+    }
 
     const result = await pool.query(query, params);
-    res.json(result.rows);
+    let topics = result.rows;
+
+    if (withPosts && topics.length > 0) {
+      const topicIds = topics.map((t: { id: number }) => t.id);
+      const hasReactionType = getHasReactionType();
+      const postsResult = await pool.query(
+        hasReactionType
+          ? `
+            SELECT 
+              p.*,
+              u.username as author_name,
+              u.avatar_url as author_avatar,
+              COALESCE(COUNT(CASE WHEN l.reaction_type = 1 THEN 1 END)::INTEGER, 0) as upvote_count,
+              COALESCE(COUNT(CASE WHEN l.reaction_type = -1 THEN 1 END)::INTEGER, 0) as downvote_count,
+              parent_u.username as parent_author_name,
+              parent_u.avatar_url as parent_author_avatar
+            FROM posts p
+            JOIN users u ON p.author_id = u.id
+            LEFT JOIN likes l ON p.id = l.post_id
+            LEFT JOIN posts parent_p ON p.parent_id = parent_p.id
+            LEFT JOIN users parent_u ON parent_p.author_id = parent_u.id
+            WHERE p.topic_id = ANY($1::int[])
+            GROUP BY p.id, p.topic_id, u.username, u.avatar_url, parent_u.username, parent_u.avatar_url
+            ORDER BY p.topic_id, p.created_at ASC
+          `
+          : `
+            SELECT 
+              p.*,
+              u.username as author_name,
+              u.avatar_url as author_avatar,
+              COALESCE(COUNT(l.id)::INTEGER, 0) as upvote_count,
+              0::INTEGER as downvote_count,
+              parent_u.username as parent_author_name,
+              parent_u.avatar_url as parent_author_avatar
+            FROM posts p
+            JOIN users u ON p.author_id = u.id
+            LEFT JOIN likes l ON p.id = l.post_id
+            LEFT JOIN posts parent_p ON p.parent_id = parent_p.id
+            LEFT JOIN users parent_u ON parent_p.author_id = parent_u.id
+            WHERE p.topic_id = ANY($1::int[])
+            GROUP BY p.id, p.topic_id, u.username, u.avatar_url, parent_u.username, parent_u.avatar_url
+            ORDER BY p.topic_id, p.created_at ASC
+          `,
+        [topicIds]
+      );
+      const postsByTopic = new Map<number, any[]>();
+      for (const post of postsResult.rows) {
+        const arr = postsByTopic.get(post.topic_id) || [];
+        arr.push(post);
+        postsByTopic.set(post.topic_id, arr);
+      }
+      topics = topics.map((t: any) => ({
+        ...t,
+        posts: postsByTopic.get(t.id) || [],
+        poll: null, // Board doesn't need poll for list view
+      }));
+    }
+
+    if (limit > 0) {
+      const countResult = await pool.query(
+        categoryId
+          ? 'SELECT COUNT(*)::INTEGER as total FROM topics WHERE category_id = $1'
+          : 'SELECT COUNT(*)::INTEGER as total FROM topics',
+        categoryId ? [categoryId] : []
+      );
+      const total = countResult.rows[0].total;
+      res.json({ topics, total });
+    } else {
+      res.json(withPosts ? topics : result.rows);
+    }
   } catch (error) {
     console.error('Get topics error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Total topics count (for CategoriesList "Все темы" without loading all topics)
+router.get('/count', async (req: Request, res: Response) => {
+  try {
+    const categoryId = req.query.category_id;
+    let query = 'SELECT COUNT(*)::INTEGER as count FROM topics';
+    const params: any[] = [];
+    if (categoryId) {
+      query += ' WHERE category_id = $1';
+      params.push(categoryId);
+    }
+    const result = await pool.query(query, params);
+    res.json({ count: result.rows[0].count });
+  } catch (error) {
+    console.error('Get topics count error:', error);
     res.status(500).json({ error: 'Server error' });
   }
 });
@@ -163,15 +266,7 @@ router.get('/:id', async (req: Request, res: Response) => {
     }
 
     // Get posts with parent information and reaction counts
-    // Check if reaction_type column exists
-    const columnCheck = await pool.query(`
-      SELECT column_name 
-      FROM information_schema.columns 
-      WHERE table_name='likes' AND column_name='reaction_type'
-    `);
-    
-    const hasReactionType = columnCheck.rows.length > 0;
-    
+    const hasReactionType = getHasReactionType();
     const postsResult = await pool.query(
       hasReactionType
         ? `

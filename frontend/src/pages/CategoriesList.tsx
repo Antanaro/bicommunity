@@ -89,21 +89,21 @@ const CategoriesList = () => {
 
       if (allTopicsCategory) {
         try {
-          const topicsResponse = await api.get('/topics');
-          allTopicsCategory.topic_count = topicsResponse.data.length.toString();
+          const countResponse = await api.get<{ count: number }>('/topics/count');
+          allTopicsCategory.topic_count = String(countResponse.data.count);
         } catch (err) {
-          console.error('Error fetching all topics:', err);
+          console.error('Error fetching topics count:', err);
         }
         categoriesData = categoriesData.filter((cat: Category) => cat.name !== 'Все темы');
         setCategories([allTopicsCategory, ...categoriesData]);
       } else {
         try {
-          const topicsResponse = await api.get('/topics');
+          const countResponse = await api.get<{ count: number }>('/topics/count');
           const virtual = {
             id: 'all-topics',
             name: 'Все темы',
             description: 'Все темы форума',
-            topic_count: topicsResponse.data.length.toString(),
+            topic_count: String(countResponse.data.count),
             created_at: new Date().toISOString(),
           };
           setCategories([virtual, ...categoriesData]);
