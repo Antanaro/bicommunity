@@ -6,7 +6,6 @@ import { useAuth } from '../contexts/AuthContext';
 import LinkifyText from '../components/LinkifyText';
 import MarkdownRenderer from '../components/MarkdownRenderer';
 import PieChart from '../components/PieChart';
-import CopyPostLinkIcon from '../components/CopyPostLinkIcon';
 
 const POPUP_Z_INDEX = 99999;
 
@@ -188,7 +187,8 @@ const PostComponent = memo(({
               {post.author_name}
             </span>
           </Link>
-          <div className="flex items-center gap-1.5 flex-shrink-0 ml-auto">
+          <div className="flex items-baseline gap-1.5 flex-shrink-0 ml-auto">
+            <span className="text-xs text-gray-500">{formatPostDate(post.created_at)}</span>
             <span
               id={`post-${post.id}`}
               className="text-blue-600 font-mono text-xs cursor-pointer hover:underline inline-flex items-center gap-0.5"
@@ -198,9 +198,7 @@ const PostComponent = memo(({
               }}
             >
               #{globalId}
-              <CopyPostLinkIcon topicId={topicId} postId={post.id} />
             </span>
-            <span className="text-xs text-gray-500">{formatPostDate(post.created_at)}</span>
           </div>
         </div>
         {/* Десктоп: левая колонка */}
@@ -221,8 +219,8 @@ const PostComponent = memo(({
         {/* Центр: верхняя строка (десктоп) + кнопки (мобильные — под контентом); ниже — сообщение */}
         <div className="flex-1 min-w-0 flex flex-col">
           <div className="hidden sm:flex items-center justify-between gap-2 mb-1.5">
-            <div className="text-xs text-gray-600 flex items-center gap-2 min-w-0">
-              <span className="text-gray-500 flex-shrink-0" title={new Date(post.created_at).toLocaleString('ru-RU')}>
+            <div className="text-xs text-gray-600 flex items-baseline gap-2 min-w-0">
+              <span className="text-gray-500 flex-shrink-0 text-xs" title={new Date(post.created_at).toLocaleString('ru-RU')}>
                 {formatPostDate(post.created_at)}
               </span>
               {post.parent_id && (
@@ -237,7 +235,6 @@ const PostComponent = memo(({
                     title="Ссылка на сообщение"
                   >
                     #{globalId}
-                    <CopyPostLinkIcon topicId={topicId} postId={post.id} />
                   </span>
                   <span>Ответ на{' '}</span>
                   <span className="relative inline-block">
@@ -301,7 +298,6 @@ const PostComponent = memo(({
                   title="Ссылка на сообщение"
                 >
                   #{globalId}
-                  <CopyPostLinkIcon topicId={topicId} postId={post.id} />
                 </span>
               )}
             </div>
@@ -1157,7 +1153,7 @@ const Board = () => {
                           </div>
                         </div>
                         <span
-                          className="text-blue-600 font-mono text-xs sm:text-sm cursor-pointer hover:underline flex-shrink-0"
+                          className="text-blue-600 font-mono text-base sm:text-xl cursor-pointer hover:underline flex-shrink-0"
                           onClick={(e) => {
                             e.preventDefault();
                             navigate(`/topic/${topic.id}`);

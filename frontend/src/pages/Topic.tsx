@@ -5,7 +5,6 @@ import { api, uploadImages } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import LinkifyText from '../components/LinkifyText';
 import MarkdownRenderer from '../components/MarkdownRenderer';
-import CopyPostLinkIcon from '../components/CopyPostLinkIcon';
 
 const POPUP_Z_INDEX = 99999;
 
@@ -181,11 +180,10 @@ const PostComponent = ({
                 {post.author_name}
               </span>
             </Link>
-            <span className="text-xs text-gray-500 flex-shrink-0 ml-auto inline-flex items-center gap-1">
+            <span className="text-xs text-gray-500 flex-shrink-0 ml-auto inline-flex items-baseline gap-1">
               {formatPostDate(post.created_at)}{' '}
-              <span className="text-blue-600 font-mono cursor-pointer hover:underline inline-flex items-center gap-0.5">
+              <span className="text-blue-600 font-mono text-xs cursor-pointer hover:underline inline-flex items-center gap-0.5">
                 #{getGlobalId(post.id)}
-                <CopyPostLinkIcon topicId={topicId} postId={post.id} />
               </span>
             </span>
           </div>
@@ -207,8 +205,8 @@ const PostComponent = ({
           {/* Центр: мета + кнопки; ниже — сообщение */}
           <div className="flex-1 min-w-0 flex flex-col">
             <div className="hidden sm:flex items-center justify-between gap-2 mb-2">
-              <div className="text-sm text-gray-600 flex items-center gap-2 min-w-0">
-                <span className="text-gray-500 flex-shrink-0" title={new Date(post.created_at).toLocaleString('ru-RU')}>
+              <div className="text-sm text-gray-600 flex items-baseline gap-2 min-w-0">
+                <span className="text-gray-500 flex-shrink-0 text-sm" title={new Date(post.created_at).toLocaleString('ru-RU')}>
                   {formatPostDate(post.created_at)}
                 </span>
                 {(post.parent_id && parentPost) && (
@@ -223,7 +221,6 @@ const PostComponent = ({
                       title="Ссылка на сообщение"
                     >
                       #{getGlobalId(post.id)}
-                      <CopyPostLinkIcon topicId={topicId} postId={post.id} />
                     </span>
                     <span>Ответ на{' '}</span>
                     <span className="relative inline-block">
@@ -302,7 +299,6 @@ const PostComponent = ({
                     title="Ссылка на сообщение"
                   >
                     #{getGlobalId(post.id)}
-                    <CopyPostLinkIcon topicId={topicId} postId={post.id} />
                   </span>
                 )}
               </div>
@@ -1212,15 +1208,15 @@ const Topic = () => {
 
       <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-4 sm:p-6 mb-4 sm:mb-6 relative">
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3">
-          <div className="flex flex-wrap items-center gap-2 sm:gap-3 min-w-0">
+          <div className="flex flex-wrap items-baseline gap-2 sm:gap-3 min-w-0">
             {isEditingTopic ? (
-              <span className="text-blue-600 font-mono text-sm sm:text-lg">
+              <span className="text-blue-600 font-mono text-xl sm:text-3xl">
                 #{globalIdMap.get(`topic-${topic.id}`) || 0}
               </span>
             ) : (
               <>
                 <h1 className="text-xl sm:text-3xl font-bold break-words">{topic.title}</h1>
-                <span className="text-blue-600 font-mono text-sm sm:text-lg cursor-pointer hover:underline flex-shrink-0"
+                <span className="text-blue-600 font-mono text-xl sm:text-3xl cursor-pointer hover:underline flex-shrink-0"
                       title="Ссылка на тему">
                   #{globalIdMap.get(`topic-${topic.id}`) || 0}
                 </span>

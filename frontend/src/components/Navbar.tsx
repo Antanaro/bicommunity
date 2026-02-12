@@ -28,17 +28,24 @@ const NavbarAvatar = ({ avatarUrl, username }: { avatarUrl?: string | null; user
   );
 };
 
-const TITLES = ['AI Vibe Forum', 'BI Vibe Forum'] as const;
+const TITLES = ['AI Vibe Forum', 'BI Vibe Forum', 'AB Vibe Forum'] as const;
+
+// BI 60%, AI 30%, AB 10%
+const getInitialTitleIndex = () => {
+  const r = Math.random();
+  if (r < 0.6) return 1;   // BI 60%
+  if (r < 0.9) return 0;  // AI 30%
+  return 2;               // AB 10%
+};
 
 const Navbar = () => {
   const { user, logout } = useAuth();
-  const [titleIndex, setTitleIndex] = useState(() =>
-    Math.floor(Math.random() * TITLES.length)
-  );
+  const [titleIndex, setTitleIndex] = useState(getInitialTitleIndex);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const currentTitle = TITLES[titleIndex];
   const isAi = currentTitle === 'AI Vibe Forum';
+  const isAb = currentTitle === 'AB Vibe Forum';
 
   // Закрывать меню при навигации и клике снаружи
   useEffect(() => {
@@ -56,7 +63,7 @@ const Navbar = () => {
           <button
             type="button"
             onClick={() => setTitleIndex((i) => (i + 1) % TITLES.length)}
-            className={`text-base sm:text-xl font-bold cursor-pointer transition-colors bg-transparent border-0 p-0 min-w-0 truncate max-w-[50vw] sm:max-w-none ${isAi ? 'text-red-500' : 'text-blue-600'}`}
+            className={`text-base sm:text-xl font-bold cursor-pointer transition-colors bg-transparent border-0 p-0 min-w-0 truncate max-w-[50vw] sm:max-w-none ${isAb ? 'text-green-600' : isAi ? 'text-red-500' : 'text-blue-600'}`}
           >
             {currentTitle}
           </button>
