@@ -308,7 +308,7 @@ const PostComponent = memo(({
                   <>
                     <button
                       onClick={() => onStartEdit(post.id)}
-                      className="px-2 py-1.5 sm:py-1 rounded border border-blue-300 bg-blue-50 text-blue-700 hover:bg-blue-100 transition text-xs min-h-[36px] sm:min-h-0"
+                      className="px-2 py-1.5 sm:py-1 rounded border border-blue-300 dark:border-blue-600 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition text-xs min-h-[36px] sm:min-h-0"
                       title="Редактировать сообщение"
                     >
                       ✏️
@@ -319,7 +319,7 @@ const PostComponent = memo(({
                           onDelete(post.id);
                         }
                       }}
-                      className="px-2 py-1.5 sm:py-1 rounded border border-red-300 bg-white text-red-600 hover:bg-red-50 transition text-xs min-h-[36px] sm:min-h-0"
+                      className="px-2 py-1.5 sm:py-1 rounded border border-red-300 dark:border-red-600 bg-white dark:bg-gray-700 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 transition text-xs min-h-[36px] sm:min-h-0"
                       title="Удалить сообщение"
                     >
                       🗑️
@@ -328,7 +328,7 @@ const PostComponent = memo(({
                 )}
                 <button
                   onClick={handleReplyClick}
-                  className="px-2 py-1.5 sm:py-1 rounded border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 transition text-xs min-h-[36px] sm:min-h-0"
+                  className="px-2 py-1.5 sm:py-1 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition text-xs min-h-[36px] sm:min-h-0"
                 >
                   Ответить
                 </button>
@@ -337,7 +337,7 @@ const PostComponent = memo(({
                   className={`px-2 py-1.5 sm:py-1 rounded border transition flex items-center gap-1 text-xs min-h-[36px] sm:min-h-0 ${
                     userReaction === 1
                       ? 'bg-green-500 border-green-500 text-white'
-                      : 'border-gray-300 bg-white text-gray-700 hover:bg-green-50'
+                      : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-green-50 dark:hover:bg-green-900/30'
                   }`}
                 >
                   👍 {post.upvote_count || 0}
@@ -347,7 +347,7 @@ const PostComponent = memo(({
                   className={`px-2 py-1.5 sm:py-1 rounded border transition flex items-center gap-1 text-xs min-h-[36px] sm:min-h-0 ${
                     userReaction === -1
                       ? 'bg-red-500 border-red-500 text-white'
-                      : 'border-gray-300 bg-white text-gray-700 hover:bg-red-50'
+                      : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-red-50 dark:hover:bg-red-900/30'
                   }`}
                 >
                   👎 {post.downvote_count || 0}
@@ -361,7 +361,7 @@ const PostComponent = memo(({
                 <textarea
                   value={editContent}
                   onChange={(e) => onEditContentChange(e.target.value)}
-                  className="w-full min-h-[100px] p-2 rounded border border-slate-300 text-gray-800 text-sm resize-y focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full min-h-[100px] p-2 rounded border border-slate-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 text-sm resize-y focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-800"
                   placeholder="Текст сообщения..."
                   autoFocus
                 />
@@ -369,14 +369,14 @@ const PostComponent = memo(({
                   <button
                     type="button"
                     onClick={() => onSaveEdit(post.id, editContent)}
-                    className="px-2 py-1 rounded border border-blue-300 bg-blue-50 text-blue-700 hover:bg-blue-100 transition text-xs"
+                    className="px-2 py-1 rounded border border-blue-300 dark:border-blue-600 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition text-xs"
                   >
                     Сохранить
                   </button>
                   <button
                     type="button"
                     onClick={onCancelEdit}
-                    className="px-2 py-1 rounded border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 transition text-xs"
+                    className="px-2 py-1 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition text-xs"
                   >
                     Отмена
                   </button>
@@ -397,7 +397,7 @@ const PostComponent = memo(({
                       key={imgIndex}
                       src={fullUrl}
                       alt={`Image ${imgIndex + 1}`}
-                      className={imagesArray.length > 1 ? 'w-full h-auto rounded border border-gray-200 cursor-pointer hover:opacity-90' : 'max-w-[160px] h-auto rounded border border-gray-200 cursor-pointer hover:opacity-90'}
+                      className={imagesArray.length > 1 ? 'w-full h-auto rounded border border-gray-200 dark:border-gray-600 cursor-pointer hover:opacity-90' : 'max-w-[160px] h-auto rounded border border-gray-200 dark:border-gray-600 cursor-pointer hover:opacity-90'}
                       onClick={() => window.open(fullUrl, '_blank')}
                     />
                   );
@@ -412,7 +412,7 @@ const PostComponent = memo(({
                 <>
                   <button
                     onClick={() => onStartEdit(post.id)}
-                    className="px-2 py-1.5 rounded border border-blue-300 bg-blue-50 text-blue-700 text-xs min-h-[36px]"
+                    className="px-2 py-1.5 rounded border border-blue-300 dark:border-blue-600 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-xs min-h-[36px]"
                   >
                     ✏️ Редакт.
                   </button>
@@ -422,24 +422,24 @@ const PostComponent = memo(({
                       onDelete(post.id);
                     }
                   }}
-                    className="px-2 py-1.5 rounded border border-red-300 text-red-600 text-xs min-h-[36px]"
+                    className="px-2 py-1.5 rounded border border-red-300 dark:border-red-600 bg-white dark:bg-gray-700 text-red-600 dark:text-red-400 text-xs min-h-[36px]"
                   >
                     🗑️
                   </button>
                 </>
               )}
-              <button onClick={handleReplyClick} className="px-2 py-1.5 rounded border border-gray-300 text-xs min-h-[36px]">
+              <button onClick={handleReplyClick} className="px-2 py-1.5 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 text-xs min-h-[36px]">
                 Ответить
               </button>
               <button
                 onClick={() => onReact(post.id, 1)}
-                className={`px-2 py-1.5 rounded border text-xs min-h-[36px] ${userReaction === 1 ? 'bg-green-500 text-white border-green-500' : 'border-gray-300'}`}
+                className={`px-2 py-1.5 rounded border text-xs min-h-[36px] ${userReaction === 1 ? 'bg-green-500 text-white border-green-500' : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200'}`}
               >
                 👍 {post.upvote_count || 0}
               </button>
               <button
                 onClick={() => onReact(post.id, -1)}
-                className={`px-2 py-1.5 rounded border text-xs min-h-[36px] ${userReaction === -1 ? 'bg-red-500 text-white border-red-500' : 'border-gray-300'}`}
+                className={`px-2 py-1.5 rounded border text-xs min-h-[36px] ${userReaction === -1 ? 'bg-red-500 text-white border-red-500' : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200'}`}
               >
                 👎 {post.downvote_count || 0}
               </button>

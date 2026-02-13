@@ -188,7 +188,7 @@ const Category = () => {
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <div className="text-gray-600">Загрузка...</div>
+        <div className="text-gray-600 dark:text-gray-400">Загрузка...</div>
       </div>
     );
   }
@@ -202,14 +202,14 @@ const Category = () => {
           canonical={`/category/${id}`}
         />
       )}
-      <Link to="/categories" className="text-blue-600 hover:underline mb-4 inline-block py-2 min-h-[44px] flex items-center">
+      <Link to="/categories" className="text-blue-600 dark:text-blue-400 hover:underline mb-4 inline-block py-2 min-h-[44px] flex items-center">
         ← Назад к категориям
       </Link>
       {category && (
         <div className="mb-4 sm:mb-6">
-          <h1 className="text-xl sm:text-3xl font-bold mb-2">{category.name}</h1>
+          <h1 className="text-xl sm:text-3xl font-bold mb-2 text-gray-900 dark:text-gray-100">{category.name}</h1>
           {category.description && (
-            <p className="text-gray-600">{category.description}</p>
+            <p className="text-gray-600 dark:text-gray-400">{category.description}</p>
           )}
         </div>
       )}
@@ -224,17 +224,17 @@ const Category = () => {
               Создать новую тему
             </button>
           ) : (
-            <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow p-6 mb-4">
-              <h3 className="text-lg font-semibold mb-4">Новая тема</h3>
+            <form onSubmit={handleSubmit} className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-4 border border-gray-200 dark:border-gray-700">
+              <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">Новая тема</h3>
               {(category?.name === 'Все темы' || id === 'all-topics') && (
                 <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Категория *
                   </label>
                   <select
                     value={formData.category_id}
                     onChange={(e) => setFormData({ ...formData, category_id: e.target.value })}
-                    className="w-full border rounded px-4 py-2"
+                    className="w-full border border-gray-300 dark:border-gray-600 rounded px-4 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                     required
                   >
                     <option value="">Выберите категорию</option>
@@ -251,18 +251,18 @@ const Category = () => {
                 placeholder="Название темы"
                 value={formData.title}
                 onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                className="w-full border rounded px-4 py-2 mb-4"
+                className="w-full border border-gray-300 dark:border-gray-600 rounded px-4 py-2 mb-4 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                 required
               />
               <textarea
                 placeholder="Содержание темы"
                 value={formData.content}
                 onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-                className="w-full border rounded px-4 py-2 mb-4 h-32"
+                className="w-full border border-gray-300 dark:border-gray-600 rounded px-4 py-2 mb-4 h-32 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                 required
               />
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Изображения (до 10 шт.)
                 </label>
                 <input
@@ -270,7 +270,7 @@ const Category = () => {
                   accept="image/*"
                   multiple
                   onChange={handleImageSelect}
-                  className="w-full border rounded px-4 py-2 mb-2"
+                  className="w-full border border-gray-300 dark:border-gray-600 rounded px-4 py-2 mb-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                 />
                 {selectedImages.length > 0 && (
                   <div className="flex flex-wrap gap-2 mt-2">
@@ -308,7 +308,7 @@ const Category = () => {
                     setFormData({ title: '', content: '', category_id: '' });
                     setSelectedImages([]);
                   }}
-                  className="bg-gray-300 text-gray-700 px-4 py-2 rounded hover:bg-gray-400 transition"
+                  className="bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-200 px-4 py-2 rounded hover:bg-gray-400 dark:hover:bg-gray-500 transition"
                 >
                   Отмена
                 </button>
@@ -320,35 +320,35 @@ const Category = () => {
 
       <div className="space-y-4">
         {topics.length === 0 ? (
-          <div className="bg-white rounded-lg shadow p-6 text-center text-gray-500">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 text-center text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-700">
             {category?.name === 'Все темы' ? 'Пока нет тем на форуме.' : 'Пока нет тем в этой категории.'}
           </div>
         ) : (
           topics.map((topic) => (
             <div
               key={topic.id}
-              className="bg-white rounded-lg shadow p-3 sm:p-4 hover:shadow-lg transition relative group"
+              className="bg-white dark:bg-gray-800 rounded-lg shadow p-3 sm:p-4 hover:shadow-lg transition relative group border border-gray-200 dark:border-gray-700"
             >
               <Link to={`/topic/${topic.id}`} className="block pr-10">
                 <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 text-sm">
                   {/* Название — всегда первое */}
                   <div className="flex items-center gap-2 min-w-0 flex-wrap">
-                    <span className="font-semibold text-gray-800 hover:text-blue-600 transition break-words">
+                    <span className="font-semibold text-gray-800 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400 transition break-words">
                       {topic.title}
                     </span>
                     {category?.name === 'Все темы' && topic.category_name && (
-                      <span className="text-blue-600 text-xs">[{topic.category_name}]</span>
+                      <span className="text-blue-600 dark:text-blue-400 text-xs">[{topic.category_name}]</span>
                     )}
-                    <span className="bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded font-medium text-xs">
+                    <span className="bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 px-1.5 py-0.5 rounded font-medium text-xs">
                       💬 {topic.post_count || 0}
                     </span>
                   </div>
                   {/* Содержание — только на десктопе или укороченно */}
-                  <span className="text-gray-600 truncate sm:max-w-[200px] lg:max-w-xs text-xs sm:text-sm hidden sm:block">
+                  <span className="text-gray-600 dark:text-gray-400 truncate sm:max-w-[200px] lg:max-w-xs text-xs sm:text-sm hidden sm:block">
                     <LinkifyText text={topic.content.substring(0, 60) + (topic.content.length > 60 ? '...' : '')} />
                   </span>
                   {/* Мета: автор, даты — в одну строку на мобильном */}
-                  <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-gray-500">
+                  <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-gray-500 dark:text-gray-400">
                     <span>{topic.author_name}</span>
                     <span>•</span>
                     <span>
