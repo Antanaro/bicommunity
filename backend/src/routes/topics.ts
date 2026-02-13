@@ -139,14 +139,22 @@ router.get('/', async (req: Request, res: Response) => {
 router.get('/count', async (req: Request, res: Response) => {
   try {
     const categoryId = req.query.category_id;
-    let query = 'SELECT COUNT(*)::INTEGER as count FROM topics';
-    const params: any[] = [];
-    if (categoryId) {
-      query += ' WHERE category_id = $1';
-      params.push(categoryId);
-    }
-    const result = await pool.query(query, params);
-    res.json({ count: result.rows[0].count });
+    const topicsResult = await pool.query(
+      categoryId
+        ? 'SELECT COUNT(*)::INTEGER as count FROM topics WHERE category_id = $1'
+        : 'SELECT COUNT(*)::INTEGER as count FROM topics',
+      categoryId ? [categoryId] : []
+    );
+    const postsResult = await pool.query(
+      categoryId
+        ? 'SELECT COUNT(p.id)::INTEGER as count FROM posts p JOIN topics t ON p.topic_id = t.id WHERE t.category_id = $1'
+        : 'SELECT COUNT(*)::INTEGER as count FROM posts',
+      categoryId ? [categoryId] : []
+    );
+    res.json({
+      count: topicsResult.rows[0].count,
+      posts_count: postsResult.rows[0].count,
+    });
   } catch (error) {
     console.error('Get topics count error:', error);
     res.status(500).json({ error: 'Server error' });

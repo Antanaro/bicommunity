@@ -9,7 +9,14 @@ const router = express.Router();
 router.get('/', async (req: Request, res: Response) => {
   try {
     const result = await pool.query(
-      'SELECT c.*, COUNT(t.id) as topic_count FROM categories c LEFT JOIN topics t ON c.id = t.category_id GROUP BY c.id ORDER BY c.created_at DESC'
+      `SELECT c.*, 
+        COUNT(DISTINCT t.id) as topic_count, 
+        COUNT(p.id)::INTEGER as post_count 
+      FROM categories c 
+      LEFT JOIN topics t ON c.id = t.category_id 
+      LEFT JOIN posts p ON t.id = p.topic_id 
+      GROUP BY c.id 
+      ORDER BY c.created_at DESC`
     );
     res.json(result.rows);
   } catch (error) {

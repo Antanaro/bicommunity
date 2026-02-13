@@ -11,6 +11,7 @@ interface Category {
   name: string;
   description: string;
   topic_count: string;
+  post_count?: number;
   created_at: string;
 }
 
@@ -90,8 +91,9 @@ const CategoriesList = () => {
 
       if (allTopicsCategory) {
         try {
-          const countResponse = await api.get<{ count: number }>('/topics/count');
+          const countResponse = await api.get<{ count: number; posts_count: number }>('/topics/count');
           allTopicsCategory.topic_count = String(countResponse.data.count);
+          allTopicsCategory.post_count = countResponse.data.posts_count ?? 0;
         } catch (err) {
           console.error('Error fetching topics count:', err);
         }
@@ -99,12 +101,13 @@ const CategoriesList = () => {
         setCategories([allTopicsCategory, ...categoriesData]);
       } else {
         try {
-          const countResponse = await api.get<{ count: number }>('/topics/count');
+          const countResponse = await api.get<{ count: number; posts_count: number }>('/topics/count');
           const virtual = {
             id: 'all-topics',
             name: 'Все темы',
             description: 'Все темы форума',
             topic_count: String(countResponse.data.count),
+            post_count: countResponse.data.posts_count ?? 0,
             created_at: new Date().toISOString(),
           };
           setCategories([virtual, ...categoriesData]);
@@ -372,7 +375,13 @@ const CategoriesList = () => {
                 {category.description && (
                   <p className="text-gray-600 dark:text-gray-400 mb-3">{category.description}</p>
                 )}
-                <div className="text-sm text-gray-500 dark:text-gray-400">Тем: {category.topic_count || 0}</div>
+                <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+                  <span>Тем: {category.topic_count || 0}</span>
+                  <span>•</span>
+                  <span className="bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 px-1.5 py-0.5 rounded font-medium">
+                    💬 {Number(category.post_count) || 0}
+                  </span>
+                </div>
               </Link>
               {isAdmin && category.name !== 'Все темы' && (
                 <button
