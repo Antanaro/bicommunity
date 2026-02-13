@@ -267,18 +267,18 @@ const PostComponent = memo(({
                           <div className="flex items-center gap-2 mb-2">
                             <Avatar avatarUrl={tooltipPost.author_avatar} username={tooltipPost.author_name} size="sm" />
                             <div>
-                              <span className="font-semibold text-sm">{tooltipPost.author_name}</span>
-                              <div className="text-xs text-gray-500">
+                              <span className="font-semibold text-sm text-gray-900 dark:text-gray-100">{tooltipPost.author_name}</span>
+                              <div className="text-xs text-gray-500 dark:text-gray-400">
                                 {formatPostDate(tooltipPost.created_at)} #{getGlobalIdForPost(tooltipPost.id)}
                               </div>
                             </div>
                           </div>
-                          <p className="text-sm whitespace-pre-wrap max-h-[60vh] overflow-y-auto">
+                          <p className="text-sm whitespace-pre-wrap max-h-[60vh] overflow-y-auto text-gray-800 dark:text-gray-200">
                             <LinkifyText text={tooltipPost.content} />
                           </p>
                           <button
                             onClick={closeTooltip}
-                            className="mt-2 text-xs text-blue-600 hover:underline"
+                            className="mt-2 text-xs text-blue-600 dark:text-blue-400 hover:underline"
                           >
                             Закрыть
                           </button>

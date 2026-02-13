@@ -258,14 +258,14 @@ const PostComponent = ({
                               >
                                 <Avatar avatarUrl={tooltipPost.author_avatar} username={tooltipPost.author_name} size="sm" />
                                 <div>
-                                  <span className="font-semibold text-sm">{tooltipPost.author_name}</span>
+                                  <span className="font-semibold text-sm text-gray-900 dark:text-gray-100">{tooltipPost.author_name}</span>
                                   <div className="text-xs text-gray-500 dark:text-gray-400">
                                     {formatPostDate(tooltipPost.created_at)} #{getGlobalId(tooltipPost.id)}
                                   </div>
                                 </div>
                               </Link>
                             </div>
-                            <p className="text-sm whitespace-pre-wrap max-h-[60vh] overflow-y-auto">
+                            <p className="text-sm whitespace-pre-wrap max-h-[60vh] overflow-y-auto text-gray-800 dark:text-gray-200">
                               <LinkifyText text={tooltipPost.content} />
                             </p>
                             {tooltipPost.images && tooltipPost.images.length > 0 && (
@@ -273,13 +273,13 @@ const PostComponent = ({
                                 <img
                                   src={tooltipPost.images[0].startsWith('http') ? tooltipPost.images[0] : (import.meta.env.VITE_API_URL || '') + tooltipPost.images[0]}
                                   alt="Preview"
-                                  className="w-20 h-20 object-cover rounded border"
+                                  className="w-20 h-20 object-cover rounded border border-gray-200 dark:border-gray-600"
                                 />
                               </div>
                             )}
                             <button
                               onClick={closeTooltip}
-                              className="mt-2 text-xs text-blue-600 hover:underline"
+                              className="mt-2 text-xs text-blue-600 dark:text-blue-400 hover:underline"
                             >
                               Закрыть
                             </button>

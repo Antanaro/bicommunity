@@ -82,6 +82,12 @@ code {
   /* box-shadow вместо filter — filter создаёт GPU-слой и провоцирует исчезновение курсора при наведении на Mac */
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   transition: box-shadow 0.3s ease;
+  /* Фон окружения: в светлой теме — серый как страница (gray-50), в тёмной — тёмно-серый */
+  background-color: #f9fafb;
+  border-radius: 0.5rem;
+}
+.dark .pie-chart-container {
+  background-color: #1f2937;
 }
 
 .pie-chart {
