@@ -6,9 +6,8 @@ html {
   overflow-x: hidden;
 }
 
-html.dark {
-  color-scheme: dark;
-}
+/* color-scheme: dark отключён — на macOS в разных браузерах приводит к исчезновению курсора
+   при переключении темы. Контент остаётся тёмным через Tailwind dark:. */
 
 body {
   margin: 0;
