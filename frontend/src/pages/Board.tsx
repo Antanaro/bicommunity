@@ -63,7 +63,7 @@ const Avatar = memo(({
   const fullUrl = getFullUrl(avatarUrl);
   
   return (
-    <div className={`${sizeClasses[size]} rounded-full bg-gray-200 flex items-center justify-center overflow-hidden flex-shrink-0`}>
+    <div className={`${sizeClasses[size]} rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center overflow-hidden flex-shrink-0`}>
       {fullUrl ? (
         <img
           src={fullUrl}
@@ -71,7 +71,7 @@ const Avatar = memo(({
           className="w-full h-full object-cover"
         />
       ) : (
-        <span className="text-gray-500 font-medium">
+        <span className="text-gray-500 dark:text-gray-300 font-medium">
           {username.charAt(0).toUpperCase()}
         </span>
       )}
@@ -178,21 +178,21 @@ const PostComponent = memo(({
   }, []);
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden mb-2">
+    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden mb-2">
       <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 p-2 sm:p-3">
         {/* Верхняя строка на мобильном: аватар + имя + дата + #id */}
-        <div className="flex sm:hidden items-center gap-2 pb-2 border-b border-gray-100">
+        <div className="flex sm:hidden items-center gap-2 pb-2 border-b border-gray-100 dark:border-gray-700">
           <Link to={`/users/${post.author_id}`} className="flex items-center gap-2 flex-shrink-0 min-w-0">
             <Avatar avatarUrl={post.author_avatar} username={post.author_name} size="sm" />
-            <span className="font-semibold text-gray-800 text-sm truncate hover:text-blue-600">
+            <span className="font-semibold text-gray-800 dark:text-gray-200 text-sm truncate hover:text-blue-600 dark:hover:text-blue-400">
               {post.author_name}
             </span>
           </Link>
           <div className="flex items-baseline gap-1.5 flex-shrink-0 ml-auto">
-            <span className="text-xs text-gray-500">{formatPostDate(post.created_at)}</span>
+            <span className="text-xs text-gray-500 dark:text-gray-400">{formatPostDate(post.created_at)}</span>
             <span
               id={`post-${post.id}`}
-              className="text-blue-600 font-mono text-xs cursor-pointer hover:underline inline-flex items-center gap-0.5"
+              className="text-blue-600 dark:text-blue-400 font-mono text-xs cursor-pointer hover:underline inline-flex items-center gap-0.5"
               onClick={(e) => {
                 e.preventDefault();
                 document.getElementById(`post-${post.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -208,7 +208,7 @@ const PostComponent = memo(({
             <Avatar avatarUrl={post.author_avatar} username={post.author_name} size="xl" />
             <div className="mt-1.5 w-full">
               <span
-                className="font-semibold text-gray-800 text-sm block truncate hover:text-blue-600 transition"
+                className="font-semibold text-gray-800 dark:text-gray-200 text-sm block truncate hover:text-blue-600 dark:hover:text-blue-400 transition"
                 title={post.author_name}
               >
                 {post.author_name}
@@ -220,8 +220,8 @@ const PostComponent = memo(({
         {/* Центр: верхняя строка (десктоп) + кнопки (мобильные — под контентом); ниже — сообщение */}
         <div className="flex-1 min-w-0 flex flex-col">
           <div className="hidden sm:flex items-center justify-between gap-2 mb-1.5">
-            <div className="text-xs text-gray-600 flex items-baseline gap-2 min-w-0">
-              <span className="text-gray-500 flex-shrink-0 text-xs" title={new Date(post.created_at).toLocaleString('ru-RU')}>
+            <div className="text-xs text-gray-600 dark:text-gray-400 flex items-baseline gap-2 min-w-0">
+              <span className="text-gray-500 dark:text-gray-400 flex-shrink-0 text-xs" title={new Date(post.created_at).toLocaleString('ru-RU')}>
                 {formatPostDate(post.created_at)}
               </span>
               {post.parent_id && (
@@ -242,7 +242,7 @@ const PostComponent = memo(({
                     <button
                       ref={anchorRef}
                       onClick={(e) => handleIdClick(e, post.parent_id!)}
-                      className="text-blue-600 hover:underline font-mono"
+                      className="text-blue-600 dark:text-blue-400 hover:underline font-mono"
                       onMouseEnter={openTooltipOnHover}
                       onMouseLeave={scheduleClose}
                     >
@@ -251,7 +251,7 @@ const PostComponent = memo(({
                     {showTooltip && tooltipPost && tooltipPost.id === post.parent_id && tooltipAnchorRect &&
                       createPortal(
                         <div
-                          className="bg-white border border-gray-300 rounded-lg shadow-xl p-3"
+                          className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-xl p-3"
                           style={{
                             position: 'fixed',
                             left: tooltipAnchorRect.left,
@@ -291,7 +291,7 @@ const PostComponent = memo(({
               {!post.parent_id && (
                 <span
                   id={`post-${post.id}`}
-                  className="text-blue-600 font-mono text-xs cursor-pointer hover:underline inline-flex items-center gap-0.5"
+                  className="text-blue-600 dark:text-blue-400 font-mono text-xs cursor-pointer hover:underline inline-flex items-center gap-0.5"
                   onClick={(e) => {
                     e.preventDefault();
                     document.getElementById(`post-${post.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -355,7 +355,7 @@ const PostComponent = memo(({
               </div>
             )}
           </div>
-          <div className="flex-1 rounded-lg bg-slate-50 border border-slate-200 p-2 sm:p-3">
+          <div className="flex-1 rounded-lg bg-slate-50 dark:bg-gray-700/50 border border-slate-200 dark:border-gray-600 p-2 sm:p-3">
             {editingPostId === post.id ? (
               <div className="space-y-2">
                 <textarea
@@ -383,7 +383,7 @@ const PostComponent = memo(({
                 </div>
               </div>
             ) : (
-              <div className="prose prose-slate max-w-none text-sm text-gray-800">
+              <div className="prose prose-slate dark:prose-invert max-w-none text-sm text-gray-800 dark:text-gray-200">
                 <MarkdownRenderer content={post.content} />
               </div>
             )}
@@ -986,7 +986,7 @@ const Board = () => {
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <div className="text-gray-600">Загрузка...</div>
+        <div className="text-gray-600 dark:text-gray-400">Загрузка...</div>
       </div>
     );
   }
@@ -1033,10 +1033,10 @@ const Board = () => {
       </div>
 
       {user && showTopicForm && (
-        <form onSubmit={handleCreateTopic} className="bg-white rounded-lg shadow p-4 sm:p-6 mb-6">
-          <h3 className="text-lg font-semibold mb-4">Новая тема</h3>
+        <form onSubmit={handleCreateTopic} className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 sm:p-6 mb-6 border border-gray-200 dark:border-gray-700">
+          <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">Новая тема</h3>
           <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Категория *
             </label>
             <select
@@ -1069,7 +1069,7 @@ const Board = () => {
             required
           />
           <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Изображения (до 10 шт.)
             </label>
             <input
@@ -1124,7 +1124,7 @@ const Board = () => {
       )}
 
       {topics.length === 0 ? (
-        <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6 text-center text-gray-500">
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm p-6 text-center text-gray-500 dark:text-gray-400">
           Пока нет тем на форуме.
         </div>
       ) : (
@@ -1138,7 +1138,7 @@ const Board = () => {
               const topicGlobalId = getGlobalId(topic.id, null, true);
               
               return (
-                <div key={topic.id} className="bg-white rounded-lg shadow p-3 sm:p-6">
+                <div key={topic.id} className="bg-white dark:bg-gray-800 rounded-lg shadow p-3 sm:p-6 border border-gray-200 dark:border-gray-700">
                   {/* Topic Header */}
                   <div className="mb-4 pb-4 border-b">
                     <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
@@ -1146,11 +1146,11 @@ const Board = () => {
                         <Avatar avatarUrl={topic.author_avatar} username={topic.author_name} size="md" />
                         <div className="min-w-0 flex-1">
                           <h2 className="text-base sm:text-xl font-bold break-words">
-                            <Link to={`/topic/${topic.id}`} className="hover:text-blue-600">
+                            <Link to={`/topic/${topic.id}`} className="hover:text-blue-600 dark:hover:text-blue-400">
                               {topic.title}
                             </Link>
                           </h2>
-                          <div className="text-xs sm:text-sm text-gray-500 flex flex-wrap gap-x-1 gap-y-0.5 mt-0.5">
+                          <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 flex flex-wrap gap-x-1 gap-y-0.5 mt-0.5">
                             <span className="font-medium">{topic.author_name}</span>
                             <span className="hidden sm:inline">•</span>
                             <span>{topic.category_name}</span>
@@ -1197,7 +1197,7 @@ const Board = () => {
                     <div className="mb-4">
                       <button
                         onClick={() => toggleTopicExpansion(topic.id)}
-                        className="text-blue-600 hover:underline text-sm"
+                        className="text-blue-600 dark:text-blue-400 hover:underline text-sm"
                       >
                         {isExpanded 
                           ? `Свернуть (показано ${allPosts.length} из ${allPosts.length})`
@@ -1237,7 +1237,7 @@ const Board = () => {
                     <form
                       data-topic-id={topic.id}
                       onSubmit={handleSubmitPost}
-                      className="mt-4 bg-gray-50 rounded-lg p-3 sm:p-4 border"
+                      className="mt-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 sm:p-4 border border-gray-200 dark:border-gray-600"
                     >
                       <div className="flex justify-between items-center mb-2">
                         <h3 className="text-sm font-semibold">
@@ -1325,7 +1325,7 @@ const Board = () => {
               <button
                 onClick={() => setCurrentPage(1)}
                 disabled={currentPage === 1}
-                className="px-3 py-2.5 min-h-[44px] sm:min-h-0 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                className="px-3 py-2.5 min-h-[44px] sm:min-h-0 bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed text-sm text-gray-900 dark:text-gray-100"
                 title="Первая страница"
               >
                 ««
@@ -1333,24 +1333,24 @@ const Board = () => {
               <button
                 onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                 disabled={currentPage === 1}
-                className="px-4 py-2.5 min-h-[44px] sm:min-h-0 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                className="px-4 py-2.5 min-h-[44px] sm:min-h-0 bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed text-sm text-gray-900 dark:text-gray-100"
               >
                 Назад
               </button>
-              <span className="text-gray-600 text-sm px-2">
+              <span className="text-gray-600 dark:text-gray-400 text-sm px-2">
                 {currentPage} / {totalPages}
               </span>
               <button
                 onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                 disabled={currentPage === totalPages}
-                className="px-4 py-2.5 min-h-[44px] sm:min-h-0 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                className="px-4 py-2.5 min-h-[44px] sm:min-h-0 bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed text-sm text-gray-900 dark:text-gray-100"
               >
                 Вперед
               </button>
               <button
                 onClick={() => setCurrentPage(totalPages)}
                 disabled={currentPage === totalPages}
-                className="px-3 py-2.5 min-h-[44px] sm:min-h-0 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                className="px-3 py-2.5 min-h-[44px] sm:min-h-0 bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed text-sm text-gray-900 dark:text-gray-100"
                 title="Последняя страница"
               >
                 »»

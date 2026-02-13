@@ -40,6 +40,14 @@
       }
     }
     </script>
+    <script>
+      (function(){
+        var s=localStorage.getItem('bicommunity-theme');
+        var d=window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches;
+        var t=(s==='dark'||s==='light')?s:(d?'dark':'light');
+        document.documentElement.classList.add(t);
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
