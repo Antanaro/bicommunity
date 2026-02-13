@@ -55,24 +55,26 @@ code {
   -webkit-user-select: none;
   -moz-user-select: none;
   -ms-user-select: none;
+  /* box-shadow вместо filter — filter создаёт GPU-слой и провоцирует исчезновение курсора при наведении на Mac */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: box-shadow 0.3s ease;
 }
 
 .pie-chart {
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
-  transition: filter 0.3s ease, transform 0.3s ease;
   overflow: visible !important;
 }
 
 .pie-chart-button:hover .pie-chart-container {
-  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.15));
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
+/* transform: scale убран — filter+transform провоцируют баг с курсором на Mac при наведении */
 .pie-chart-button:hover .pie-chart-container svg {
-  transform: scale(1.05);
+  opacity: 0.95;
 }
 
 .pie-chart-button:active .pie-chart-container svg {
-  transform: scale(0.95);
+  opacity: 0.9;
 }
 
 /* Анимация для сегментов pie-chart */

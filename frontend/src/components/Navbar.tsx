@@ -87,7 +87,7 @@ const Navbar = () => {
               type="button"
               onClick={toggleTheme}
               aria-label={theme === 'light' ? 'Включить тёмную тему' : 'Включить светлую тему'}
-              className="p-2 rounded-lg text-amber-500 hover:bg-amber-50 dark:text-amber-400 dark:hover:bg-amber-900/30 transition-all duration-200 hover:scale-110 active:scale-95"
+              className="p-2 rounded-lg text-amber-500 hover:bg-amber-50 dark:text-amber-400 dark:hover:bg-amber-900/30 transition-colors duration-200"
             >
               {theme === 'light' ? <MoonIcon /> : <SunIcon />}
             </button>
