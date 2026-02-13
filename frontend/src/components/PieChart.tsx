@@ -747,37 +747,37 @@ const PieChart: React.FC<PieChartProps> = ({
           ))}
         </svg>
       ) : (
-        // Pie chart режим (с возможностью разлета)
-        <>
-          {segments.map((segment) => (
-            <svg
-              key={segment.index}
-              width={size}
-              height={size}
-              viewBox={`0 0 ${VIEWBOX_SIZE} ${VIEWBOX_SIZE}`}
-              preserveAspectRatio="xMidYMid meet"
-              className={className}
-              style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                transform: `translate(${segment.translateX}px, ${segment.translateY}px)`,
-                transformOrigin: 'center center',
-                transition: isExploded 
-                  ? 'transform 1.2s cubic-bezier(0.34, 1.56, 0.64, 1)' 
-                  : 'transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1)',
-                pointerEvents: 'none',
-                overflow: 'visible',
-              }}
-            >
-              <path
-                d={segment.pathData}
-                fill={segment.color}
-                className={`pie-segment pie-segment-${segment.index}`}
-              />
-            </svg>
-          ))}
-        </>
+        // Pie chart: один SVG с несколькими path — иначе в тёмной теме сегменты перекрывают друг друга
+        <svg
+          width={size}
+          height={size}
+          viewBox={`0 0 ${VIEWBOX_SIZE} ${VIEWBOX_SIZE}`}
+          preserveAspectRatio="xMidYMid meet"
+          className={className}
+          style={{ overflow: 'visible' }}
+        >
+          {segments.map((segment) => {
+            const tx = segment.translateX * VIEWBOX_SIZE / size;
+            const ty = segment.translateY * VIEWBOX_SIZE / size;
+            return (
+              <g
+                key={segment.index}
+                transform={`translate(${tx}, ${ty})`}
+                style={{
+                  transition: isExploded 
+                    ? 'transform 1.2s cubic-bezier(0.34, 1.56, 0.64, 1)' 
+                    : 'transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                }}
+              >
+                <path
+                  d={segment.pathData}
+                  fill={segment.color}
+                  className={`pie-segment pie-segment-${segment.index}`}
+                />
+              </g>
+            );
+          })}
+        </svg>
       )}
     </div>
   );
