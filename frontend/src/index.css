@@ -9,6 +9,19 @@ html {
 /* color-scheme: dark отключён — на macOS в разных браузерах приводит к исчезновению курсора
    при переключении темы. Контент остаётся тёмным через Tailwind dark:. */
 
+/* Workaround: на Mac курсор pointer может исчезать при наведении на кликабельные элементы.
+   Кастомный SVG-курсор остаётся видимым на любом фоне. */
+@layer base {
+  a:not([class*="cursor-not-allowed"]),
+  button:not(:disabled):not([class*="cursor-not-allowed"]),
+  [role="button"]:not([class*="cursor-not-allowed"]),
+  [class*="cursor-pointer"]:not([class*="cursor-not-allowed"]),
+  input[type="submit"]:not(:disabled),
+  input[type="button"]:not(:disabled) {
+    cursor: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3e%3cpath fill='%23111' stroke='%23fff' stroke-width='1' d='M8 2v7l1 7 2-4 2 5 1-6 2 6h2V2l-2 6-1-5-2 4-2-6H8z'/%3e%3c/svg%3e") 8 8, pointer;
+  }
+}
+
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
