@@ -9,22 +9,6 @@ html {
 /* color-scheme: dark отключён — на macOS в разных браузерах приводит к исчезновению курсора
    при переключении темы. Контент остаётся тёмным через Tailwind dark:. */
 
-/* Workaround: на Mac курсор pointer исчезает при наведении на ссылки и кликабельные элементы.
-   Оставляем cursor: default — курсор остаётся стрелкой, баг не срабатывает.
-   Кликабельность очевидна по подчёркиванию и цвету при hover. */
-@layer base {
-  a, a * {
-    cursor: default !important;
-  }
-  button:not(:disabled):not([class*="cursor-not-allowed"]),
-  [role="button"]:not([class*="cursor-not-allowed"]),
-  [class*="cursor-pointer"]:not([class*="cursor-not-allowed"]),
-  input[type="submit"]:not(:disabled),
-  input[type="button"]:not(:disabled) {
-    cursor: default !important;
-  }
-}
-
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
