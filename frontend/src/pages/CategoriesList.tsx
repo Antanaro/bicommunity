@@ -215,9 +215,9 @@ const CategoriesList = () => {
         {isAdmin && (
           <button
             onClick={() => setShowForm(!showForm)}
-            className="bg-blue-500 text-white px-4 py-2.5 rounded hover:bg-blue-600 transition text-sm w-full sm:w-auto min-h-[44px] sm:min-h-0"
+            className="px-3 py-1.5 rounded border border-blue-300 dark:border-blue-600 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition text-sm w-full sm:w-auto min-h-[44px] sm:min-h-0"
           >
-            {showForm ? '✕ Отмена' : '+ Создать категорию'}
+            {showForm ? '✕ Отмена' : '📁 Создать категорию'}
           </button>
         )}
       </div>
@@ -390,7 +390,7 @@ const CategoriesList = () => {
                     e.stopPropagation();
                     handleDeleteCategory(category.id, category.name);
                   }}
-                  className="absolute top-4 right-4 bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 transition opacity-0 group-hover:opacity-100"
+                  className="absolute top-4 right-4 px-2 py-1.5 rounded border border-red-300 dark:border-red-600 bg-white dark:bg-gray-700 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 transition text-xs opacity-80 sm:opacity-0 sm:group-hover:opacity-100 min-h-[36px] min-w-[36px]"
                   title="Удалить категорию"
                 >
                   🗑️

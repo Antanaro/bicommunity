@@ -1025,9 +1025,9 @@ const Board = () => {
         {user && (
           <button
             onClick={() => setShowTopicForm(!showTopicForm)}
-            className="bg-blue-500 text-white px-4 py-2.5 rounded hover:bg-blue-600 transition text-sm sm:text-base w-full sm:w-auto min-h-[44px] sm:min-h-0"
+            className="px-3 py-1.5 rounded border border-blue-300 dark:border-blue-600 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition text-sm sm:text-base w-full sm:w-auto min-h-[44px] sm:min-h-0"
           >
-            {showTopicForm ? '✕ Отмена' : '+ Создать тему'}
+            {showTopicForm ? '✕ Отмена' : '📝 Создать тему'}
           </button>
         )}
       </div>
