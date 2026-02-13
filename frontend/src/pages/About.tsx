@@ -55,7 +55,7 @@ const About = () => {
   if (loading) {
     return (
       <div className="max-w-3xl mx-auto">
-        <p className="text-gray-500">Загрузка...</p>
+        <p className="text-gray-500 dark:text-gray-400">Загрузка...</p>
       </div>
     );
   }
@@ -67,14 +67,14 @@ const About = () => {
         description="О форуме BI Community — площадка для обсуждения Business Intelligence, DWH, ETL и аналитики данных."
         canonical="/about"
       />
-      <h1 className="text-xl sm:text-2xl font-bold text-gray-800 mb-4 sm:mb-6">О форуме</h1>
+      <h1 className="text-xl sm:text-2xl font-bold text-gray-800 dark:text-gray-100 mb-4 sm:mb-6">О форуме</h1>
 
       {editing ? (
         <div className="space-y-4">
           <textarea
             value={editContent}
             onChange={(e) => setEditContent(e.target.value)}
-            className="w-full min-h-[300px] p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="w-full min-h-[300px] p-4 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
             placeholder="Текст в формате Markdown..."
           />
           <div className="flex gap-2">
@@ -88,7 +88,7 @@ const About = () => {
             <button
               onClick={handleCancel}
               disabled={saving}
-              className="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
+              className="px-4 py-2 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 rounded hover:bg-gray-300 dark:hover:bg-gray-500"
             >
               Отмена
             </button>
@@ -96,17 +96,17 @@ const About = () => {
         </div>
       ) : (
         <>
-          <div className="bg-white rounded-lg shadow p-4 sm:p-6">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 sm:p-6 border border-gray-200 dark:border-gray-700 prose prose-slate dark:prose-invert max-w-none">
             {content ? (
               <MarkdownRenderer content={content} />
             ) : (
-              <p className="text-gray-500">Текст ещё не добавлен.</p>
+              <p className="text-gray-500 dark:text-gray-400">Текст ещё не добавлен.</p>
             )}
           </div>
           {isAdmin && (
             <button
               onClick={() => setEditing(true)}
-              className="mt-4 px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
+              className="mt-4 px-4 py-2 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 rounded hover:bg-gray-300 dark:hover:bg-gray-500"
             >
               Редактировать
             </button>

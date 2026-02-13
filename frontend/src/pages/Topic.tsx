@@ -73,7 +73,7 @@ const Avatar = ({
   const fullUrl = getFullUrl(avatarUrl);
   
   return (
-    <div className={`${sizeClasses[size]} rounded-full bg-gray-200 flex items-center justify-center overflow-hidden flex-shrink-0`}>
+    <div className={`${sizeClasses[size]} rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center overflow-hidden flex-shrink-0`}>
       {fullUrl ? (
         <img
           src={fullUrl}
@@ -81,7 +81,7 @@ const Avatar = ({
           className="w-full h-full object-cover"
         />
       ) : (
-        <span className="text-gray-500 font-medium">
+        <span className="text-gray-500 dark:text-gray-300 font-medium">
           {username.charAt(0).toUpperCase()}
         </span>
       )}
@@ -168,22 +168,22 @@ const PostComponent = ({
   return (
     <div className={level > 0 ? 'mt-2' : ''}>
       <div
-        className={`bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden ${
-          level > 0 ? 'border-l-4 border-l-blue-400' : ''
+        className={`bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden ${
+          level > 0 ? 'border-l-4 border-l-blue-400 dark:border-l-blue-500' : ''
         }`}
       >
         <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 p-3 sm:p-4">
           {/* Мобильный: верхняя строка — аватар + имя */}
-          <div className="flex sm:hidden items-center gap-2 pb-2 border-b border-gray-100">
+          <div className="flex sm:hidden items-center gap-2 pb-2 border-b border-gray-100 dark:border-gray-700">
             <Link to={`/users/${post.author_id}`} className="flex items-center gap-2 min-w-0">
               <Avatar avatarUrl={post.author_avatar} username={post.author_name} size="sm" />
-              <span className="font-semibold text-gray-800 text-sm truncate hover:text-blue-600">
+              <span className="font-semibold text-gray-800 dark:text-gray-200 text-sm truncate hover:text-blue-600 dark:hover:text-blue-400">
                 {post.author_name}
               </span>
             </Link>
-            <span className="text-xs text-gray-500 flex-shrink-0 ml-auto inline-flex items-baseline gap-1">
+            <span className="text-xs text-gray-500 dark:text-gray-400 flex-shrink-0 ml-auto inline-flex items-baseline gap-1">
               {formatPostDate(post.created_at)}{' '}
-              <span className="text-blue-600 font-mono text-xs cursor-pointer hover:underline inline-flex items-center gap-0.5">
+              <span className="text-blue-600 dark:text-blue-400 font-mono text-xs cursor-pointer hover:underline inline-flex items-center gap-0.5">
                 #{getGlobalId(post.id)}
               </span>
             </span>
@@ -194,7 +194,7 @@ const PostComponent = ({
               <Avatar avatarUrl={post.author_avatar} username={post.author_name} size="xl" />
               <div className="mt-2 w-full">
                 <span
-                  className="font-semibold text-gray-800 text-lg block truncate hover:text-blue-600 transition"
+                  className="font-semibold text-gray-800 dark:text-gray-200 text-lg block truncate hover:text-blue-600 dark:hover:text-blue-400 transition"
                   title={post.author_name}
                 >
                   {post.author_name}
@@ -206,15 +206,15 @@ const PostComponent = ({
           {/* Центр: мета + кнопки; ниже — сообщение */}
           <div className="flex-1 min-w-0 flex flex-col">
             <div className="hidden sm:flex items-center justify-between gap-2 mb-2">
-              <div className="text-sm text-gray-600 flex items-baseline gap-2 min-w-0">
-                <span className="text-gray-500 flex-shrink-0 text-sm" title={new Date(post.created_at).toLocaleString('ru-RU')}>
+              <div className="text-sm text-gray-600 dark:text-gray-400 flex items-baseline gap-2 min-w-0">
+                <span className="text-gray-500 dark:text-gray-400 flex-shrink-0 text-sm" title={new Date(post.created_at).toLocaleString('ru-RU')}>
                   {formatPostDate(post.created_at)}
                 </span>
                 {(post.parent_id && parentPost) && (
                   <>
                     <span
                       id={`post-${post.id}`}
-                      className="text-blue-600 font-mono text-sm cursor-pointer hover:underline flex-shrink-0 inline-flex items-center gap-0.5"
+                      className="text-blue-600 dark:text-blue-400 font-mono text-sm cursor-pointer hover:underline flex-shrink-0 inline-flex items-center gap-0.5"
                       onClick={(e) => {
                         e.preventDefault();
                         document.getElementById(`post-${post.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -228,7 +228,7 @@ const PostComponent = ({
                       <button
                         ref={anchorRef}
                         onClick={(e) => handleIdClick(e, post.parent_id!)}
-                        className="text-blue-600 hover:underline font-mono"
+                        className="text-blue-600 dark:text-blue-400 hover:underline font-mono"
                         onMouseEnter={openTooltipOnHover}
                         onMouseLeave={scheduleClose}
                       >
@@ -237,7 +237,7 @@ const PostComponent = ({
                       {showTooltip && tooltipPost && tooltipPost.id === post.parent_id && tooltipAnchorRect &&
                         createPortal(
                           <div
-                            className="bg-white border border-gray-300 rounded-lg shadow-xl p-3"
+                            className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-xl p-3"
                             style={{
                               position: 'fixed',
                               left: tooltipAnchorRect.left,
@@ -253,13 +253,13 @@ const PostComponent = ({
                             <div className="flex items-center gap-2 mb-2">
                               <Link
                                 to={`/users/${tooltipPost.author_id}`}
-                                className="flex items-center gap-2 hover:text-blue-600 transition"
+                                className="flex items-center gap-2 hover:text-blue-600 dark:hover:text-blue-400 transition"
                                 onClick={(e) => e.stopPropagation()}
                               >
                                 <Avatar avatarUrl={tooltipPost.author_avatar} username={tooltipPost.author_name} size="sm" />
                                 <div>
                                   <span className="font-semibold text-sm">{tooltipPost.author_name}</span>
-                                  <div className="text-xs text-gray-500">
+                                  <div className="text-xs text-gray-500 dark:text-gray-400">
                                     {formatPostDate(tooltipPost.created_at)} #{getGlobalId(tooltipPost.id)}
                                   </div>
                                 </div>
@@ -292,7 +292,7 @@ const PostComponent = ({
                 {!post.parent_id && (
                   <span
                     id={`post-${post.id}`}
-                    className="text-blue-600 font-mono text-sm cursor-pointer hover:underline flex-shrink-0 inline-flex items-center gap-0.5"
+                    className="text-blue-600 dark:text-blue-400 font-mono text-sm cursor-pointer hover:underline flex-shrink-0 inline-flex items-center gap-0.5"
                     onClick={(e) => {
                       e.preventDefault();
                       document.getElementById(`post-${post.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -309,7 +309,7 @@ const PostComponent = ({
                     <>
                       <button
                         onClick={() => onStartEdit(post.id)}
-                        className="px-2 py-1.5 rounded border border-blue-300 bg-blue-50 text-blue-700 text-xs sm:text-sm"
+                        className="px-2 py-1.5 rounded border border-blue-300 dark:border-blue-600 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-xs sm:text-sm"
                         title="Редактировать"
                       >
                         ✏️
@@ -320,20 +320,20 @@ const PostComponent = ({
                             onDelete(post.id);
                           }
                         }}
-                        className="px-2 py-1.5 rounded border border-red-300 text-red-600 text-xs sm:text-sm"
+                        className="px-2 py-1.5 rounded border border-red-300 dark:border-red-600 text-red-600 dark:text-red-400 text-xs sm:text-sm"
                         title="Удалить"
                       >
                         🗑️
                       </button>
                     </>
                   )}
-                  <button onClick={() => onReply(post.id)} className="px-2 py-1.5 rounded border border-gray-300 text-xs sm:text-sm">
+                  <button onClick={() => onReply(post.id)} className="px-2 py-1.5 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 text-xs sm:text-sm hover:bg-gray-50 dark:hover:bg-gray-600">
                     Ответить
                   </button>
                   <button
                     onClick={() => onReact(post.id, 1)}
                     className={`px-2 py-1.5 rounded border flex items-center gap-1 text-xs sm:text-sm min-h-[36px] sm:min-h-0 ${
-                      userReaction === 1 ? 'bg-green-500 border-green-500 text-white' : 'border-gray-300'
+                      userReaction === 1 ? 'bg-green-500 border-green-500 text-white' : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200'
                     }`}
                   >
                     👍 {post.upvote_count || 0}
@@ -341,7 +341,7 @@ const PostComponent = ({
                   <button
                     onClick={() => onReact(post.id, -1)}
                     className={`px-2 py-1.5 rounded border flex items-center gap-1 text-xs sm:text-sm min-h-[36px] sm:min-h-0 ${
-                      userReaction === -1 ? 'bg-red-500 border-red-500 text-white' : 'border-gray-300'
+                      userReaction === -1 ? 'bg-red-500 border-red-500 text-white' : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200'
                     }`}
                   >
                     👎 {post.downvote_count || 0}
@@ -349,13 +349,13 @@ const PostComponent = ({
                 </div>
               )}
             </div>
-            <div className="flex-1 rounded-lg bg-slate-50 border border-slate-200 p-3 sm:p-4">
+            <div className="flex-1 rounded-lg bg-slate-50 dark:bg-gray-700/50 border border-slate-200 dark:border-gray-600 p-3 sm:p-4">
               {editingPostId === post.id ? (
                 <div className="space-y-2">
                   <textarea
                     value={editContent}
                     onChange={(e) => onEditContentChange(e.target.value)}
-                    className="w-full min-h-[120px] p-3 rounded border border-slate-300 text-gray-800 text-sm resize-y focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full min-h-[120px] p-3 rounded border border-slate-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 text-sm resize-y focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-800"
                     placeholder="Текст сообщения..."
                     autoFocus
                   />
@@ -363,21 +363,21 @@ const PostComponent = ({
                     <button
                       type="button"
                       onClick={() => onSaveEdit(post.id, editContent)}
-                      className="px-3 py-1.5 rounded border border-blue-300 bg-blue-50 text-blue-700 hover:bg-blue-100 transition text-sm"
+                      className="px-3 py-1.5 rounded border border-blue-300 dark:border-blue-600 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition text-sm"
                     >
                       Сохранить
                     </button>
                     <button
                       type="button"
                       onClick={onCancelEdit}
-                      className="px-3 py-1.5 rounded border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 transition text-sm"
+                      className="px-3 py-1.5 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition text-sm"
                     >
                       Отмена
                     </button>
                   </div>
                 </div>
               ) : (
-                <div className="prose prose-slate max-w-none text-gray-800">
+                <div className="prose prose-slate dark:prose-invert max-w-none text-gray-800 dark:text-gray-200">
                   <MarkdownRenderer content={post.content} />
                 </div>
               )}
@@ -391,7 +391,7 @@ const PostComponent = ({
                         key={imgIndex}
                         src={fullUrl}
                         alt={`Image ${imgIndex + 1}`}
-                        className={imagesArray.length > 1 ? 'w-full h-auto rounded border border-gray-200 cursor-pointer hover:opacity-90' : 'max-w-[200px] h-auto rounded border border-gray-200 cursor-pointer hover:opacity-90'}
+                        className={imagesArray.length > 1 ? 'w-full h-auto rounded border border-gray-200 dark:border-gray-600 cursor-pointer hover:opacity-90' : 'max-w-[200px] h-auto rounded border border-gray-200 dark:border-gray-600 cursor-pointer hover:opacity-90'}
                         onClick={() => window.open(fullUrl, '_blank')}
                       />
                     );
@@ -400,21 +400,21 @@ const PostComponent = ({
               )}
             </div>
             {user && (
-              <div className="flex sm:hidden flex-wrap gap-2 mt-2 pt-2 border-t border-gray-100">
+              <div className="flex sm:hidden flex-wrap gap-2 mt-2 pt-2 border-t border-gray-100 dark:border-gray-700">
                 {user.id === post.author_id && (
                   <>
-                    <button onClick={() => onStartEdit(post.id)} className="px-2 py-1.5 rounded border border-blue-300 bg-blue-50 text-blue-700 text-xs min-h-[36px]">✏️</button>
+                    <button onClick={() => onStartEdit(post.id)} className="px-2 py-1.5 rounded border border-blue-300 dark:border-blue-600 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-xs min-h-[36px]">✏️</button>
                     <button
                       onClick={() => { if (window.confirm('Удалить сообщение?')) onDelete(post.id); }}
-                      className="px-2 py-1.5 rounded border border-red-300 text-red-600 text-xs min-h-[36px]"
+                      className="px-2 py-1.5 rounded border border-red-300 dark:border-red-600 text-red-600 dark:text-red-400 text-xs min-h-[36px]"
                     >
                       🗑️
                     </button>
                   </>
                 )}
-                <button onClick={() => onReply(post.id)} className="px-2 py-1.5 rounded border border-gray-300 text-xs min-h-[36px]">Ответить</button>
-                <button onClick={() => onReact(post.id, 1)} className={`px-2 py-1.5 rounded border text-xs min-h-[36px] ${userReaction === 1 ? 'bg-green-500 text-white border-green-500' : 'border-gray-300'}`}>👍 {post.upvote_count || 0}</button>
-                <button onClick={() => onReact(post.id, -1)} className={`px-2 py-1.5 rounded border text-xs min-h-[36px] ${userReaction === -1 ? 'bg-red-500 text-white border-red-500' : 'border-gray-300'}`}>👎 {post.downvote_count || 0}</button>
+                <button onClick={() => onReply(post.id)} className="px-2 py-1.5 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 text-xs min-h-[36px]">Ответить</button>
+                <button onClick={() => onReact(post.id, 1)} className={`px-2 py-1.5 rounded border text-xs min-h-[36px] ${userReaction === 1 ? 'bg-green-500 text-white border-green-500' : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200'}`}>👍 {post.upvote_count || 0}</button>
+                <button onClick={() => onReact(post.id, -1)} className={`px-2 py-1.5 rounded border text-xs min-h-[36px] ${userReaction === -1 ? 'bg-red-500 text-white border-red-500' : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200'}`}>👎 {post.downvote_count || 0}</button>
               </div>
             )}
           </div>
@@ -1164,7 +1164,7 @@ const Topic = () => {
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <div className="text-gray-600">Загрузка...</div>
+        <div className="text-gray-600 dark:text-gray-400">Загрузка...</div>
       </div>
     );
   }
@@ -1172,15 +1172,15 @@ const Topic = () => {
   if (!topic) {
     return (
       <div className="text-center py-8">
-        <div className="text-gray-500 mb-4">
+        <div className="text-gray-500 dark:text-gray-400 mb-4">
           {error || 'Тема не найдена'}
         </div>
-        <div className="text-sm text-gray-400 mb-4">
+        <div className="text-sm text-gray-400 dark:text-gray-500 mb-4">
           ID темы: {id || 'не указан'}
         </div>
         <Link
           to="/"
-          className="text-blue-600 hover:underline"
+          className="text-blue-600 dark:text-blue-400 hover:underline"
         >
           ← Вернуться на главную
         </Link>
@@ -1211,7 +1211,7 @@ const Topic = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 py-4 px-3 sm:px-4">
+    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 py-4 px-3 sm:px-4">
       <SeoHead
         title={topic.title}
         description={topicDesc}
@@ -1222,12 +1222,12 @@ const Topic = () => {
       <button
         type="button"
         onClick={goBack}
-        className="text-blue-600 hover:underline mb-4 inline-block text-left bg-transparent border-none cursor-pointer p-2 -ml-2 min-h-[44px] flex items-center"
+        className="text-blue-600 dark:text-blue-400 hover:underline mb-4 inline-block text-left bg-transparent border-none cursor-pointer p-2 -ml-2 min-h-[44px] flex items-center"
       >
         ← Назад
       </button>
 
-      <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-4 sm:p-6 mb-4 sm:mb-6 relative">
+      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm p-4 sm:p-6 mb-4 sm:mb-6 relative">
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3">
           <div className="flex flex-wrap items-baseline gap-2 sm:gap-3 min-w-0">
             {isEditingTopic ? (
@@ -1236,7 +1236,7 @@ const Topic = () => {
               </span>
             ) : (
               <>
-                <h1 className="text-xl sm:text-3xl font-bold break-words">{topic.title}</h1>
+                <h1 className="text-xl sm:text-3xl font-bold break-words text-gray-900 dark:text-gray-100">{topic.title}</h1>
                 <span className="text-blue-600 font-mono text-xl sm:text-3xl cursor-pointer hover:underline flex-shrink-0"
                       title="Ссылка на тему">
                   #{globalIdMap.get(`topic-${topic.id}`) || 0}
@@ -1276,11 +1276,11 @@ const Topic = () => {
             )}
           </div>
         </div>
-        <div className="flex items-center gap-3 text-sm text-gray-500 mb-4">
-          <Link to={`/users/${topic.author_id}`} className="flex items-center gap-3 hover:text-blue-600 transition">
+        <div className="flex items-center gap-3 text-sm text-gray-500 dark:text-gray-400 mb-4">
+          <Link to={`/users/${topic.author_id}`} className="flex items-center gap-3 hover:text-blue-600 dark:hover:text-blue-400 transition">
             <Avatar avatarUrl={topic.author_avatar} username={topic.author_name} size="md" />
             <div>
-              <span className="font-medium text-gray-700 hover:text-blue-600">
+              <span className="font-medium text-gray-700 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400">
                 {topic.author_name}
               </span>
               <div>{new Date(topic.created_at).toLocaleString('ru-RU')}</div>
@@ -1290,23 +1290,23 @@ const Topic = () => {
         {isEditingTopic ? (
           <form onSubmit={handleSaveTopicEdit} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Название темы</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Название темы</label>
               <input
                 type="text"
                 value={editTitle}
                 onChange={(e) => setEditTitle(e.target.value)}
-                className="w-full border border-gray-300 rounded px-3 py-2 text-lg"
+                className="w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 text-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                 placeholder="Название"
                 maxLength={200}
                 required
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Содержание</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Содержание</label>
               <textarea
                 value={editContent}
                 onChange={(e) => setEditContent(e.target.value)}
-                className="w-full border border-gray-300 rounded px-3 py-2 min-h-[200px]"
+                className="w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 min-h-[200px] bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                 placeholder="Содержание темы"
                 required
               />
@@ -1322,14 +1322,14 @@ const Topic = () => {
               <button
                 type="button"
                 onClick={handleCancelTopicEdit}
-                className="bg-gray-300 text-gray-700 px-4 py-2 rounded hover:bg-gray-400 transition"
+                className="bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-200 px-4 py-2 rounded hover:bg-gray-400 dark:hover:bg-gray-500 transition"
               >
                 Отмена
               </button>
             </div>
           </form>
         ) : (
-          <div className="prose max-w-none">
+          <div className="prose prose-slate dark:prose-invert max-w-none">
             <MarkdownRenderer content={topic.content} />
             {topic.images && topic.images.length > 0 && (
               <div className={`mt-4 ${topic.images.length > 1 ? 'grid grid-cols-2 gap-0' : 'flex'}`}>
@@ -1355,11 +1355,11 @@ const Topic = () => {
       {/* Create poll modal */}
       {showCreatePollModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-3 sm:p-4" onClick={() => !creatingPoll && setShowCreatePollModal(false)}>
-          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-4 sm:p-6" onClick={(e) => e.stopPropagation()}>
-            <h3 className="text-xl font-bold mb-4">Создать голосование</h3>
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-4 sm:p-6 border border-gray-200 dark:border-gray-700" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-xl font-bold mb-4 text-gray-900 dark:text-gray-100">Создать голосование</h3>
             <form onSubmit={handleCreatePoll} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Вопрос</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Вопрос</label>
                 <input
                   type="text"
                   value={pollQuestion}
@@ -1372,9 +1372,9 @@ const Topic = () => {
               </div>
               <div>
                 <div className="flex justify-between items-center mb-1">
-                  <label className="block text-sm font-medium text-gray-700">Варианты (от 2 до 10)</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Варианты (от 2 до 10)</label>
                   {pollOptions.length < 10 && (
-                    <button type="button" onClick={addPollOption} className="text-blue-600 hover:underline text-sm">
+                    <button type="button" onClick={addPollOption} className="text-blue-600 dark:text-blue-400 hover:underline text-sm">
                       + Добавить вариант
                     </button>
                   )}
@@ -1385,7 +1385,7 @@ const Topic = () => {
                       type="text"
                       value={opt}
                       onChange={(e) => setPollOptions((prev) => prev.map((o, i) => (i === idx ? e.target.value : o)))}
-                      className="flex-1 border border-gray-300 rounded px-3 py-2"
+                      className="flex-1 border border-gray-300 dark:border-gray-600 rounded px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                       placeholder={`Вариант ${idx + 1}`}
                       maxLength={200}
                     />
@@ -1405,7 +1405,7 @@ const Topic = () => {
                   onChange={(e) => setPollMultipleChoice(e.target.checked)}
                   className="rounded border-gray-300"
                 />
-                <label htmlFor="poll-multiple" className="text-sm text-gray-700">Множественный выбор (несколько вариантов)</label>
+                <label htmlFor="poll-multiple" className="text-sm text-gray-700 dark:text-gray-300">Множественный выбор (несколько вариантов)</label>
               </div>
               <div className="flex items-center gap-2">
                 <input
@@ -1415,13 +1415,13 @@ const Topic = () => {
                   onChange={(e) => setPollAllowViewWithoutVote(e.target.checked)}
                   className="rounded border-gray-300"
                 />
-                <label htmlFor="poll-view-without-vote" className="text-sm text-gray-700">Разрешить просмотр результатов без голосования</label>
+                <label htmlFor="poll-view-without-vote" className="text-sm text-gray-700 dark:text-gray-300">Разрешить просмотр результатов без голосования</label>
               </div>
               <div className="flex gap-2 pt-2">
                 <button type="submit" disabled={creatingPoll} className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition disabled:opacity-50">
                   {creatingPoll ? 'Создание...' : 'Создать голосование'}
                 </button>
-                <button type="button" onClick={() => !creatingPoll && setShowCreatePollModal(false)} className="bg-gray-300 text-gray-700 px-4 py-2 rounded hover:bg-gray-400 transition">
+                <button type="button" onClick={() => !creatingPoll && setShowCreatePollModal(false)} className="bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-200 px-4 py-2 rounded hover:bg-gray-400 dark:hover:bg-gray-500 transition">
                   Отмена
                 </button>
               </div>
@@ -1432,7 +1432,7 @@ const Topic = () => {
 
       {/* Poll block: vote form or results — full width as topic card */}
       {topic.poll && (
-        <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6 mb-6">
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm p-6 mb-6">
           <div className="flex items-start justify-between gap-3 mb-3">
             {isEditingPollQuestion ? (
               <form onSubmit={handleSavePollQuestion} className="flex-1 min-w-0 flex gap-2 items-center">
@@ -1440,7 +1440,7 @@ const Topic = () => {
                   type="text"
                   value={pollEditQuestion}
                   onChange={(e) => setPollEditQuestion(e.target.value)}
-                  className="flex-1 border border-gray-300 rounded px-3 py-2 text-lg"
+                  className="flex-1 border border-gray-300 dark:border-gray-600 rounded px-3 py-2 text-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                   placeholder="Вопрос голосования"
                   maxLength={500}
                   autoFocus
@@ -1454,13 +1454,13 @@ const Topic = () => {
               </form>
             ) : (
               <>
-                <h3 className="text-lg font-semibold flex-1">{topic.poll.question}</h3>
+                <h3 className="text-lg font-semibold flex-1 text-gray-900 dark:text-gray-100">{topic.poll.question}</h3>
                 {canEditPoll && (
                   <div className="flex items-center gap-2 flex-shrink-0">
                     <button
                       type="button"
                       onClick={handleStartEditPollQuestion}
-                      className="text-blue-600 hover:underline text-sm"
+                      className="text-blue-600 dark:text-blue-400 hover:underline text-sm"
                     >
                       ✏️ Редактировать
                     </button>
@@ -1468,7 +1468,7 @@ const Topic = () => {
                       type="button"
                       onClick={handleDeletePoll}
                       disabled={deletingPoll}
-                      className="text-red-600 hover:underline text-sm disabled:opacity-50"
+                      className="text-red-600 dark:text-red-400 hover:underline text-sm disabled:opacity-50"
                     >
                       {deletingPoll ? '…' : '🗑️ Удалить'}
                     </button>
@@ -1478,7 +1478,7 @@ const Topic = () => {
             )}
           </div>
           {topic.poll.multiple_choice && (
-            <p className="text-sm text-gray-500 mb-3">Можно выбрать несколько вариантов</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">Можно выбрать несколько вариантов</p>
           )}
 
           {showVoteForm && (
@@ -1528,7 +1528,7 @@ const Topic = () => {
                   <button
                     type="button"
                     onClick={() => setPollShowResultsWithoutVote(true)}
-                    className="text-blue-600 hover:underline"
+                    className="text-blue-600 dark:text-blue-400 hover:underline"
                   >
                     Посмотреть результаты
                   </button>
@@ -1546,8 +1546,8 @@ const Topic = () => {
                   return (
                     <div key={opt.id}>
                       <div className="flex justify-between text-sm mb-1">
-                        <span className="text-gray-800">{opt.text}</span>
-                        <span className="text-gray-600">{opt.vote_count} ({pct}%)</span>
+                        <span className="text-gray-800 dark:text-gray-200">{opt.text}</span>
+                        <span className="text-gray-600 dark:text-gray-400">{opt.vote_count} ({pct}%)</span>
                       </div>
                       <div className="h-6 bg-gray-200 rounded overflow-hidden">
                         <div
@@ -1559,7 +1559,7 @@ const Topic = () => {
                   );
                 })}
               </div>
-              <p className="text-sm text-gray-500">Всего голосов: {topic.poll.total_votes}</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">Всего голосов: {topic.poll.total_votes}</p>
               {topic.poll.allow_view_without_vote && !userHasVoted && pollShowResultsWithoutVote && (
                 <button
                   type="button"
@@ -1574,11 +1574,11 @@ const Topic = () => {
         </div>
       )}
 
-      <h2 className="text-xl sm:text-2xl font-bold mb-4">Сообщения ({topic.posts.length})</h2>
+      <h2 className="text-xl sm:text-2xl font-bold mb-4 text-gray-900 dark:text-gray-100">Сообщения ({topic.posts.length})</h2>
 
       <div className="space-y-4 mb-6">
         {topic.posts.length === 0 ? (
-          <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6 text-center text-gray-500">
+          <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm p-6 text-center text-gray-500 dark:text-gray-400">
             Пока нет сообщений. Будьте первым!
           </div>
         ) : (
@@ -1610,7 +1610,7 @@ const Topic = () => {
         <form
           id="reply-form"
           onSubmit={handleSubmitPost}
-          className="bg-white rounded-lg border border-gray-200 shadow-sm p-4 sm:p-6"
+          className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm p-4 sm:p-6"
         >
           {replyingTo && (() => {
             const replyingToPost = getReplyingToPost();
@@ -1623,7 +1623,7 @@ const Topic = () => {
             return (
               <div className="mb-4">
                 <div className="flex justify-between items-center mb-2">
-                  <div className="text-sm text-gray-600">
+                  <div className="text-sm text-gray-600 dark:text-gray-400">
                     Ответ на{' '}
                     <span className="text-blue-600 font-mono">
                       #{getGlobalIdForPost(replyingToPost.id)}
@@ -1633,7 +1633,7 @@ const Topic = () => {
                   <button
                     type="button"
                     onClick={cancelReply}
-                    className="text-blue-600 hover:text-blue-800 text-sm"
+                    className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-sm"
                   >
                     ✕ Отменить ответ
                   </button>
@@ -1641,18 +1641,18 @@ const Topic = () => {
               </div>
             );
           })()}
-          <h3 className="text-lg font-semibold mb-4">
+          <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">
             {replyingTo ? 'Ответить на сообщение' : 'Добавить сообщение'}
           </h3>
           <textarea
             value={newPost}
             onChange={(e) => setNewPost(e.target.value)}
             placeholder={replyingTo ? 'Ваш ответ...' : 'Ваше сообщение...'}
-            className="w-full border rounded px-4 py-2 mb-4 h-32"
+            className="w-full border border-gray-300 dark:border-gray-600 rounded px-4 py-2 mb-4 h-32 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
             required
           />
           <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Изображения (до 10 шт.)
             </label>
             <input
@@ -1660,7 +1660,7 @@ const Topic = () => {
               accept="image/*"
               multiple
               onChange={handleImageSelect}
-              className="w-full border rounded px-4 py-2 mb-2"
+              className="w-full border border-gray-300 dark:border-gray-600 rounded px-4 py-2 mb-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
             />
             {selectedImages.length > 0 && (
               <div className="flex flex-wrap gap-2 mt-2">
@@ -1695,7 +1695,7 @@ const Topic = () => {
               <button
                 type="button"
                 onClick={cancelReply}
-                className="bg-gray-300 text-gray-700 px-4 py-2 rounded hover:bg-gray-400 transition"
+                className="bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-200 px-4 py-2 rounded hover:bg-gray-400 dark:hover:bg-gray-500 transition"
               >
                 Отмена
               </button>

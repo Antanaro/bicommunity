@@ -264,19 +264,19 @@ const Profile = () => {
       <SeoHead title="Мой профиль" noIndex />
       {/* Уведомления */}
       {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+        <div className="bg-red-100 dark:bg-red-900/30 border border-red-400 dark:border-red-700 text-red-700 dark:text-red-300 px-4 py-3 rounded">
           {error}
         </div>
       )}
       {success && (
-        <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded">
+        <div className="bg-green-100 dark:bg-green-900/30 border border-green-400 dark:border-green-700 text-green-700 dark:text-green-300 px-4 py-3 rounded">
           {success}
         </div>
       )}
 
       {/* Информация о профиле */}
-      <div className="bg-white rounded-lg shadow p-4 sm:p-6">
-        <h1 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">Профиль</h1>
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 sm:p-6 border border-gray-200 dark:border-gray-700">
+        <h1 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-gray-900 dark:text-gray-100">Профиль</h1>
         
         {/* Аватар */}
         <div className="flex flex-col sm:flex-row items-start gap-4 sm:gap-6 mb-4 sm:mb-6">
@@ -290,11 +290,11 @@ const Profile = () => {
             />
             <div
               onClick={handleAvatarClick}
-              className="w-24 h-24 rounded-full bg-gray-200 flex items-center justify-center cursor-pointer overflow-hidden hover:opacity-80 transition border-2 border-gray-300 hover:border-blue-400"
+              className="w-24 h-24 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center cursor-pointer overflow-hidden hover:opacity-80 transition border-2 border-gray-300 dark:border-gray-600 hover:border-blue-400 dark:hover:border-blue-500"
               title="Нажмите, чтобы изменить аватар"
             >
               {uploadingAvatar ? (
-                <div className="text-gray-500 text-sm">Загрузка...</div>
+                <div className="text-gray-500 dark:text-gray-400 text-sm">Загрузка...</div>
               ) : getAvatarUrl() ? (
                 <img
                   src={getAvatarUrl()!}
@@ -302,7 +302,7 @@ const Profile = () => {
                   className="w-full h-full object-cover"
                 />
               ) : (
-                <span className="text-3xl text-gray-500">
+                <span className="text-3xl text-gray-500 dark:text-gray-400">
                   {user.username.charAt(0).toUpperCase()}
                 </span>
               )}
@@ -312,23 +312,23 @@ const Profile = () => {
             </div>
           </div>
           <div className="flex-1">
-            <div className="text-xl font-semibold">{user.username}</div>
-            <div className="text-gray-500 text-sm">{user.email}</div>
-            <div className="text-gray-500 text-sm">
+            <div className="text-xl font-semibold text-gray-900 dark:text-gray-100">{user.username}</div>
+            <div className="text-gray-500 dark:text-gray-400 text-sm">{user.email}</div>
+            <div className="text-gray-500 dark:text-gray-400 text-sm">
               {user.role === 'admin' ? 'Администратор' : 'Пользователь'}
             </div>
             {/* Статистика */}
             {userStats && (
               <div className="flex flex-wrap gap-4 mt-3 text-sm">
-                <span className="text-gray-600">
-                  <span className="font-semibold text-gray-800">{userStats.topics_count}</span> тем
+                <span className="text-gray-600 dark:text-gray-400">
+                  <span className="font-semibold text-gray-800 dark:text-gray-200">{userStats.topics_count}</span> тем
                 </span>
-                <span className="text-gray-600">
-                  <span className="font-semibold text-gray-800">{userStats.posts_count}</span> сообщений
+                <span className="text-gray-600 dark:text-gray-400">
+                  <span className="font-semibold text-gray-800 dark:text-gray-200">{userStats.posts_count}</span> сообщений
                 </span>
                 {userStats.likes_received > 0 && (
-                  <span className="text-gray-600">
-                    <span className="font-semibold text-gray-800">{userStats.likes_received}</span> 👍
+                  <span className="text-gray-600 dark:text-gray-400">
+                    <span className="font-semibold text-gray-800 dark:text-gray-200">{userStats.likes_received}</span> 👍
                   </span>
                 )}
               </div>
@@ -337,15 +337,15 @@ const Profile = () => {
         </div>
 
         {/* О себе */}
-        <div className="border-t pt-4">
+        <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
           <div className="flex justify-between items-center mb-2">
-            <label className="block text-gray-700 text-sm font-bold">
+            <label className="block text-gray-700 dark:text-gray-300 text-sm font-bold">
               О себе
             </label>
             {!isEditingBio && (
               <button
                 onClick={() => setIsEditingBio(true)}
-                className="text-blue-500 hover:text-blue-600 text-sm"
+                className="text-blue-500 dark:text-blue-400 hover:text-blue-600 dark:hover:text-blue-300 text-sm"
               >
                 Редактировать
               </button>
@@ -358,7 +358,7 @@ const Profile = () => {
                 value={bio}
                 onChange={(e) => setBio(e.target.value)}
                 placeholder="Расскажите немного о себе..."
-                className="w-full border rounded px-3 py-2 h-24 resize-none focus:outline-none focus:border-blue-500"
+                className="w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 h-24 resize-none focus:outline-none focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                 maxLength={500}
               />
               <div className="flex justify-between items-center">
@@ -366,7 +366,7 @@ const Profile = () => {
                 <div className="flex gap-2">
                   <button
                     onClick={cancelEditBio}
-                    className="px-3 py-1 text-sm text-gray-600 hover:text-gray-800"
+                    className="px-3 py-1 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
                     disabled={savingBio}
                   >
                     Отмена
@@ -382,11 +382,11 @@ const Profile = () => {
               </div>
             </div>
           ) : (
-            <div className="text-gray-700">
+            <div className="text-gray-700 dark:text-gray-300">
               {user.bio ? (
                 <p className="whitespace-pre-wrap">{user.bio}</p>
               ) : (
-                <p className="text-gray-400 italic">Информация о себе не указана</p>
+                <p className="text-gray-400 dark:text-gray-500 italic">Информация о себе не указана</p>
               )}
             </div>
           )}
@@ -395,21 +395,21 @@ const Profile = () => {
 
       {/* Мои темы / Темы, где участвовал */}
       <div className="grid gap-4 sm:grid-cols-2">
-        <div className="bg-white rounded-lg shadow p-4 sm:p-6">
-          <h2 className="text-lg font-bold mb-4">Мои темы</h2>
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 sm:p-6 border border-gray-200 dark:border-gray-700">
+          <h2 className="text-lg font-bold mb-4 text-gray-900 dark:text-gray-100">Мои темы</h2>
           {myTopics.length === 0 ? (
-            <p className="text-gray-500 text-sm">Нет созданных тем</p>
+            <p className="text-gray-500 dark:text-gray-400 text-sm">Нет созданных тем</p>
           ) : (
             <ul className="space-y-2">
               {myTopics.slice(0, 5).map((topic) => (
                 <li key={topic.id}>
                   <Link
                     to={`/topic/${topic.id}`}
-                    className="text-blue-600 hover:text-blue-800 text-sm font-medium hover:underline block truncate"
+                    className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-sm font-medium hover:underline block truncate"
                   >
                     {topic.title}
                   </Link>
-                  <div className="text-xs text-gray-500">
+                  <div className="text-xs text-gray-500 dark:text-gray-400">
                     {topic.category_name} • {topic.post_count} сообщ.
                   </div>
                 </li>
@@ -417,26 +417,26 @@ const Profile = () => {
             </ul>
           )}
           {myTopics.length > 5 && (
-            <Link to={`/users/${user.id}`} className="text-blue-600 hover:underline text-sm mt-2 inline-block">
+            <Link to={`/users/${user.id}`} className="text-blue-600 dark:text-blue-400 hover:underline text-sm mt-2 inline-block">
               Все мои темы →
             </Link>
           )}
         </div>
-        <div className="bg-white rounded-lg shadow p-4 sm:p-6">
-          <h2 className="text-lg font-bold mb-4">Темы, где участвовал</h2>
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 sm:p-6 border border-gray-200 dark:border-gray-700">
+          <h2 className="text-lg font-bold mb-4 text-gray-900 dark:text-gray-100">Темы, где участвовал</h2>
           {participatedTopics.length === 0 ? (
-            <p className="text-gray-500 text-sm">Пока не участвовал в чужих темах</p>
+            <p className="text-gray-500 dark:text-gray-400 text-sm">Пока не участвовал в чужих темах</p>
           ) : (
             <ul className="space-y-2">
               {participatedTopics.slice(0, 5).map((topic) => (
                 <li key={topic.id}>
                   <Link
                     to={`/topic/${topic.id}`}
-                    className="text-blue-600 hover:text-blue-800 text-sm font-medium hover:underline block truncate"
+                    className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-sm font-medium hover:underline block truncate"
                   >
                     {topic.title}
                   </Link>
-                  <div className="text-xs text-gray-500">
+                  <div className="text-xs text-gray-500 dark:text-gray-400">
                     {topic.category_name}
                     {topic.author_name && ` • ${topic.author_name}`}
                   </div>
@@ -445,7 +445,7 @@ const Profile = () => {
             </ul>
           )}
           {participatedTopics.length > 5 && (
-            <Link to={`/users/${user.id}`} className="text-blue-600 hover:underline text-sm mt-2 inline-block">
+            <Link to={`/users/${user.id}`} className="text-blue-600 dark:text-blue-400 hover:underline text-sm mt-2 inline-block">
               Все темы →
             </Link>
           )}
@@ -453,30 +453,30 @@ const Profile = () => {
       </div>
 
       {/* Настройки уведомлений */}
-      <div className="bg-white rounded-lg shadow p-4 sm:p-6">
-        <h2 className="text-lg sm:text-xl font-bold mb-4">Уведомления</h2>
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 sm:p-6 border border-gray-200 dark:border-gray-700">
+        <h2 className="text-lg sm:text-xl font-bold mb-4 text-gray-900 dark:text-gray-100">Уведомления</h2>
 
         <div className="mb-4">
-          <label className="block text-gray-700 text-sm font-bold mb-1">
+          <label className="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-1">
             Telegram chat_id
           </label>
           <input
             type="text"
             value={telegramChatId}
             onChange={(e) => setTelegramChatId(e.target.value)}
-            className="w-full border rounded px-3 py-2 focus:outline-none focus:border-blue-500"
+            className="w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 focus:outline-none focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
             placeholder="Например: 123456789"
           />
-          <p className="text-xs text-gray-500 mt-1">
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
             Получите ваш chat_id, отправив команду <code>/myid</code>{' '}
-            <a href="https://t.me/bicommunity_bot" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">нашему Telegram‑боту</a>, и
+            <a href="https://t.me/bicommunity_bot" target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 hover:underline">нашему Telegram‑боту</a>, и
             вставьте значение сюда.
           </p>
         </div>
 
         <div className="space-y-3">
           <div>
-            <div className="text-sm font-semibold text-gray-800 mb-1">
+            <div className="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">
               Ответ на моё сообщение
             </div>
             <div className="flex gap-4 text-sm">
@@ -502,7 +502,7 @@ const Profile = () => {
           </div>
 
           <div>
-            <div className="text-sm font-semibold text-gray-800 mb-1">
+            <div className="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">
               Ответ в теме, которую я создал
             </div>
             <div className="flex gap-4 text-sm">
@@ -528,7 +528,7 @@ const Profile = () => {
           </div>
 
           <div>
-            <div className="text-sm font-semibold text-gray-800 mb-1">
+            <div className="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">
               Новые темы на форуме
             </div>
             <div className="flex gap-4 text-sm">
@@ -566,11 +566,11 @@ const Profile = () => {
       </div>
 
       {/* Приглашения */}
-      <div className="bg-white rounded-lg shadow p-4 sm:p-6">
-        <h2 className="text-lg sm:text-xl font-bold mb-4">Мои приглашения</h2>
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 sm:p-6 border border-gray-200 dark:border-gray-700">
+        <h2 className="text-lg sm:text-xl font-bold mb-4 text-gray-900 dark:text-gray-100">Мои приглашения</h2>
         
         {loading ? (
-          <p className="text-gray-500">Загрузка...</p>
+          <p className="text-gray-500 dark:text-gray-400">Загрузка...</p>
         ) : invitationsData ? (
           <>
             {/* Статистика */}
@@ -578,7 +578,7 @@ const Profile = () => {
               <span className="text-green-600">
                 Доступно: {invitationsData.stats.available}
               </span>
-              <span className="text-gray-500">
+              <span className="text-gray-500 dark:text-gray-400">
                 Использовано: {invitationsData.stats.used}
               </span>
             </div>
@@ -590,21 +590,21 @@ const Profile = () => {
                   key={inv.id}
                   className={`p-3 rounded border ${
                     inv.used_by_id 
-                      ? 'bg-gray-50 border-gray-200' 
-                      : 'bg-green-50 border-green-200'
+                      ? 'bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600' 
+                      : 'bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-800'
                   }`}
                 >
                   <div className="flex items-center justify-between">
                     <div>
-                      <code className="text-sm font-mono bg-white px-2 py-1 rounded">
+                      <code className="text-sm font-mono bg-white dark:bg-gray-800 px-2 py-1 rounded border border-gray-200 dark:border-gray-600">
                         {inv.code}
                       </code>
                       {inv.used_by_id ? (
-                        <span className="ml-3 text-sm text-gray-500">
+                        <span className="ml-3 text-sm text-gray-500 dark:text-gray-400">
                           Использован: <strong>{inv.used_by_username}</strong>
                         </span>
                       ) : (
-                        <span className="ml-3 text-sm text-green-600">
+                        <span className="ml-3 text-sm text-green-600 dark:text-green-400">
                           Доступен
                         </span>
                       )}
@@ -622,7 +622,7 @@ const Profile = () => {
               ))}
 
               {invitationsData.invitations.length === 0 && (
-                <p className="text-gray-500 text-center py-4">
+                <p className="text-gray-500 dark:text-gray-400 text-center py-4">
                   У вас пока нет приглашений
                 </p>
               )}

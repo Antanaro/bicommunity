@@ -12,7 +12,7 @@ interface MarkdownRendererProps {
  */
 const MarkdownRenderer: React.FC<MarkdownRendererProps> = memo(({ content, className = '' }) => {
   return (
-    <div className={`prose prose-sm max-w-none ${className}`}>
+    <div className={`prose prose-sm prose-slate dark:prose-invert max-w-none ${className}`}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={{
@@ -26,29 +26,29 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = memo(({ content, class
           ol: ({ node, ...props }) => <ol className="list-decimal list-inside mb-2 ml-4" {...props} />,
           li: ({ node, ...props }) => <li className="mb-1" {...props} />,
           blockquote: ({ node, ...props }) => (
-            <blockquote className="border-l-4 border-gray-300 pl-4 italic my-2 text-gray-600" {...props} />
+            <blockquote className="border-l-4 border-gray-300 dark:border-gray-600 pl-4 italic my-2 text-gray-600 dark:text-gray-400" {...props} />
           ),
           code: ({ node, className, children, ...props }: any) => {
             const isInline = !className || !className.includes('language-');
             if (isInline) {
               return (
-                <code className="bg-gray-100 px-1 py-0.5 rounded text-sm font-mono" {...props}>
+                <code className="bg-gray-100 dark:bg-gray-700 px-1 py-0.5 rounded text-sm font-mono" {...props}>
                   {children}
                 </code>
               );
             }
             return (
-              <code className="block bg-gray-100 p-3 rounded text-sm font-mono overflow-x-auto my-2" {...props}>
+              <code className="block bg-gray-100 dark:bg-gray-700 p-3 rounded text-sm font-mono overflow-x-auto my-2" {...props}>
                 {children}
               </code>
             );
           },
-          pre: ({ node, ...props }) => <pre className="bg-gray-100 p-3 rounded overflow-x-auto my-2" {...props} />,
+          pre: ({ node, ...props }) => <pre className="bg-gray-100 dark:bg-gray-700 p-3 rounded overflow-x-auto my-2" {...props} />,
           a: ({ node, href, children, ...rest }) => {
             const safeHref = (href && (href.startsWith('http://') || href.startsWith('https://'))) ? href : '#';
             return (
               <a
-                className="text-blue-600 underline hover:text-blue-800"
+                className="text-blue-600 dark:text-blue-400 underline hover:text-blue-800 dark:hover:text-blue-300"
                 href={safeHref}
                 target="_blank"
                 rel="noopener noreferrer"
@@ -59,21 +59,21 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = memo(({ content, class
             );
           },
           img: ({ node, ...props }) => (
-            <img className="max-w-full h-auto rounded border my-2" {...props} />
+            <img className="max-w-full h-auto rounded border border-gray-200 dark:border-gray-600 my-2" {...props} />
           ),
           table: ({ node, ...props }) => (
             <div className="overflow-x-auto my-2">
-              <table className="min-w-full border-collapse border border-gray-300" {...props} />
+              <table className="min-w-full border-collapse border border-gray-300 dark:border-gray-600" {...props} />
             </div>
           ),
-          thead: ({ node, ...props }) => <thead className="bg-gray-100" {...props} />,
+          thead: ({ node, ...props }) => <thead className="bg-gray-100 dark:bg-gray-700" {...props} />,
           th: ({ node, ...props }) => (
-            <th className="border border-gray-300 px-4 py-2 text-left font-semibold" {...props} />
+            <th className="border border-gray-300 dark:border-gray-600 px-4 py-2 text-left font-semibold" {...props} />
           ),
           td: ({ node, ...props }) => (
-            <td className="border border-gray-300 px-4 py-2" {...props} />
+            <td className="border border-gray-300 dark:border-gray-600 px-4 py-2" {...props} />
           ),
-          hr: ({ node, ...props }) => <hr className="my-4 border-gray-300" {...props} />,
+          hr: ({ node, ...props }) => <hr className="my-4 border-gray-300 dark:border-gray-600" {...props} />,
           strong: ({ node, ...props }) => <strong className="font-bold" {...props} />,
           em: ({ node, ...props }) => <em className="italic" {...props} />,
         }}
