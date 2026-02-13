@@ -46,6 +46,9 @@
         var d=window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches;
         var t=(s==='dark'||s==='light')?s:(d?'dark':'light');
         document.documentElement.classList.add(t);
+        if (/Mac|iPhone|iPad|iPod/.test(navigator.platform) || /Mac OS X/.test(navigator.userAgent)) {
+          document.documentElement.classList.add('mac-cursor-fix');
+        }
       })();
     </script>
   </head>

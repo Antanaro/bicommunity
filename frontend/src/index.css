@@ -9,6 +9,30 @@ html {
 /* color-scheme: dark отключён — на macOS в разных браузерах приводит к исчезновению курсора
    при переключении темы. Контент остаётся тёмным через Tailwind dark:. */
 
+/* MacBook: отключаем transition и hover-opacity — GPU-слои при анимации провоцируют
+   исчезновение курсора. Класс mac-cursor-fix добавляется в index.html при обнаружении Mac. */
+html.mac-cursor-fix *,
+html.mac-cursor-fix *::before,
+html.mac-cursor-fix *::after {
+  transition-duration: 0s !important;
+  transition-delay: 0s !important;
+}
+html.mac-cursor-fix .pie-chart-container,
+html.mac-cursor-fix .pie-chart-button:hover .pie-chart-container {
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+}
+html.mac-cursor-fix img:hover,
+html.mac-cursor-fix .hover\:opacity-80:hover,
+html.mac-cursor-fix .hover\:opacity-90:hover {
+  opacity: 1 !important;
+}
+html.mac-cursor-fix .pie-chart-button:hover .pie-chart-container svg,
+html.mac-cursor-fix .pie-chart-button:hover .pie-segment,
+html.mac-cursor-fix .pie-chart-button:active .pie-chart-container svg,
+html.mac-cursor-fix .pie-chart-button:active .pie-segment {
+  opacity: 1 !important;
+}
+
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
