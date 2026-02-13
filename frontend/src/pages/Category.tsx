@@ -219,7 +219,7 @@ const Category = () => {
           {!showForm ? (
             <button
               onClick={() => setShowForm(true)}
-              className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition"
+              className="px-3 py-1.5 rounded border border-blue-300 dark:border-blue-600 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition text-sm"
             >
               Создать новую тему
             </button>
@@ -376,7 +376,7 @@ const Category = () => {
                     e.stopPropagation();
                     handleDeleteTopic(topic.id, topic.title);
                   }}
-                  className="absolute top-2 right-2 bg-red-500 text-white px-2 py-1.5 rounded hover:bg-red-600 transition opacity-80 sm:opacity-0 sm:group-hover:opacity-100 text-xs min-h-[36px] min-w-[36px]"
+                  className="absolute top-2 right-2 px-2 py-1.5 rounded border border-red-300 dark:border-red-600 bg-white dark:bg-gray-700 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 transition text-xs min-h-[36px] min-w-[36px] opacity-80 sm:opacity-0 sm:group-hover:opacity-100"
                   title="Удалить тему"
                 >
                   🗑️

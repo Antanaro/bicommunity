@@ -84,6 +84,16 @@ code {
   transition: box-shadow 0.3s ease;
 }
 
+/* MacBook/Safari: SVG по умолчанию рендерит белый холст. В тёмной теме — явно тёмный фон. */
+html.dark .pie-chart-button,
+html.dark .pie-chart-container,
+html.dark .pie-chart-button .pie-chart-container {
+  background-color: rgb(17 24 39); /* Tailwind gray-900 */
+}
+html.dark .pie-chart-container svg {
+  background-color: inherit;
+}
+
 .pie-chart {
   overflow: visible !important;
 }

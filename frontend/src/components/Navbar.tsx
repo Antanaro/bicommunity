@@ -29,14 +29,13 @@ const NavbarAvatar = ({ avatarUrl, username }: { avatarUrl?: string | null; user
   );
 };
 
-const TITLES = ['AI Vibe Forum', 'BI Vibe Forum', 'AB Vibe Forum'] as const;
+const TITLES = ['AI Vibe Forum', 'BI Vibe Forum'] as const;
+const TITLE_COLORS = ['text-blue-600 dark:text-blue-400', 'text-red-500 dark:text-red-400', 'text-green-600 dark:text-green-400'] as const;
 
-// BI 60%, AI 30%, AB 10%
+// BI 60%, AI 40%
 const getInitialTitleIndex = () => {
   const r = Math.random();
-  if (r < 0.6) return 1;   // BI 60%
-  if (r < 0.9) return 0;  // AI 30%
-  return 2;               // AB 10%
+  return r < 0.6 ? 1 : 0;
 };
 
 const SunIcon = () => (
@@ -56,11 +55,15 @@ const Navbar = () => {
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const [titleIndex, setTitleIndex] = useState(getInitialTitleIndex);
+  const [colorIndex, setColorIndex] = useState(getInitialTitleIndex);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
   const currentTitle = TITLES[titleIndex];
-  const isAi = currentTitle === 'AI Vibe Forum';
-  const isAb = currentTitle === 'AB Vibe Forum';
+  const titleColorClass = TITLE_COLORS[colorIndex % 3];
+
+  const handleTitleClick = () => {
+    setTitleIndex((i) => (i + 1) % TITLES.length);
+    setColorIndex((i) => (i + 1) % 3);
+  };
 
   // Закрывать меню при навигации и клике снаружи
   useEffect(() => {
@@ -78,8 +81,8 @@ const Navbar = () => {
           <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={() => setTitleIndex((i) => (i + 1) % TITLES.length)}
-              className={`text-base sm:text-xl font-bold cursor-pointer transition-colors bg-transparent border-0 p-0 min-w-0 truncate max-w-[50vw] sm:max-w-none ${isAb ? 'text-green-600 dark:text-green-400' : isAi ? 'text-red-500 dark:text-red-400' : 'text-blue-600 dark:text-blue-400'}`}
+              onClick={handleTitleClick}
+              className={`text-base sm:text-xl font-bold cursor-pointer transition-colors bg-transparent border-0 p-0 min-w-0 truncate max-w-[50vw] sm:max-w-none ${titleColorClass}`}
             >
               {currentTitle}
             </button>
@@ -116,7 +119,7 @@ const Navbar = () => {
                   <NavbarAvatar avatarUrl={user.avatar_url} username={user.username} />
                   <span className="max-w-[120px] truncate">{user.username}</span>
                 </Link>
-                <button onClick={logout} className="bg-red-500 dark:bg-red-600 text-white px-4 py-2 rounded hover:bg-red-600 dark:hover:bg-red-700 transition text-sm">
+                <button onClick={logout} className="px-3 py-1.5 rounded border border-red-300 dark:border-red-600 bg-white dark:bg-gray-700 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 transition text-sm">
                   Выйти
                 </button>
               </div>
@@ -125,7 +128,7 @@ const Navbar = () => {
                 <Link to="/login" className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition py-2">
                   Вход
                 </Link>
-                <Link to="/register" className="bg-blue-500 dark:bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-600 dark:hover:bg-blue-700 transition text-sm">
+                <Link to="/register" className="px-3 py-1.5 rounded border border-blue-300 dark:border-blue-600 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition text-sm inline-block">
                   Регистрация
                 </Link>
               </div>
@@ -203,7 +206,7 @@ const Navbar = () => {
                       logout();
                       closeMenu();
                     }}
-                    className="py-3 px-2 text-left text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg font-medium"
+                    className="py-3 px-2 text-left rounded border border-red-300 dark:border-red-600 bg-white dark:bg-gray-700 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 transition text-sm"
                   >
                     Выйти
                   </button>
@@ -220,7 +223,7 @@ const Navbar = () => {
                   <Link
                     to="/register"
                     onClick={closeMenu}
-                    className="py-3 px-2 bg-blue-500 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-600 dark:hover:bg-blue-700 text-center font-medium"
+                    className="py-3 px-2 rounded border border-blue-300 dark:border-blue-600 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition text-sm text-center inline-block"
                   >
                     Регистрация
                   </Link>
