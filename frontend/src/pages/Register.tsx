@@ -119,7 +119,7 @@ const Register = () => {
                 type="text"
                 value={invitationCode}
                 onChange={(e) => setInvitationCode(e.target.value.trim())}
-                className={`w-full border rounded px-4 py-2 pr-10 ${
+                className={`w-full border border-gray-300 rounded px-4 py-2 pr-10 bg-white text-gray-900 placeholder:text-gray-500 ${
                   codeValid === true ? 'border-green-500' : 
                   codeValid === false ? 'border-red-500' : ''
                 }`}
@@ -151,7 +151,7 @@ const Register = () => {
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              className="w-full border rounded px-4 py-2"
+              className="w-full border border-gray-300 rounded px-4 py-2 bg-white text-gray-900 placeholder:text-gray-500"
               required
               minLength={3}
               maxLength={50}
@@ -166,7 +166,7 @@ const Register = () => {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full border rounded px-4 py-2"
+              className="w-full border border-gray-300 rounded px-4 py-2 bg-white text-gray-900 placeholder:text-gray-500"
               required
             />
           </div>
@@ -179,7 +179,7 @@ const Register = () => {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full border rounded px-4 py-2"
+              className="w-full border border-gray-300 rounded px-4 py-2 bg-white text-gray-900 placeholder:text-gray-500"
               required
               minLength={6}
             />
